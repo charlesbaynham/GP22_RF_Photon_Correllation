@@ -80,10 +80,10 @@ void loop() {
 			timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = 0;
 
 			// Convert string -> long int
-			long timePeriod = atol(timePeriodStr);
+			uint32_t timePeriod = atol(timePeriodStr);
 
 			// Calculate stop time
-			long stop = millis() + timePeriod;
+			uint32_t stop = millis() + timePeriod;
 
 			// Loop and report
 			while (millis() < stop) {

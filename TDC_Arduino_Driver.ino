@@ -53,11 +53,17 @@ void loop() {
 
 	if (Serial.available()) {
 		// If there's a command, read it.
-		char command[4];
-		Serial.readBytesUntil('\n', command, 4);
+		char command[5];
+		command[Serial.readBytesUntil('\n', command, 4)] = 0;
+
+		Serial.println(command);
 
 		// Identify and execute the command
-		if (0 == strcmp("*RST", command)) resetFunc(); // Reset
+		if (0 == strcmp("*RST", command)) {
+			Serial.println("Resetting");
+			Serial.flush();
+			resetFunc(); // Reset
+		}
 		else if (0 == strcmp("*IDN", command)) { // Identify
 			Serial.print(PROG_IDN);
 			Serial.print(" - ");

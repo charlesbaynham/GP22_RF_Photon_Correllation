@@ -96,7 +96,7 @@ void loop() {
 				}
 			}
 		}
-		else if (0 == strcmp("TEST", command)) { // Test connection
+		else if (0 == strcmp("*TST", command)) { // Test connection
 
 			int testResult = testTDC();
 			if (testResult) {

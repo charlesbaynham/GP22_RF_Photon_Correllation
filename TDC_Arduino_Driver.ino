@@ -95,9 +95,13 @@ void loop() {
 					// Check we didn't timeout
 					if (result != 0xFFFFFFFF) {
 						// Report
-						Serial.println(result);
+						Serial.print(result);
+						Serial.print('\t');
 					}
 				}
+
+				// newline to terminate
+				Serial.println("DONE");
 			}
 		}
 		else if (0 == strcmp("*TST", command)) { // Test connection
@@ -112,6 +116,8 @@ void loop() {
 			}
 		}
 
+		// Empty the serial input
+		while (Serial.available()) Serial.read();
 
 	}
 

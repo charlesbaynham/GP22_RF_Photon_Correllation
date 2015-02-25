@@ -86,7 +86,7 @@ void loop() {
 			long stop = millis() + timePeriod;
 
 			// Loop and report
-			while (millis() > stop) {
+			while (millis() < stop) {
 
 				// Do the measurement
 				uint32_t result = measure();

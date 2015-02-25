@@ -172,7 +172,7 @@ uint32_t measure() {
 	SPI.transfer(TDC_CS, TDC_INIT);
 
 	// Wait until interrupt goes low indicating a successful read
-	long start = micros();
+	uint32_t start = millis();
 	while (digitalRead(TDC_INT)) {
 		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
 	}
@@ -190,17 +190,6 @@ uint32_t measure() {
 	result.raw[2] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 	result.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
-
-	//long finish = micros();
-
-	//float time = (float)result.proc * pow(2, -16) * 1 / 4000000; // in seconds
-	//float freq = 1 / (2 * time); // in Hz (/2 because we're only sampling half a wave)
-
-	//char statStr[20];
-	//sprintf(statStr, "%g s, %g Hz, time: %i", time, freq, finish - start);
-	//sprintf(statStr, "Freq: %10e Hz", freq);
-
-	//Serial.println(statStr);
 
 	return result.proc;
 }

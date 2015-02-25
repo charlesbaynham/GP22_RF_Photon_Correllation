@@ -25,6 +25,7 @@ byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
 
 #define TDC_READ_CONFIG_FROM_EEPROM 0xF0
 #define TDC_INIT 0x70
+#define TDC_RESET 0x50
 
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
@@ -152,7 +153,7 @@ int testTDC() {
 void initTDC() {
 
 	// Send reset
-	SPI.transfer(TDC_CS, 0x50);
+	SPI.transfer(TDC_CS, TDC_RESET);
 
 	// Wait 100ms
 	delay(100);

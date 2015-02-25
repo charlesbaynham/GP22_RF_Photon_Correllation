@@ -75,27 +75,28 @@ void loop() {
 			// Read the number of ms to time for
 
 			// Advance to the params
-			Serial.readBytesUntil(':', (char*)0, 100);
+			if (Serial.findUntil(":", "\n")) {
 
-			char timePeriodStr[32];
-			timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = 0;
+				char timePeriodStr[32];
+				timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = 0;
 
-			// Convert string -> long int
-			uint32_t timePeriod = atol(timePeriodStr);
+				// Convert string -> long int
+				uint32_t timePeriod = atol(timePeriodStr);
 
-			// Calculate stop time
-			uint32_t stop = millis() + timePeriod;
+				// Calculate stop time
+				uint32_t stop = millis() + timePeriod;
 
-			// Loop and report
-			while (millis() < stop) {
+				// Loop and report
+				while (millis() < stop) {
 
-				// Do the measurement
-				uint32_t result = measure();
+					// Do the measurement
+					uint32_t result = measure();
 
-				// Check we didn't timeout
-				if (result != 0xFFFFFFFF) {
-					// Report
-					Serial.println(result);
+					// Check we didn't timeout
+					if (result != 0xFFFFFFFF) {
+						// Report
+						Serial.println(result);
+					}
 				}
 			}
 		}

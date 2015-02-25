@@ -6,6 +6,9 @@
 
 byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
 
+#define PROG_IDN "GP22_DRIVER"
+#define PROG_VER "0.1"
+
 #define TDC_WRITE_TO_REGISTER 0x80
 #define TDC_READ_FROM_REGISTER 0xB0
 #define TDC_REG0 0x00
@@ -23,38 +26,99 @@ byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
 #define TDC_READ_CONFIG_FROM_EEPROM 0xF0
 #define TDC_INIT 0x70
 
+// Function to reset the arduino:
+void(*resetFunc) (void) = 0;
 
 void setup() {
 
-	// Serial
+	// Serial connection
 	Serial.begin(115200);
-	Serial.println("Starting");
-
-	// Initialize the SPI connection for the GP22 TDC
-	SPI.begin(TDC_CS);
-	SPI.setDataMode(TDC_CS, SPI_MODE1);
-	/* " The TDC-GP22 does only support the following SPI mode (Motorola specification):
-	Clock Phase Bit = 1
-	Clock Polarity Bit = 0 */
-	SPI.setBitOrder(TDC_CS, MSBFIRST);
 
 	// Setup the interrupt pin for input
 	pinMode(TDC_INT, INPUT);
 
-	// Wait 1s
-	delay(1000);
+	// Initialize the SPI connection for the GP22 TDC:
+
+	SPI.begin(TDC_CS);	
+	/* " The TDC-GP22 does only support the following SPI mode (Motorola specification):
+	Clock Phase Bit = 1
+	Clock Polarity Bit = 0 "    =>          */
+	SPI.setDataMode(TDC_CS, SPI_MODE1);
+	SPI.setBitOrder(TDC_CS, MSBFIRST);
+
+	// Setup complete. Move to waiting for a command
+}
+
+void loop() {
+
+	if (Serial.available()) {
+		// If there's a command, read it.
+		char command[4];
+		Serial.readBytesUntil('\n', command, 4);
+
+		// Identify and execute the command
+		if (0 == strcmp("*RST", command)) resetFunc(); // Reset
+		else if (0 == strcmp("*IDN", command)) { // Identify
+			Serial.print(PROG_IDN);
+			Serial.print(" - ");
+			Serial.println(PROG_VER);
+		}
+		else if (0 == strcmp("MEAS", command)) { // Do the measurements
+
+			initTDC(); // Load the EEPROM config
+
+			// Read the number of ms to time for
+			char timePeriodStr[32];
+			timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = '0';
+
+			// Convert string -> long int
+			long timePeriod = atol(timePeriodStr);
+
+			// Calculate stop time
+			long stop = millis() + timePeriod;
+			
+			// Loop and report
+			while (millis() > stop) {
+
+				// Do the measurement
+				uint32_t result = measure();
+
+				// Check we didn't timeout
+				if (result != 0xFFFFFFFF) {
+					// Report
+					Serial.println(result);
+				}
+			}
+		}
+		else if (0 == strcmp("TEST", command)) { // Test connection
+
+			int testResult = testTDC();
+			if (testResult) {
+				Serial.print("FAILED with response ");
+				Serial.println(testResult);
+			}
+			else {
+				Serial.println("PASSED");
+			}
+		}
+
+
+	}
+
+}
+
+int testTDC() {
 
 	// Send reset
 	SPI.transfer(TDC_CS, 0x50);
 
-	// Wait 1s
-	delay(1000);
+	// Wait 100ms
+	delay(100);
 
 	// Write 0101010101000000000000000 into register 1 (the defaults)
 	//  == 0xAA8000
 #define testData 0xAA
-	Serial.print("Writing testdata: ");
-	Serial.println(testData, HEX);
+
 	// Command:
 	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | TDC_REG1, SPI_CONTINUE);
 	// Data:
@@ -69,48 +133,45 @@ void setup() {
 	byte commsTest = SPI.transfer(TDC_CS, 0x00);
 
 	if (commsTest == testData) {
-		Serial.println("Comms test passed");
+		return 0;
 	}
 	else {
-		Serial.print("ERROR in SPI test. Response was:");
-		Serial.println(commsTest, HEX);
+		return commsTest;
 	}
 
-	// Loading config from EEPROM
+}
+
+void initTDC() {
+
+	// Send reset
+	SPI.transfer(TDC_CS, 0x50);
+
+	// Wait 100ms
+	delay(100);
+
+	// Load config from EEPROM
 	SPI.transfer(TDC_CS, TDC_READ_CONFIG_FROM_EEPROM);
 
-	// Wait 500ms
+	// Wait 500ms for load
 	delay(500);
-
-	// Define config:
-#define r0 0xF3076A00
-#define r1 0x21420001
-#define r2 0xA0251C02
-#define r3 0x10000003
-#define r4 0x10000004
-#define r5 0x40000005
-#define r6 0x40004006
-
-	// Check int pin
-	bool interrupt = digitalRead(TDC_INT);
-
-	Serial.print("Interrupt is currently: ");
-	Serial.println(interrupt ? "HIGH" : "LOW");
 }
 
 // the loop function runs over and over again forever
-void loop() {
+uint32_t measure() {
 
-	// Init for start of timing
+	// Send the INIT opcode to start waiting for a timing event
 	SPI.transfer(TDC_CS, TDC_INIT);
 
-	// Check until interrupt goes low
+	// Wait until interrupt goes low indicating a successful read
 	long start = micros();
 	while (digitalRead(TDC_INT)) {
-		//if (millis() - start > 500) { return; } // Give up if we've been waiting 500ms
+		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
 	}
 
 	// Read result
+	// The device's format is a 32 bit fixed point number with 16 bits for the 
+	// fractional part. The following reads the 4 bytes MSB first and then interprets the four
+	// together as a unsigned integer of 32 bits. 
 	union {
 		byte raw[4];
 		uint32_t proc;
@@ -121,39 +182,37 @@ void loop() {
 	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 	result.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
 
-	long finish = micros();
+	//long finish = micros();
 
-	float time = (float)result.proc * pow(2, -16) * 1 / 4000000; // in seconds
-	float freq = 1 / (2 * time); // in Hz
+	//float time = (float)result.proc * pow(2, -16) * 1 / 4000000; // in seconds
+	//float freq = 1 / (2 * time); // in Hz (/2 because we're only sampling half a wave)
 
-	char statStr[20];
-	sprintf(statStr, "%g s, %g Hz, time: %i", time, freq, finish - start);
+	//char statStr[20];
+	//sprintf(statStr, "%g s, %g Hz, time: %i", time, freq, finish - start);
+	//sprintf(statStr, "Freq: %10e Hz", freq);
 
-	Serial.print("Status: ");
-	Serial.println(statStr);
+	//Serial.println(statStr);
 
-	while (!digitalRead(TDC_INT));
-
-	delay(250);
+	return result.proc;
 }
 
-byte * transferN(const byte * data, uint8_t n, byte * outputPtr) {
-
-	int dataIndex, outputIndex;
-	dataIndex = n;
-	outputIndex = 0;
-
-	do {
-		dataIndex--;
-
-		if (outputIndex)
-			outputPtr[outputIndex] = SPI.transfer(TDC_CS, data[dataIndex], (dataIndex > 0 ? SPI_CONTINUE : SPI_LAST));
-		else
-			SPI.transfer(TDC_CS, data[dataIndex], (dataIndex > 0 ? SPI_CONTINUE : SPI_LAST));
-
-		if (outputIndex) outputIndex++;
-
-	} while (dataIndex > 0);
-
-	return outputPtr;
-}
+//byte * transferN(const byte * data, uint8_t n, byte * outputPtr) {
+//
+//	int dataIndex, outputIndex;
+//	dataIndex = n;
+//	outputIndex = 0;
+//
+//	do {
+//		dataIndex--;
+//
+//		if (outputIndex)
+//			outputPtr[outputIndex] = SPI.transfer(TDC_CS, data[dataIndex], (dataIndex > 0 ? SPI_CONTINUE : SPI_LAST));
+//		else
+//			SPI.transfer(TDC_CS, data[dataIndex], (dataIndex > 0 ? SPI_CONTINUE : SPI_LAST));
+//
+//		if (outputIndex) outputIndex++;
+//
+//	} while (dataIndex > 0);
+//
+//	return outputPtr;
+//}

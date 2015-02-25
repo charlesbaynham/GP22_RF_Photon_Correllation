@@ -17,4 +17,9 @@
   <ItemGroup>
     <None Include="TDC_Arduino_Driver.ino" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Visual Micro\.TDC_Arduino_Driver.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

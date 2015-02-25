@@ -39,7 +39,7 @@ void setup() {
 
 	// Initialize the SPI connection for the GP22 TDC:
 
-	SPI.begin(TDC_CS);	
+	SPI.begin(TDC_CS);
 	/* " The TDC-GP22 does only support the following SPI mode (Motorola specification):
 	Clock Phase Bit = 1
 	Clock Polarity Bit = 0 "    =>          */
@@ -55,8 +55,6 @@ void loop() {
 		// If there's a command, read it.
 		char command[5];
 		command[Serial.readBytesUntil('\n', command, 4)] = 0;
-
-		Serial.println(command);
 
 		// Identify and execute the command
 		if (0 == strcmp("*RST", command)) {
@@ -74,15 +72,19 @@ void loop() {
 			initTDC(); // Load the EEPROM config
 
 			// Read the number of ms to time for
+
+			// Advance to the params
+			Serial.readBytesUntil(':', (char*)0, 100);
+
 			char timePeriodStr[32];
-			timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = '0';
+			timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = 0;
 
 			// Convert string -> long int
 			long timePeriod = atol(timePeriodStr);
 
 			// Calculate stop time
 			long stop = millis() + timePeriod;
-			
+
 			// Loop and report
 			while (millis() > stop) {
 

@@ -180,7 +180,7 @@ uint32_t measure() {
 
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
-	while (digitalRead(TDC_INT)) {
+	while (HIGH == digitalRead(TDC_INT)) {
 		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
 	}
 

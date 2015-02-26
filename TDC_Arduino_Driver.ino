@@ -7,7 +7,7 @@
 		Current version:			*/
 
 #define PROG_IDN "GP22_DRIVER"
-#define PROG_VER "0.2"
+#define PROG_VER "0.3"
 
 /*----------------------------------*/
 
@@ -86,7 +86,7 @@ void loop() {
 
 			// Read the number of ms to time for
 
-			// Advance to the params
+			// Advance to the params (do nothing if no params given)
 			if (Serial.findUntil(":", "\n")) {
 
 				char timePeriodStr[32];
@@ -116,11 +116,20 @@ void loop() {
 				Serial.println("DONE");
 			}
 		}
+		else if (0 == strcmp("SING", command)) { // Do a single measurement
+
+			// Do the measurement
+			uint32_t result = measure();
+
+			// Report result
+			Serial.println(result);
+
+		}
 		else if (0 == strcmp("*TST", command)) { // Test connection
 
 			// Run the test
 			int testResult = testTDC();
-			
+
 			// Restore the values changed during the test
 			initTDC();
 

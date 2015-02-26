@@ -58,6 +58,9 @@ void setup() {
 	SPI.setDataMode(TDC_CS, SPI_MODE1);
 	SPI.setBitOrder(TDC_CS, MSBFIRST);
 
+	// Order the GP22 to load its config
+	initTDC();
+
 	// Setup complete. Move to waiting for a command
 }
 
@@ -80,8 +83,6 @@ void loop() {
 			Serial.println(PROG_VER);
 		}
 		else if (0 == strcmp("MEAS", command)) { // Do the measurements
-
-			initTDC(); // Load the EEPROM config
 
 			// Read the number of ms to time for
 
@@ -117,7 +118,13 @@ void loop() {
 		}
 		else if (0 == strcmp("*TST", command)) { // Test connection
 
+			// Run the test
 			int testResult = testTDC();
+			
+			// Restore the values changed during the test
+			initTDC();
+
+			// Report the result
 			if (testResult) {
 				Serial.print("FAILED with response ");
 				Serial.println(testResult);
@@ -134,6 +141,7 @@ void loop() {
 
 }
 
+// Write to the GP22 then read to check comms
 int testTDC() {
 
 	// Send reset
@@ -168,6 +176,7 @@ int testTDC() {
 
 }
 
+// Setup the GP22 with the data stored in its EEPROM
 void initTDC() {
 
 	// Send reset

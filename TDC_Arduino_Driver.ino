@@ -1,3 +1,17 @@
+/*------------------------------------
+
+		DRIVER FOR GP22 TDC CHIP
+
+		See README.md for more information
+
+		Current version:			*/
+
+#define PROG_IDN "GP22_DRIVER"
+#define PROG_VER "0.2"
+
+/*----------------------------------*/
+
+
 #define TDC_CS 10
 #define TDC_INT 12
 
@@ -5,9 +19,6 @@
 #include <SPI.h>
 
 byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
-
-#define PROG_IDN "GP22_DRIVER"
-#define PROG_VER "0.1"
 
 #define TDC_WRITE_TO_REGISTER 0x80
 #define TDC_READ_FROM_REGISTER 0xB0

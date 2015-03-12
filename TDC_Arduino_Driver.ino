@@ -230,6 +230,25 @@ uint32_t measure() {
 	return result.proc;
 }
 
+// Read status
+// The device's format is a 16 bit number
+// See p.36 of the ACAM datasheet
+uint16_t readStatus() {
+	union {
+		byte raw[2];
+		uint16_t proc;
+	} status;
+
+	// Send command to read status
+	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_STATUS, SPI_CONTINUE);
+
+	// Read in the data
+	status.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	status.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+
+	return status.proc;
+}
+
 //byte * transferN(const byte * data, uint8_t n, byte * outputPtr) {
 //
 //	int dataIndex, outputIndex;

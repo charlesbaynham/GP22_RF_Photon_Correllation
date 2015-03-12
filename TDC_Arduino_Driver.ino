@@ -201,7 +201,7 @@ void initTDC() {
 	delay(500);
 }
 
-// the loop function runs over and over again forever
+// Perform a single measurement & return the outcome
 uint32_t measure() {
 
 	// Send the INIT opcode to start waiting for a timing event

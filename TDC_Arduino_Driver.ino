@@ -37,6 +37,7 @@ byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
 #define TDC_READ_CONFIG_FROM_EEPROM 0xF0
 #define TDC_INIT 0x70
 #define TDC_RESET 0x50
+#define TDC_START_CAL 0x04
 
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
@@ -123,6 +124,17 @@ void loop() {
 
 			// Report result
 			Serial.println(result);
+
+		}
+		else if (0 == strcmp("CALI", command)) { // Calibrate the TDC and report the result
+
+			// Do the calibration
+			uint16_t calib = calibrate();
+
+			// Report result
+			Serial.print("Calibration: ");
+			Serial.print(calib);
+			Serial.println("s");
 
 		}
 		else if (0 == strcmp("*TST", command)) { // Test connection
@@ -229,6 +241,57 @@ uint32_t measure() {
 
 	return result.proc;
 }
+
+// Perform a calibration routine and then return the single precision resolution
+uint16_t calibrate() {
+
+	// Accept hits on the channels
+	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
+
+	delay(1);
+
+	// Send the START_CAL_TDC opcode to start the calibration routine
+	SPI.transfer(TDC_CS, TDC_START_CAL, SPI_LAST);
+
+	delay(1);
+
+	// Request that the ALU calculates the calibration difference by writing
+	// into register 1. This tells the ALU what to calculate and also triggers the calculation
+	// See p.52 of the ACAM manual
+	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | TDC_REG1, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x67, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x41, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+
+	delay(1);
+
+	// Read result
+	// 16 bits
+	union {
+		byte raw[2];
+		uint16_t proc;
+	} calibration;
+	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_RESULT1, SPI_CONTINUE);
+	calibration.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	calibration.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+
+	delay(1);
+
+
+	// Restore register 1 to normal settings (HIT1 - START, 1 hit on STOP1, 0 hits on STOP2)
+	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | TDC_REG1, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x01, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x41, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+
+	delay(1);
+
+
+	return calibration.proc;
+}
+
 
 // Read status
 // The device's format is a 16 bit number

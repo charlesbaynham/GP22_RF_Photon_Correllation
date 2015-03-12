@@ -132,9 +132,7 @@ void loop() {
 			uint16_t calib = calibrate();
 
 			// Report result
-			Serial.print("Calibration: ");
-			Serial.print(calib);
-			Serial.println("s");
+			Serial.println(calib);
 
 		}
 		else if (0 == strcmp("*TST", command)) { // Test connection
@@ -238,7 +236,9 @@ uint32_t measure() {
 	return result.proc;
 }
 
-// Perform a calibration routine and then return the single precision resolution
+// Perform a calibration routine and then return the number of LSBs in 2 clock cycles
+// The default clock setting is 4 MHz, so a measurement of x LSBs in 2 clock cycles corresponds to
+//	a precision of 1/4MHz * 2 cycles / x
 uint16_t calibrate() {
 
 	// Accept hits on the channels

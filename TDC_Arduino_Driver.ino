@@ -174,13 +174,9 @@ int testTDC() {
 	// Write 0101010101000000000000000 into register 1 (the defaults)
 	//  == 0xAA8000
 #define testData 0xAA
+#define reg1Config 0x8000
 
-	// Command:
-	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | TDC_REG1, SPI_CONTINUE);
-	// Data:
-	SPI.transfer(TDC_CS, testData, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x80, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x00);
+	writeConfigReg(TDC_REG1, (testData << 16) | reg1Config);
 
 	// Read back from the first 8 bits of register 1 (should be 0xAA)
 	// Command:
@@ -258,12 +254,8 @@ uint16_t calibrate() {
 	// Request that the ALU calculates the calibration difference by writing
 	// into register 1. This tells the ALU what to calculate and also triggers the calculation
 	// See p.52 of the ACAM manual
-	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | TDC_REG1, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x67, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x41, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x00, SPI_LAST);
-
+	writeConfigReg(TDC_REG1, 0x67410000);
+	
 	delay(1);
 
 	// Read result
@@ -280,11 +272,7 @@ uint16_t calibrate() {
 
 
 	// Restore register 1 to normal settings (HIT1 - START, 1 hit on STOP1, 0 hits on STOP2)
-	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | TDC_REG1, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x01, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x41, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+	writeConfigReg(TDC_REG1, 0x01410000);
 
 	delay(1);
 
@@ -312,23 +300,24 @@ uint16_t readStatus() {
 	return status.proc;
 }
 
-//byte * transferN(const byte * data, uint8_t n, byte * outputPtr) {
-//
-//	int dataIndex, outputIndex;
-//	dataIndex = n;
-//	outputIndex = 0;
-//
-//	do {
-//		dataIndex--;
-//
-//		if (outputIndex)
-//			outputPtr[outputIndex] = SPI.transfer(TDC_CS, data[dataIndex], (dataIndex > 0 ? SPI_CONTINUE : SPI_LAST));
-//		else
-//			SPI.transfer(TDC_CS, data[dataIndex], (dataIndex > 0 ? SPI_CONTINUE : SPI_LAST));
-//
-//		if (outputIndex) outputIndex++;
-//
-//	} while (dataIndex > 0);
-//
-//	return outputPtr;
-//}
+// Write the given data into the target register
+void writeConfigReg(uint8_t targetReg, uint32_t data) {
+
+	// Store the 32 bit int in the same memory as 4 bytes
+	union {
+		uint32_t raw;
+		byte bytes[4];
+	} conversion;
+
+	conversion.raw = data;
+
+	// Command to start transfer into the given register
+	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | targetReg, SPI_CONTINUE);
+
+	// The data to write
+	SPI.transfer(TDC_CS, conversion.bytes[3], SPI_CONTINUE);
+	SPI.transfer(TDC_CS, conversion.bytes[2], SPI_CONTINUE);
+	SPI.transfer(TDC_CS, conversion.bytes[1], SPI_CONTINUE);
+	SPI.transfer(TDC_CS, conversion.bytes[0], SPI_LAST);
+
+}

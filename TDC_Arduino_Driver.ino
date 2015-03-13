@@ -118,7 +118,7 @@ void loop() {
 				}
 
 				// newline to terminate
-				Serial.println("DONE");
+				Serial.println("");
 			}
 		}
 		else if (0 == strcmp("SETU", command)) { // Setup the registers. 

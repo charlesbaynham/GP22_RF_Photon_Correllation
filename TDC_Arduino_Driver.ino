@@ -284,8 +284,16 @@ uint32_t measure() {
 	result.raw[2] = SPI.transfer(TDC_CS, 0x00, (autoCalibrate ? SPI_CONTINUE : SPI_LAST));
 	// (autoCalibrate ? SPI_CONTINUE : SPI_LAST) means continue if autoCalibrate, stop if not
 
-	if (!autoCalibrate) // If the TDC isn't automatically calibrating, stop here after 16 bits
+	if (!autoCalibrate) { // If the TDC isn't automatically calibrating, stop here after 16 bits
+		// Check for timeout
+		if (result.proc16[1] == 0xFFFF)
+			return 0xFFFFFFFF;
+
+		// Else return the result
+		// N.B we're only interested in proc16[1]
+		//    proc16[0] was never read into and will contain zeros / garbage
 		return result.proc16[1];
+	}
 
 	// Otherwise, read 32 bits
 	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);

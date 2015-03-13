@@ -138,18 +138,17 @@ void loop() {
 		else if (0 == strcmp("*TST", command)) { // Test connection
 
 			// Run the test
-			int testResult = testTDC();
+			bool testResult = testTDC();
 
 			// Restore the values changed during the test
 			initTDC();
 
 			// Report the result
 			if (testResult) {
-				Serial.print("FAILED with response ");
-				Serial.println(testResult);
+				Serial.println("PASSED");
 			}
 			else {
-				Serial.println("PASSED");
+				Serial.print("FAILED");
 			}
 		}
 
@@ -161,7 +160,7 @@ void loop() {
 }
 
 // Write to the GP22 then read to check comms
-int testTDC() {
+bool testTDC() {
 
 	// Send reset
 	SPI.transfer(TDC_CS, 0x50);
@@ -174,7 +173,7 @@ int testTDC() {
 #define testData 0xAA
 #define reg1Config 0x8000
 
-	writeConfigReg(TDC_REG1, (testData << 16) | reg1Config);
+	writeConfigReg(TDC_REG1, ((testData << 16) | reg1Config) << 8);
 
 	// Read back from the first 8 bits of register 1 (should be 0xAA)
 	// Command:
@@ -182,13 +181,7 @@ int testTDC() {
 	// Data:
 	byte commsTest = SPI.transfer(TDC_CS, 0x00);
 
-	if (commsTest == testData) {
-		return 0;
-	}
-	else {
-		return commsTest;
-	}
-
+	return (commsTest == testData);
 }
 
 // Setup the GP22 with the data stored in its EEPROM

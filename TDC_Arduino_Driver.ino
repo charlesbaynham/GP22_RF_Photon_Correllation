@@ -149,8 +149,10 @@ void loop() {
 			byte commsCheck = SPI.transfer(TDC_CS, 0x00);
 			byte shouldBe = (reg[1] & 0xFF000000) >> 24;
 
-			if (commsCheck == shouldBe)
-				Serial.println("DONE");
+			if (commsCheck == shouldBe) {
+				Serial.print("DONE - ");
+				Serial.println(commsCheck, HEX);
+			}
 			else {
 				Serial.print("Error. Read: 0x");
 				Serial.print(commsCheck, HEX);
@@ -290,7 +292,7 @@ uint16_t calibrate() {
 	// into register 1. This tells the ALU what to calculate and also triggers the calculation
 	// See p.52 of the ACAM manual
 	writeConfigReg(TDC_REG1, 0x67410000);
-	
+
 	delay(1);
 
 	// Read result

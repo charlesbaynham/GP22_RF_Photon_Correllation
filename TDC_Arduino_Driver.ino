@@ -117,6 +117,48 @@ void loop() {
 				Serial.println("DONE");
 			}
 		}
+		else if (0 == strcmp("SETU", command)) { // Setup the registers. 
+			// Command: "SETUp:REG1:REG2:REG3:REG4:REG5:REG6:REG7" Registers as base 10 numbers
+
+			// Reset the TDC
+			SPI.transfer(TDC_CS, TDC_RESET);
+
+			// The registers to be read from the serial port
+			uint32_t reg[7] = { 0 };
+			// Was this register read?
+			bool wasRead[7] = { false };
+
+			// Read all the params
+			for (int i = 0; i < 7 && Serial.findUntil(":", "\n"); i++) { // Advance to the next ':'
+				// Read the number that should follow
+				reg[i] = Serial.parseInt();
+				wasRead[i] = true;
+			}
+
+			// Write the values to the TDC's registers
+			for (int i = 0; i < 7 && wasRead[i]; i++) {
+				writeConfigReg(i, reg[i]);
+			}
+
+			delay(1);
+
+			// Read back from the first 8 bits of register 1 (should match reg[1])
+			// Command:
+			SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_REG5, SPI_CONTINUE);
+			// Data:
+			byte commsCheck = SPI.transfer(TDC_CS, 0x00);
+			byte shouldBe = (reg[1] & 0xFF000000) >> 24;
+
+			if (commsCheck == shouldBe)
+				Serial.println("DONE");
+			else {
+				Serial.print("Error. Read: 0x");
+				Serial.print(commsCheck, HEX);
+				Serial.print(" instead of 0x");
+				Serial.println(shouldBe, HEX);
+			}
+
+		}
 		else if (0 == strcmp("SING", command)) { // Do a single measurement
 
 			// Do the measurement

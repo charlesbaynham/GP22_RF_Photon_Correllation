@@ -39,6 +39,10 @@ byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
 #define TDC_RESET 0x50
 #define TDC_START_CAL 0x04
 
+// Is the TDC set to automatically calibrate its results?
+// If so, we'll need to read 4 bytes instead of 2
+bool autoCalibrate = true;
+
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
 
@@ -135,6 +139,10 @@ void loop() {
 				wasRead[i] = true;
 			}
 
+			// Store whether we're in calibration mode or not (bit 13 in reg 0)
+			if (wasRead[0])
+				autoCalibrate = (bool)(reg[0] & (1 << 13));
+
 			// Write the values to the TDC's registers
 			for (int i = 0; i < 7 && wasRead[i]; i++) {
 				writeConfigReg(i, reg[i]);
@@ -150,8 +158,14 @@ void loop() {
 			byte shouldBe = (reg[1] & 0xFF000000) >> 24;
 
 			if (commsCheck == shouldBe) {
-				Serial.print("DONE - ");
+				Serial.print("DONE - CALIBRATION MODE ");
+				if (autoCalibrate)
+					Serial.print("ON - ");
+				else
+					Serial.print("OFF - ");
+
 				Serial.println(commsCheck, HEX);
+
 			}
 			else {
 				Serial.print("Error. Read: 0x");
@@ -262,15 +276,22 @@ uint32_t measure() {
 	// together as a unsigned integer of 32 bits. 
 	union {
 		byte raw[4];
-		uint32_t proc;
+		uint32_t proc32;
+		uint16_t proc16[2];
 	} result;
 	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_RESULT1, SPI_CONTINUE);
 	result.raw[3] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	result.raw[2] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	result.raw[2] = SPI.transfer(TDC_CS, 0x00, (autoCalibrate ? SPI_CONTINUE : SPI_LAST));
+	// (autoCalibrate ? SPI_CONTINUE : SPI_LAST) means continue if autoCalibrate, stop if not
+
+	if (!autoCalibrate) // If the TDC isn't automatically calibrating, stop here after 16 bits
+		return result.proc16[1];
+
+	// Otherwise, read 32 bits
 	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 	result.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
 
-	return result.proc;
+	return result.proc32;
 }
 
 // Perform a calibration routine and then return the number of LSBs in 2 clock cycles

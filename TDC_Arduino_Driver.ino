@@ -83,7 +83,7 @@ void loop() {
 			Serial.print(" - ");
 			Serial.println(PROG_VER);
 		}
-		else if (0 == strcmp("MEAS", command)) { // Do the measurements
+		else if (0 == strcmp("MEAS", command)) { // Do many measurements
 
 			// Read the number of ms to time for
 
@@ -99,7 +99,7 @@ void loop() {
 				// Calculate stop time
 				uint32_t stop = millis() + timePeriod;
 
-				// Loop and report
+				// Loop until stoptime
 				while (millis() < stop) {
 
 					// Do the measurement
@@ -107,7 +107,7 @@ void loop() {
 
 					// Check we didn't timeout
 					if (result != 0xFFFFFFFF) {
-						// Report
+						// Report result
 						Serial.print(result);
 						Serial.print('\t');
 					}

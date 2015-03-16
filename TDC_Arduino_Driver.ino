@@ -150,7 +150,7 @@ void loop() {
 
 			delay(1);
 
-			// Read back from the first 8 bits of register 1 (should match reg[1])
+			// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
 			// Command:
 			SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_REG5, SPI_CONTINUE);
 			// Data:
@@ -171,7 +171,9 @@ void loop() {
 				Serial.print("Error. Read: 0x");
 				Serial.print(commsCheck, HEX);
 				Serial.print(" instead of 0x");
-				Serial.println(shouldBe, HEX);
+				Serial.print(shouldBe, HEX);
+				Serial.print(" from reg[1] == ");
+				Serial.println(reg[1], HEX);
 			}
 
 		}
@@ -226,8 +228,7 @@ bool testTDC() {
 	// Wait 100ms
 	delay(100);
 
-	// Write 0101010101000000000000000 into register 1 (the defaults)
-	//  == 0xAA8000
+	// Write 0xAA800000 into register 1 (the defaults + test data)
 #define testData 0xAA
 #define reg1Config 0x8000
 
@@ -306,6 +307,8 @@ uint32_t measure() {
 // The default clock setting is 4 MHz, so a measurement of x LSBs in 2 clock cycles corresponds to
 //	a precision of 1/4MHz * 2 cycles / x
 uint16_t calibrate() {
+
+	// This sequence is as per the ACAM eval software source code (in Labview)
 
 	// Accept hits on the channels
 	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);

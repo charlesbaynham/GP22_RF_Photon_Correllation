@@ -18,7 +18,7 @@
 #include <math.h>
 #include <SPI.h>
 
-byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
+uint32_t reg1, reg6;
 
 #define TDC_WRITE_TO_REGISTER 0x80
 #define TDC_READ_FROM_REGISTER 0xB0
@@ -28,6 +28,7 @@ byte * transferN(const byte * data, uint8_t n, byte * outputPtr = 0);
 #define TDC_REG3 0x03
 #define TDC_REG4 0x04
 #define TDC_REG5 0x05
+#define TDC_REG6 0x06
 #define TDC_STATUS 0x04
 #define TDC_RESULT1 0x00
 #define TDC_RESULT2 0x01
@@ -142,6 +143,14 @@ void loop() {
 			// Store whether we're in calibration mode or not (bit 13 in reg 0)
 			if (wasRead[0])
 				autoCalibrate = (bool)(reg[0] & (1 << 13));
+
+			// Store Reg1
+			if (wasRead[1])
+				reg1 = reg[1];
+
+			// Store Reg6
+			if (wasRead[6])
+				reg6 = reg[6];
 
 			// Write the values to the TDC's registers
 			for (int i = 0; i < 7 && wasRead[i]; i++) {
@@ -310,6 +319,9 @@ uint16_t calibrate() {
 
 	// This sequence is as per the ACAM eval software source code (in Labview)
 
+	// Goto quad res. mode
+	writeConfigReg(TDC_REG6, reg6 | 0x2000);
+
 	// Accept hits on the channels
 	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
 
@@ -327,24 +339,25 @@ uint16_t calibrate() {
 
 	delay(1);
 
+	// Read ALU_PTR from the status and subtract 1 to get the location of the most recently written
+	//   measurement (the calibration)
+	uint8_t storageLocation = (readStatus() & 0x7) - 1;
+
 	// Read result
 	// 16 bits
 	union {
 		byte raw[2];
 		uint16_t proc;
 	} calibration;
-	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_RESULT1, SPI_CONTINUE);
+	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | storageLocation, SPI_CONTINUE);
 	calibration.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 	calibration.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
 
-	delay(1);
+	// Restore register 1
+	writeConfigReg(TDC_REG1, reg1);
 
-
-	// Restore register 1 to normal settings (HIT1 - START, 1 hit on STOP1, 0 hits on STOP2)
-	writeConfigReg(TDC_REG1, 0x01410000);
-
-	delay(1);
-
+	// Restore register 6
+	writeConfigReg(TDC_REG6, reg6);
 
 	return calibration.proc;
 }

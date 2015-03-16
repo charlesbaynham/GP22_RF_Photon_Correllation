@@ -18,7 +18,10 @@
 #include <math.h>
 #include <SPI.h>
 
-uint32_t reg1, reg6;
+// Default values for TDC settigns
+uint32_t reg0 = 0x22066800, reg1 = 0x55400000, reg6 = 0x0;
+// Is the TDC set to automatically calibrate its results?
+bool autoCalibrate = true;
 
 #define TDC_WRITE_TO_REGISTER 0x80
 #define TDC_READ_FROM_REGISTER 0xB0
@@ -39,10 +42,6 @@ uint32_t reg1, reg6;
 #define TDC_INIT 0x70
 #define TDC_RESET 0x50
 #define TDC_START_CAL 0x04
-
-// Is the TDC set to automatically calibrate its results?
-// If so, we'll need to read 4 bytes instead of 2
-bool autoCalibrate = true;
 
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
@@ -143,6 +142,10 @@ void loop() {
 			// Store whether we're in calibration mode or not (bit 13 in reg 0)
 			if (wasRead[0])
 				autoCalibrate = (bool)(reg[0] & (1 << 13));
+
+			// Store Reg0
+			if (wasRead[0])
+				reg0 = reg[0];
 
 			// Store Reg1
 			if (wasRead[1])
@@ -292,7 +295,7 @@ uint32_t measure() {
 	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_RESULT1, SPI_CONTINUE);
 	result.raw[3] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 	result.raw[2] = SPI.transfer(TDC_CS, 0x00, (autoCalibrate ? SPI_CONTINUE : SPI_LAST));
-	// (autoCalibrate ? SPI_CONTINUE : SPI_LAST) means continue if autoCalibrate, stop if not
+	// (autoCalibrate ? SPI_CONTINUE : SPI_LAST) means "continue if autoCalibrate, stop if not"
 
 	if (!autoCalibrate) { // If the TDC isn't automatically calibrating, stop here after 16 bits
 		// Check for timeout
@@ -317,25 +320,28 @@ uint32_t measure() {
 //	a precision of 1/4MHz * 2 cycles / x
 uint16_t calibrate() {
 
-	// This sequence is as per the ACAM eval software source code (in Labview)
+	// This sequence is adapted from the ACAM eval software source code (in Labview)
+
+	// Goto single res. mode
+	//writeConfigReg(TDC_REG6, reg6 & 0xFFFFCFFF);
+
+	// Goto double res. mode
+	//writeConfigReg(TDC_REG6, (reg6 & 0xFFFFCFFF) | 0x1000);
 
 	// Goto quad res. mode
-	writeConfigReg(TDC_REG6, reg6 | 0x2000);
+	writeConfigReg(TDC_REG0, (reg0 & 0xFFFFDFFF) | 0x1800); // Meas. mode 2 with no auto cal
+	writeConfigReg(TDC_REG6, (reg6 & 0xFFFFCFFF) | 0x2000);
 
-	// Accept hits on the channels
-	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
-
-	delay(1);
-
-	// Send the START_CAL_TDC opcode to start the calibration routine
+	// Send the START_CAL_TDC opcode to measure the calibration data
 	SPI.transfer(TDC_CS, TDC_START_CAL, SPI_LAST);
 
-	delay(1);
+	// Send INIT so that the TDC is ready to give a response
+	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
 
 	// Request that the ALU calculates the calibration difference by writing
 	// into register 1. This tells the ALU what to calculate and also triggers the calculation
 	// See p.52 of the ACAM manual
-	writeConfigReg(TDC_REG1, 0x67410000);
+	writeConfigReg(TDC_REG1, 0x67400000);
 
 	delay(1);
 
@@ -357,6 +363,9 @@ uint16_t calibrate() {
 		calibration.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
 		calibration.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
 	}
+
+	// Restore register 0
+	writeConfigReg(TDC_REG0, reg0);
 
 	// Restore register 1
 	writeConfigReg(TDC_REG1, reg1);

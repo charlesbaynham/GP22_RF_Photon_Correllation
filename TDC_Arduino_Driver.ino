@@ -349,9 +349,14 @@ uint16_t calibrate() {
 		byte raw[2];
 		uint16_t proc;
 	} calibration;
-	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | storageLocation, SPI_CONTINUE);
-	calibration.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	calibration.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+
+	// Check that we actually took a measurement. If ALU_PTR was 0, ALU_PTR-1 == 0xFF and we failed
+	if (storageLocation == 0xFF) { calibration.proc = 0xFFFF; } // Return error
+	else { // Read and return data
+		SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | storageLocation, SPI_CONTINUE);
+		calibration.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+		calibration.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+	}
 
 	// Restore register 1
 	writeConfigReg(TDC_REG1, reg1);

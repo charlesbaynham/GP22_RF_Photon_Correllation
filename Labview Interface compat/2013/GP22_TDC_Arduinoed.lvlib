@@ -12,6 +12,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 	<Item Name="Examples" Type="Folder">
 		<Item Name="GP22_TDC_Arduinoed Measurement.vi" Type="VI" URL="../Examples/GP22_TDC_Arduinoed Measurement.vi"/>
 		<Item Name="GP22_TDC_Arduinoed Single Measurement.vi" Type="VI" URL="../Examples/GP22_TDC_Arduinoed Single Measurement.vi"/>
+		<Item Name="StateMachine.vi" Type="VI" URL="../Examples/StateMachine.vi"/>
 		<Item Name="Test Calibration wobble.vi" Type="VI" URL="../Examples/Test Calibration wobble.vi"/>
 	</Item>
 	<Item Name="Private" Type="Folder">

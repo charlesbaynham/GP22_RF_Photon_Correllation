@@ -10,6 +10,10 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 	<Property Name="NI.Lib.SourceVersion" Type="Int">318799872</Property>
 	<Property Name="NI.Lib.Version" Type="Str">1.0.0.0</Property>
 	<Item Name="Examples" Type="Folder">
+		<Item Name="typedefs" Type="Folder">
+			<Item Name="Data.ctl" Type="VI" URL="../Examples/typedefs/Data.ctl"/>
+			<Item Name="State.ctl" Type="VI" URL="../Examples/typedefs/State.ctl"/>
+		</Item>
 		<Item Name="GP22_TDC_Arduinoed Measurement.vi" Type="VI" URL="../Examples/GP22_TDC_Arduinoed Measurement.vi"/>
 		<Item Name="GP22_TDC_Arduinoed Single Measurement.vi" Type="VI" URL="../Examples/GP22_TDC_Arduinoed Single Measurement.vi"/>
 		<Item Name="StateMachine.vi" Type="VI" URL="../Examples/StateMachine.vi"/>

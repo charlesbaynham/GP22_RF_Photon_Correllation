@@ -332,17 +332,17 @@ uint16_t calibrate() {
 	writeConfigReg(TDC_REG0, (reg0 & 0xFFFFDFFF) | 0x1800); // Meas. mode 2 with no auto cal
 	writeConfigReg(TDC_REG6, (reg6 & 0xFFFFCFFF) | 0x2000);
 
-	// Send the START_CAL_TDC opcode to measure the calibration data
-	SPI.transfer(TDC_CS, TDC_START_CAL, SPI_LAST);
-
 	// Send INIT so that the TDC is ready to give a response
 	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
+
+	// Send the START_CAL_TDC opcode to measure the calibration data
+	SPI.transfer(TDC_CS, TDC_START_CAL, SPI_LAST);
 
 	// Request that the ALU calculates the calibration difference by writing
 	// into register 1. This tells the ALU what to calculate and also triggers the calculation
 	// See p.52 of the ACAM manual
+	// Our calculation is CALI2 - CALI1 == T_ref
 	writeConfigReg(TDC_REG1, 0x67400000);
-
 	delay(1);
 
 	// Read ALU_PTR from the status and subtract 1 to get the location of the most recently written

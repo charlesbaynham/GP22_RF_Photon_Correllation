@@ -38,5 +38,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="Self-Test.vi" Type="VI" URL="../Public/Self-Test.vi"/>
 		<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>
 		<Item Name="Calibrate.vi" Type="VI" URL="../Public/Calibrate.vi"/>
+		<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
 	</Item>
+	<Item Name="Globals.vi" Type="VI" URL="../Public/Globals.vi"/>
 </Library>

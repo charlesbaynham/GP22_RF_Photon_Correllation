@@ -15,7 +15,6 @@
 		<Property Name="IOScan.StartEngineOnDeploy" Type="Bool">false</Property>
 		<Property Name="NI.SortType" Type="Int">3</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="Globals.vi" Type="VI" URL="../Public/Globals.vi"/>
 		<Item Name="GP22_TDC_Arduinoed.lvlib" Type="Library" URL="../GP22_TDC_Arduinoed.lvlib"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">

@@ -42,6 +42,7 @@ bool autoCalibrate = true;
 #define TDC_INIT 0x70
 #define TDC_RESET 0x50
 #define TDC_START_CAL 0x04
+#define TDC_START_CAL_RES 0x03
 
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
@@ -283,36 +284,10 @@ uint32_t measure() {
 		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
 	}
 
-	// Read result
-	// The device's format is a 32 bit fixed point number with 16 bits for the 
-	// fractional part. The following reads the 4 bytes MSB first and then interprets the four
-	// together as a unsigned integer of 32 bits. 
-	union {
-		byte raw[4];
-		uint32_t proc32;
-		uint16_t proc16[2];
-	} result;
-	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_RESULT1, SPI_CONTINUE);
-	result.raw[3] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	result.raw[2] = SPI.transfer(TDC_CS, 0x00, (autoCalibrate ? SPI_CONTINUE : SPI_LAST));
-	// (autoCalibrate ? SPI_CONTINUE : SPI_LAST) means "continue if autoCalibrate, stop if not"
+	// Read the result
+	uint32_t result = read_bytes(TDC_RESULT1, !autoCalibrate);
 
-	if (!autoCalibrate) { // If the TDC isn't automatically calibrating, stop here after 16 bits
-		// Check for timeout
-		if (result.proc16[1] == 0xFFFF)
-			return 0xFFFFFFFF;
-
-		// Else return the result
-		// N.B we're only interested in proc16[1]
-		//    proc16[0] was never read into and will contain zeros / garbage
-		return result.proc16[1];
-	}
-
-	// Otherwise, read 32 bits
-	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	result.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
-
-	return result.proc32;
+	return result;
 }
 
 // Perform a calibration routine and then return the number of LSBs in 2 clock cycles
@@ -350,18 +325,12 @@ uint16_t calibrate() {
 	uint8_t storageLocation = (readStatus() & 0x7) - 1;
 
 	// Read result
-	// 16 bits
-	union {
-		byte raw[2];
-		uint16_t proc;
-	} calibration;
+	uint16_t calibration;
 
 	// Check that we actually took a measurement. If ALU_PTR was 0, ALU_PTR-1 == 0xFF and we failed
-	if (storageLocation == 0xFF) { calibration.proc = 0xFFFF; } // Return error
+	if (storageLocation == 0xFF) { calibration = 0xFFFF; } // Return error
 	else { // Read and return data
-		SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | storageLocation, SPI_CONTINUE);
-		calibration.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-		calibration.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+		calibration = read_bytes(storageLocation, true);
 	}
 
 	// Restore register 0
@@ -373,7 +342,7 @@ uint16_t calibrate() {
 	// Restore register 6
 	writeConfigReg(TDC_REG6, reg6);
 
-	return calibration.proc;
+	return calibration;
 }
 
 
@@ -381,19 +350,11 @@ uint16_t calibrate() {
 // The device's format is a 16 bit number
 // See p.36 of the ACAM datasheet
 uint16_t readStatus() {
-	union {
-		byte raw[2];
-		uint16_t proc;
-	} status;
-
-	// Send command to read status
-	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_STATUS, SPI_CONTINUE);
 
 	// Read in the data
-	status.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	status.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+	uint16_t status = read_bytes(TDC_STATUS, true);
 
-	return status.proc;
+	return status;
 }
 
 // Write the given data into the target register
@@ -416,4 +377,40 @@ void writeConfigReg(uint8_t targetReg, uint32_t data) {
 	SPI.transfer(TDC_CS, conversion.bytes[1], SPI_CONTINUE);
 	SPI.transfer(TDC_CS, conversion.bytes[0], SPI_LAST);
 
+}
+
+// Read result
+// The device's format is a 32 bit fixed point number with 16 bits for the 
+// fractional part. The following reads either 16 or 32 bits, MSBs first. 
+// If it reads 16, the return value will be 0x0000RRRR where RRRR is the result bytes
+// If the 16 bits are 0xFFFF, the return value will be 0xFFFFFFFF
+uint32_t read_bytes(uint8_t reg, bool read16bits) {
+
+	union {
+		byte raw[4];
+		uint32_t proc32;
+		uint16_t proc16[2];
+	} result;
+
+	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | reg, SPI_CONTINUE);
+	result.raw[3] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	result.raw[2] = SPI.transfer(TDC_CS, 0x00, (read16bits ? SPI_LAST : SPI_CONTINUE));
+	// (read16bits ? SPI_LAST : SPI_CONTINUE) means "continue if reading 32 bits, stop if not"
+
+	if (read16bits) { // If only reading 16 bits, stop here
+		// Check for timeout
+		if (result.proc16[1] == 0xFFFF)
+			return 0xFFFFFFFF;
+
+		// Else return the result
+		// N.B we're only interested in proc16[1]
+		//    proc16[0] was never read into and will contain zeros / garbage
+		return result.proc16[1];
+	}
+
+	// Otherwise, read all 32 bits
+	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
+	result.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+
+	return result.proc32;
 }

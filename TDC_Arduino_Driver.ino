@@ -204,6 +204,15 @@ void loop() {
 			Serial.println(calib);
 
 		}
+		else if (0 == strcmp("HCAL", command)) { // Calibrate the highspeed clock and report the result
+
+			// Do the calibration
+			uint32_t calib = calibrateHF();
+
+			// Report result
+			Serial.println(calib);
+
+		}
 		else if (0 == strcmp("*TST", command)) { // Test connection
 
 			// Run the test
@@ -341,6 +350,34 @@ uint16_t calibrate() {
 	return calibration;
 }
 
+uint32_t calibrateHF() {
+
+	// Set EN_AUTOCALC=0
+	writeConfigReg(TDC_REG3, 0x0);
+
+	// Init
+	SPI.transfer(TDC_CS, TDC_INIT);
+
+	// Start the calibration
+	SPI.transfer(TDC_CS, TDC_START_CAL_RES);
+
+	// Wait until interrupt goes low indicating a successful read
+	uint32_t start = millis();
+	while (HIGH == digitalRead(TDC_INT)) {
+		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
+	}
+
+	//The time interval to be measured is set by ANZ_PER_CALRES
+	//which defines the number of periods of the 32.768 kHz clock:
+	//2 periods = 61.03515625 µs
+	// But labview will handle this, we just output the raw data
+	uint32_t result = read_bytes(TDC_RESULT1, false);
+
+	// Restore reg3
+	writeConfigReg(TDC_REG3, reg[3]);
+
+	return result;
+}
 
 // Read status
 // The device's format is a 16 bit number

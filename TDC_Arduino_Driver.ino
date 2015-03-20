@@ -18,8 +18,9 @@
 #include <math.h>
 #include <SPI.h>
 
-// Default values for TDC settigns
-uint32_t reg0 = 0x22066800, reg1 = 0x55400000, reg6 = 0x0;
+// Hold TDC settings
+uint32_t reg[7];
+
 // Is the TDC set to automatically calibrate its results?
 bool autoCalibrate = true;
 
@@ -48,6 +49,15 @@ bool autoCalibrate = true;
 void(*resetFunc) (void) = 0;
 
 void setup() {
+
+	// Default values for TDC settings
+	reg[0] = 0x22066800;
+	reg[1] = 0x55400000;
+	reg[2] = 0x20000000;
+	reg[3] = 0x18000000;
+	reg[4] = 0x20000000;
+	reg[5] = 0x00000000;
+	reg[6] = 0x00000000;
 
 	// Serial connection
 	Serial.begin(115200);
@@ -128,8 +138,6 @@ void loop() {
 			// Reset the TDC
 			SPI.transfer(TDC_CS, TDC_RESET);
 
-			// The registers to be read from the serial port
-			uint32_t reg[7] = { 0 };
 			// Was this register read?
 			bool wasRead[7] = { false };
 
@@ -143,18 +151,6 @@ void loop() {
 			// Store whether we're in calibration mode or not (bit 13 in reg 0)
 			if (wasRead[0])
 				autoCalibrate = (bool)(reg[0] & (1 << 13));
-
-			// Store Reg0
-			if (wasRead[0])
-				reg0 = reg[0];
-
-			// Store Reg1
-			if (wasRead[1])
-				reg1 = reg[1];
-
-			// Store Reg6
-			if (wasRead[6])
-				reg6 = reg[6];
 
 			// Write the values to the TDC's registers
 			for (int i = 0; i < 7 && wasRead[i]; i++) {
@@ -304,8 +300,8 @@ uint16_t calibrate() {
 	//writeConfigReg(TDC_REG6, (reg6 & 0xFFFFCFFF) | 0x1000);
 
 	// Goto quad res. mode
-	writeConfigReg(TDC_REG0, (reg0 & 0xFFFFDFFF) | 0x1800); // Meas. mode 2 with no auto cal
-	writeConfigReg(TDC_REG6, (reg6 & 0xFFFFCFFF) | 0x2000);
+	writeConfigReg(TDC_REG0, (reg[0] & 0xFFFFDFFF) | 0x1800); // Meas. mode 2 with no auto cal
+	writeConfigReg(TDC_REG6, (reg[6] & 0xFFFFCFFF) | 0x2000);
 
 	// Send INIT so that the TDC is ready to give a response
 	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
@@ -334,13 +330,13 @@ uint16_t calibrate() {
 	}
 
 	// Restore register 0
-	writeConfigReg(TDC_REG0, reg0);
+	writeConfigReg(TDC_REG0, reg[0]);
 
 	// Restore register 1
-	writeConfigReg(TDC_REG1, reg1);
+	writeConfigReg(TDC_REG1, reg[1]);
 
 	// Restore register 6
-	writeConfigReg(TDC_REG6, reg6);
+	writeConfigReg(TDC_REG6, reg[6]);
 
 	return calibration;
 }

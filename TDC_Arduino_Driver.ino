@@ -7,7 +7,7 @@
 		Current version:			*/
 
 #define PROG_IDN "GP22_DRIVER"
-#define PROG_VER "0.3"
+#define PROG_VER "0.4"
 
 /*----------------------------------*/
 

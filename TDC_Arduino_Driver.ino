@@ -12,8 +12,9 @@
 /*----------------------------------*/
 
 
-#define TDC_CS 10
-#define TDC_INT 12
+// N.B. Only pins 4, 10 or 52 are allowed for CS
+#define TDC_CS 52
+#define TDC_INT 45
 
 #include <math.h>
 #include <SPI.h>
@@ -50,7 +51,7 @@ void(*resetFunc) (void) = 0;
 
 void setup() {
 
-	// Default values for TDC settings
+	// Default values for TDC settings (According to ACAM's defaults)
 	reg[0] = 0x22066800;
 	reg[1] = 0x55400000;
 	reg[2] = 0x20000000;
@@ -226,7 +227,7 @@ void loop() {
 				Serial.println("PASSED");
 			}
 			else {
-				Serial.print("FAILED");
+				Serial.println("FAILED");
 			}
 		}
 
@@ -369,7 +370,7 @@ uint32_t calibrateHF() {
 
 	//The time interval to be measured is set by ANZ_PER_CALRES
 	//which defines the number of periods of the 32.768 kHz clock:
-	//2 periods = 61.03515625 µs
+	//2 periods = 61.03515625 us
 	// But labview will handle this, we just output the raw data
 	uint32_t result = read_bytes(TDC_RESULT1, false);
 

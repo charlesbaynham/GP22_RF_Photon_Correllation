@@ -14,6 +14,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="Data.ctl" Type="VI" URL="../Examples/typedefs/Data.ctl"/>
 			<Item Name="State.ctl" Type="VI" URL="../Examples/typedefs/State.ctl"/>
 		</Item>
+		<Item Name="AdaptedForYb.vi" Type="VI" URL="../Examples/AdaptedForYb.vi"/>
 		<Item Name="StateMachine.vi" Type="VI" URL="../Examples/StateMachine.vi"/>
 		<Item Name="Take multiple measurements.vi" Type="VI" URL="../Examples/Take multiple measurements.vi"/>
 		<Item Name="Take single measurement.vi" Type="VI" URL="../Examples/Take single measurement.vi"/>
@@ -25,6 +26,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="ConvertTimes - Single.vi" Type="VI" URL="../Private/ConvertTimes - Single.vi"/>
 		<Item Name="Default Instrument Setup.vi" Type="VI" URL="../Private/Default Instrument Setup.vi"/>
 		<Item Name="ConvertTimes.vi" Type="VI" URL="../Private/ConvertTimes.vi"/>
+		<Item Name="MakeHistogram.vi" Type="VI" URL="../Private/MakeHistogram.vi"/>
 	</Item>
 	<Item Name="Public" Type="Folder">
 		<Property Name="NI.LibItem.Scope" Type="Int">1</Property>

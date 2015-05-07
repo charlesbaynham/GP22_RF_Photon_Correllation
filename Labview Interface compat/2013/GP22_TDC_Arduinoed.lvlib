@@ -14,10 +14,9 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="Data.ctl" Type="VI" URL="../Examples/typedefs/Data.ctl"/>
 			<Item Name="State.ctl" Type="VI" URL="../Examples/typedefs/State.ctl"/>
 		</Item>
-		<Item Name="GP22_TDC_Arduinoed Measurement.vi" Type="VI" URL="../Examples/GP22_TDC_Arduinoed Measurement.vi"/>
-		<Item Name="GP22_TDC_Arduinoed Single Measurement.vi" Type="VI" URL="../Examples/GP22_TDC_Arduinoed Single Measurement.vi"/>
 		<Item Name="StateMachine.vi" Type="VI" URL="../Examples/StateMachine.vi"/>
-		<Item Name="Test Calibration wobble.vi" Type="VI" URL="../Examples/Test Calibration wobble.vi"/>
+		<Item Name="Take multiple measurements.vi" Type="VI" URL="../Examples/Take multiple measurements.vi"/>
+		<Item Name="Take single measurement.vi" Type="VI" URL="../Examples/Take single measurement.vi"/>
 	</Item>
 	<Item Name="Private" Type="Folder">
 		<Property Name="NI.LibItem.Scope" Type="Int">2</Property>
@@ -26,23 +25,31 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="ConvertTimes - Single.vi" Type="VI" URL="../Private/ConvertTimes - Single.vi"/>
 		<Item Name="Default Instrument Setup.vi" Type="VI" URL="../Private/Default Instrument Setup.vi"/>
 		<Item Name="ConvertTimes.vi" Type="VI" URL="../Private/ConvertTimes.vi"/>
-		<Item Name="Create_Reg_Cluster.vi" Type="VI" URL="../Private/Create_Reg_Cluster.vi"/>
 	</Item>
 	<Item Name="Public" Type="Folder">
 		<Property Name="NI.LibItem.Scope" Type="Int">1</Property>
 		<Property Name="NI.SortType" Type="Int">3</Property>
-		<Item Name="Close.vi" Type="VI" URL="../Public/Close.vi"/>
-		<Item Name="Initialize.vi" Type="VI" URL="../Public/Initialize.vi"/>
+		<Item Name="Utilities" Type="Folder">
+			<Item Name="Initialize.vi" Type="VI" URL="../Public/Initialize.vi"/>
+			<Item Name="Close.vi" Type="VI" URL="../Public/Close.vi"/>
+			<Item Name="Reset.vi" Type="VI" URL="../Public/Utility/Reset.vi"/>
+			<Item Name="Self-Test.vi" Type="VI" URL="../Public/Self-Test.vi"/>
+		</Item>
+		<Item Name="Calibration" Type="Folder">
+			<Item Name="Calibrate.vi" Type="VI" URL="../Public/Calibrate.vi"/>
+			<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
+		</Item>
+		<Item Name="Config" Type="Folder">
+			<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
+			<Item Name="Create_Reg_Cluster.vi" Type="VI" URL="../Private/Create_Reg_Cluster.vi"/>
+		</Item>
+		<Item Name="Measurements" Type="Folder">
+			<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>
+			<Item Name="MultipleMeasurements.vi" Type="VI" URL="../Public/MultipleMeasurements.vi"/>
+			<Item Name="CalibratedMultipleMeasurements.vi" Type="VI" URL="../Public/CalibratedMultipleMeasurements.vi"/>
+			<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
+		</Item>
 		<Item Name="VI Tree.vi" Type="VI" URL="../Public/VI Tree.vi"/>
-		<Item Name="MultipleMeasurements.vi" Type="VI" URL="../Public/MultipleMeasurements.vi"/>
-		<Item Name="Reset.vi" Type="VI" URL="../Public/Utility/Reset.vi"/>
-		<Item Name="Self-Test.vi" Type="VI" URL="../Public/Self-Test.vi"/>
-		<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>
-		<Item Name="Calibrate.vi" Type="VI" URL="../Public/Calibrate.vi"/>
-		<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
-		<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
-		<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
-		<Item Name="CalibratedMultipleMeasurements.vi" Type="VI" URL="../Public/CalibratedMultipleMeasurements.vi"/>
 	</Item>
 	<Item Name="Globals.vi" Type="VI" URL="../Public/Globals.vi"/>
 </Library>

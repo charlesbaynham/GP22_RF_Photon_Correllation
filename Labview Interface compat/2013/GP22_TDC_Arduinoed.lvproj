@@ -16,7 +16,6 @@
 		<Property Name="NI.SortType" Type="Int">3</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="GP22_TDC_Arduinoed.lvlib" Type="Library" URL="../GP22_TDC_Arduinoed.lvlib"/>
-		<Item Name="Histogram of timing data.vi" Type="VI" URL="../Examples/Histogram of timing data.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Error Cluster From Error Code.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Error Cluster From Error Code.vi"/>
@@ -70,6 +69,46 @@
 			</Item>
 			<Item Name="lvanlys.dll" Type="Document" URL="/&lt;resource&gt;/lvanlys.dll"/>
 		</Item>
-		<Item Name="Build Specifications" Type="Build"/>
+		<Item Name="Build Specifications" Type="Build">
+			<Item Name="StateMachine" Type="EXE">
+				<Property Name="App_copyErrors" Type="Bool">true</Property>
+				<Property Name="App_INI_aliasGUID" Type="Str">{8A61A03E-A5B2-4A23-B669-4E87E8051D27}</Property>
+				<Property Name="App_INI_GUID" Type="Str">{A298A2EE-DA7F-4734-B8E5-15C1D948FF7F}</Property>
+				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
+				<Property Name="Bld_autoIncrement" Type="Bool">true</Property>
+				<Property Name="Bld_buildCacheID" Type="Str">{5B1AADB9-A785-4E46-A0F4-9E1A720EA37B}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">StateMachine</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">true</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">//fpsvr2/users5$/cb6/Desktop</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{BDB40400-0DB5-4CC1-8D4B-A931DA8D2993}</Property>
+				<Property Name="Bld_version.build" Type="Int">2</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">GP22T_est.exe</Property>
+				<Property Name="Destination[0].path" Type="Path">//fpsvr2/users5$/cb6/Desktop/GP22T_est.exe</Property>
+				<Property Name="Destination[0].path.type" Type="Str">&lt;none&gt;</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">//fpsvr2/users5$/cb6/Desktop/data</Property>
+				<Property Name="Destination[1].path.type" Type="Str">&lt;none&gt;</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="Source[0].itemID" Type="Str">{5AF0E485-69B6-4DB4-A1AE-A4B87C4BB94A}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/GP22_TDC_Arduinoed.lvlib/Examples/StateMachine.vi</Property>
+				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="SourceCount" Type="Int">2</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">StateMachine</Property>
+				<Property Name="TgtF_internalName" Type="Str">StateMachine</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright © 2015 </Property>
+				<Property Name="TgtF_productName" Type="Str">StateMachine</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{A744A134-C411-45C7-B591-42A4CD30F569}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">GP22T_est.exe</Property>
+			</Item>
+		</Item>
 	</Item>
 </Project>

@@ -34,13 +34,14 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="Close.vi" Type="VI" URL="../Public/Close.vi"/>
 		<Item Name="Initialize.vi" Type="VI" URL="../Public/Initialize.vi"/>
 		<Item Name="VI Tree.vi" Type="VI" URL="../Public/VI Tree.vi"/>
-		<Item Name="MeasureMode2.vi" Type="VI" URL="../Public/MeasureMode2.vi"/>
+		<Item Name="MultipleMeasurements.vi" Type="VI" URL="../Public/MultipleMeasurements.vi"/>
 		<Item Name="Reset.vi" Type="VI" URL="../Public/Utility/Reset.vi"/>
 		<Item Name="Self-Test.vi" Type="VI" URL="../Public/Self-Test.vi"/>
 		<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>
 		<Item Name="Calibrate.vi" Type="VI" URL="../Public/Calibrate.vi"/>
 		<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
 		<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
+		<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
 	</Item>
 	<Item Name="Globals.vi" Type="VI" URL="../Public/Globals.vi"/>
 </Library>

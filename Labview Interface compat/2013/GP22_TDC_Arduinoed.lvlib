@@ -42,6 +42,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
 		<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
 		<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
+		<Item Name="CalibratedMultipleMeasurements.vi" Type="VI" URL="../Public/CalibratedMultipleMeasurements.vi"/>
 	</Item>
 	<Item Name="Globals.vi" Type="VI" URL="../Public/Globals.vi"/>
 </Library>

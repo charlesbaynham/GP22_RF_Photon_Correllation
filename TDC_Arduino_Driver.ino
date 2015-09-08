@@ -262,7 +262,7 @@ bool testTDC() {
 	return (commsTest == testData);
 }
 
-// Setup the GP22 with the data stored in its EEPROM
+// Setup the GP22 with the default config
 void initTDC() {
 
 	// Send reset
@@ -272,10 +272,19 @@ void initTDC() {
 	delay(100);
 
 	// Load config from EEPROM
-	SPI.transfer(TDC_CS, TDC_READ_CONFIG_FROM_EEPROM);
+	// SPI.transfer(TDC_CS, TDC_READ_CONFIG_FROM_EEPROM);
+	
+	// Set defaults
+	// Write the values to the TDC's registers
+	for (int i = 0; i < 7; i++) {
+		writeConfigReg(i, reg[i]);
+	}
+	
+	// Wait 100ms
+	delay(100);
 
 	// Wait 500ms for load
-	delay(500);
+	// delay(500);
 }
 
 // Perform a single measurement & return the outcome

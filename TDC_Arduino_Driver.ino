@@ -7,14 +7,13 @@
 		Current version:			*/
 
 #define PROG_IDN "GP22_DRIVER"
-#define PROG_VER "0.4"
+#define PROG_VER "0.5"
 
 /*----------------------------------*/
 
 
-// N.B. Only pins 4, 10 or 52 are allowed for CS
-#define TDC_CS 52
-#define TDC_INT 45
+#define TDC_CS A0
+#define TDC_INT A1
 
 #include <math.h>
 #include <SPI.h>
@@ -61,19 +60,21 @@ void setup() {
 	reg[6] = 0x00000000;
 
 	// Serial connection
-	Serial.begin(115200);
+	Serial.begin(250000);
 
 	// Setup the interrupt pin for input
 	pinMode(TDC_INT, INPUT);
 
+	// Setup the Chip Select pin for output
+	pinMode(TDC_CS, OUTPUT);	
+
 	// Initialize the SPI connection for the GP22 TDC:
 
-	SPI.begin(TDC_CS);
+	SPI.begin();
 	/* " The TDC-GP22 does only support the following SPI mode (Motorola specification):
 	Clock Phase Bit = 1
 	Clock Polarity Bit = 0 "    =>          */
-	SPI.setDataMode(TDC_CS, SPI_MODE1);
-	SPI.setBitOrder(TDC_CS, MSBFIRST);
+	SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
 
 	// Order the GP22 to load its config
 	initTDC();
@@ -137,7 +138,9 @@ void loop() {
 			// Command: "SETUp:REG1:REG2:REG3:REG4:REG5:REG6:REG7" Registers as base 10 numbers
 
 			// Reset the TDC
-			SPI.transfer(TDC_CS, TDC_RESET);
+			digitalWrite(TDC_CS, LOW);
+			SPI.transfer(TDC_RESET);
+			digitalWrite(TDC_CS, HIGH);
 
 			// Was this register read?
 			bool wasRead[7] = { false };
@@ -162,9 +165,12 @@ void loop() {
 
 			// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
 			// Command:
-			SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_REG5, SPI_CONTINUE);
+			digitalWrite(TDC_CS, LOW);
+			SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
 			// Data:
-			byte commsCheck = SPI.transfer(TDC_CS, 0x00);
+			byte commsCheck = SPI.transfer(0x00);
+			digitalWrite(TDC_CS, HIGH);
+
 			byte shouldBe = (reg[1] & 0xFF000000) >> 24;
 
 			if (commsCheck == shouldBe) {
@@ -242,7 +248,9 @@ void loop() {
 bool testTDC() {
 
 	// Send reset
-	SPI.transfer(TDC_CS, 0x50);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(0x50);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Wait 100ms
 	delay(100);
@@ -255,9 +263,11 @@ bool testTDC() {
 
 	// Read back from the first 8 bits of register 1 (should be 0xAA)
 	// Command:
-	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | TDC_REG5, SPI_CONTINUE);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
 	// Data:
-	byte commsTest = SPI.transfer(TDC_CS, 0x00);
+	byte commsTest = SPI.transfer(0x00);
+	digitalWrite(TDC_CS, HIGH);
 
 	return (commsTest == testData);
 }
@@ -266,13 +276,15 @@ bool testTDC() {
 void initTDC() {
 
 	// Send reset
-	SPI.transfer(TDC_CS, TDC_RESET);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_RESET);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Wait 100ms
 	delay(100);
 
 	// Load config from EEPROM
-	// SPI.transfer(TDC_CS, TDC_READ_CONFIG_FROM_EEPROM);
+	// SPI.transfer(TDC_READ_CONFIG_FROM_EEPROM);
 	
 	// Set defaults
 	// Write the values to the TDC's registers
@@ -291,7 +303,9 @@ void initTDC() {
 uint32_t measure() {
 
 	// Send the INIT opcode to start waiting for a timing event
-	SPI.transfer(TDC_CS, TDC_INIT);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_INIT);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
@@ -323,10 +337,14 @@ uint16_t calibrate() {
 	writeConfigReg(TDC_REG6, (reg[6] & 0xFFFFCFFF) | 0x2000);
 
 	// Send INIT so that the TDC is ready to give a response
-	SPI.transfer(TDC_CS, TDC_INIT, SPI_LAST);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_INIT);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Send the START_CAL_TDC opcode to measure the calibration data
-	SPI.transfer(TDC_CS, TDC_START_CAL, SPI_LAST);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_START_CAL);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Request that the ALU calculates the calibration difference by writing
 	// into register 1. This tells the ALU what to calculate and also triggers the calculation
@@ -366,10 +384,14 @@ uint32_t calibrateHF() {
 	writeConfigReg(TDC_REG3, 0x0);
 
 	// Init
-	SPI.transfer(TDC_CS, TDC_INIT);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_INIT);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Start the calibration
-	SPI.transfer(TDC_CS, TDC_START_CAL_RES);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_START_CAL_RES);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
@@ -412,13 +434,15 @@ void writeConfigReg(uint8_t targetReg, uint32_t data) {
 	conversion.raw = data;
 
 	// Command to start transfer into the given register
-	SPI.transfer(TDC_CS, TDC_WRITE_TO_REGISTER | targetReg, SPI_CONTINUE);
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_WRITE_TO_REGISTER | targetReg);
 
 	// The data to write
-	SPI.transfer(TDC_CS, conversion.bytes[3], SPI_CONTINUE);
-	SPI.transfer(TDC_CS, conversion.bytes[2], SPI_CONTINUE);
-	SPI.transfer(TDC_CS, conversion.bytes[1], SPI_CONTINUE);
-	SPI.transfer(TDC_CS, conversion.bytes[0], SPI_LAST);
+	SPI.transfer(conversion.bytes[3]);
+	SPI.transfer(conversion.bytes[2]);
+	SPI.transfer(conversion.bytes[1]);
+	SPI.transfer(conversion.bytes[0]);
+	digitalWrite(TDC_CS, HIGH);
 
 }
 
@@ -435,12 +459,19 @@ uint32_t read_bytes(uint8_t reg, bool read16bits) {
 		uint16_t proc16[2];
 	} result;
 
-	SPI.transfer(TDC_CS, TDC_READ_FROM_REGISTER | reg, SPI_CONTINUE);
-	result.raw[3] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	result.raw[2] = SPI.transfer(TDC_CS, 0x00, (read16bits ? SPI_LAST : SPI_CONTINUE));
-	// (read16bits ? SPI_LAST : SPI_CONTINUE) means "continue if reading 32 bits, stop if not"
+	// Select slave
+	digitalWrite(TDC_CS, LOW);
+
+	SPI.transfer(TDC_READ_FROM_REGISTER | reg);
+
+	result.raw[3] = SPI.transfer(0x00);
+	result.raw[2] = SPI.transfer(0x00);
 
 	if (read16bits) { // If only reading 16 bits, stop here
+
+		// Deselect slave
+		digitalWrite(TDC_CS, HIGH);
+
 		// Check for timeout
 		if (result.proc16[1] == 0xFFFF)
 			return 0xFFFFFFFF;
@@ -452,8 +483,11 @@ uint32_t read_bytes(uint8_t reg, bool read16bits) {
 	}
 
 	// Otherwise, read all 32 bits
-	result.raw[1] = SPI.transfer(TDC_CS, 0x00, SPI_CONTINUE);
-	result.raw[0] = SPI.transfer(TDC_CS, 0x00, SPI_LAST);
+	result.raw[1] = SPI.transfer(0x00);
+	result.raw[0] = SPI.transfer(0x00);
+
+	// Deselect slave
+	digitalWrite(TDC_CS, HIGH);
 
 	return result.proc32;
 }

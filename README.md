@@ -4,9 +4,7 @@ README
 
 This is the source code for the driver for the GP22 TDC chip eval board, programmed by Charles Baynham.
 
-It is written in c++ and can be compiled and uploaded via the Arduino IDE. This code is intended to run on an Arduino Due (or other 3.3V Arduino board) to act as an interface to the GP22. When running, the Arduino will setup the GP22 with whatever configuration is stored in the GP22's EEPROM then wait for simple commands. 
-
-N.B. The configuration of the GP22 is done via the software interface provided on http://ACAM.de. In particular, be cautious of the DELVAL1 setting in "Ultrasonic Time of Flight". This setting should be zero, but isn't by default. If not corrected, this will greatly limit the resolution of the device. 
+It is written in c++ and can be compiled and uploaded via the Arduino IDE. This code is intended to run on an Arduino Nano (or other Atmega328P board) to act as an interface to the GP22. The GP22 will be programmed with a default setup hardcoded here and then wait for commands. 
 
 _IMPORTANT_
 -----------

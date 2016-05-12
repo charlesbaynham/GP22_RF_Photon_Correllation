@@ -9,12 +9,12 @@
 #define COMMAND_SIZE_MAX 128 // num chars
 #define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored
 
-
+#include "basicVector.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
 	// Template for the functions we'll be calling
-	typedef void (*commandFunction) (int numParams, double * params, bool isQuery);
+	typedef void (*commandFunction) (Vector<String> params, bool isQuery);
 
 	// Structure of the data to be stored for each command
 	struct dataStruct {
@@ -29,7 +29,6 @@
 		COMMAND_NOT_FOUND,
 		WRONG_NUM_OF_PARAMS,
 		ERROR_PARSING_COMMAND,
-		PARAMETER_ARRAY_SIZE_MISMATCH,
 		EMPTY_COMMAND_STRING,
 		NO_COMMAND_WAITING
 	};
@@ -69,8 +68,8 @@
 			return false;
 		}
 
-		// Search the list of commands for the given command and execute it with the given double array as a parameter
-		ExecuteError callStoredCommand(const char* command, int n, double * params, bool isQuery) {
+		// Search the list of commands for the given command and execute it with the given parameter array
+		ExecuteError callStoredCommand(const char* command, Vector<String> params, bool isQuery) {
 
 			#ifdef DEBUG
 			Serial.print(F("callStoredCommand with n="));
@@ -93,17 +92,17 @@
 
 			// Return error if too few parameters
 			if (isQuery) {
-				if (d.nq != n) {
+				if (d.nq != params.size()) {
 					return WRONG_NUM_OF_PARAMS;
 				}
 			}
 			else {
-				if (d.n != n) {
+				if (d.n != params.size()) {
 					return WRONG_NUM_OF_PARAMS;
 				}
 			}
 
-			f(n, params, isQuery);
+			f(params, isQuery);
 
 			return NO_ERROR;
 		}
@@ -197,7 +196,6 @@
 				// Catastrooooooofic fail! Blink the LED to warn the user
 				QueueArray<int>::blink();
 
-
 			// Copy the command word from the previously found command
 			strncpy(commandWord, nextCommand, endOfCommand + 1);
 
@@ -212,26 +210,10 @@
 				commandWord[endOfCommand] = '\0';
 
 			// Count the number of parameters in the string
-			int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
+			// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
 
-			// Declare an array of doubles big enough to hold all the params
-			double * paramArray;
-			paramArray = (double*)malloc(numParamsInCommand * sizeof(double) );
-			if (!paramArray)
-				// Catastrooooooofic fail! Blink the LED to warn the user
-				QueueArray<int>::blink();
-
-
-			// Loop through again, converting the strings to doubles
-			int paramArraySize = readParamsFromStr(paramArray, nextCommand, endOfCommand);
-
-			// Check sanity
-			if (paramArraySize != numParamsInCommand) {
-				free(paramArray);
-				free(nextCommand);
-				free(commandWord);
-				return PARAMETER_ARRAY_SIZE_MISMATCH;
-			}
+			// Declare a vector of Strings for the params and loop through command
+			Vector<String> paramArray = readParamsFromStr(nextCommand, endOfCommand);
 
 			#ifdef DEBUG
 			Serial.print("endOfCommand: ");
@@ -249,9 +231,8 @@
 			Serial.println("Executing...");
 			#endif
 
-			ExecuteError found = _lookupList.callStoredCommand(commandWord, paramArraySize, paramArray, isQuery);
+			ExecuteError found = _lookupList.callStoredCommand(commandWord, paramArray, isQuery);
 
-			free(paramArray);
 			free(nextCommand);
 			free(commandWord);
 
@@ -364,13 +345,14 @@
 			return numParamsInCommand;
 		}
 
-		int readParamsFromStr(double * dest, const char* str, int endOfCommand) {
+		Vector<String> readParamsFromStr(const char* str, int endOfCommand) {
 
-			// Loop through the string, converting the params to doubles
+			// Loop through the string
 			bool lastWasSpace = true;
 			int startParam = 0;
 			int endParam = 0;
 			char theParam[128]; // Buffer for the string conversion
+			Vector<String> output;
 
 			int destInd = 0;
 
@@ -397,8 +379,8 @@
 						// Null terminate
 						theParam[endParam - startParam] = '\0';
 
-						// Convert to double
-						dest[destInd] = atof(theParam);
+						// Add to vector
+						output.push_back(theParam);
 
 						// Increase index
 						destInd++;
@@ -411,7 +393,7 @@
 				}
 			}
 
-			return destInd;
+			return output;
 
 		}
 		

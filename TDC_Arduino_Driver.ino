@@ -20,35 +20,11 @@
 
 #include "CommandHandler/CommandHandler.h"
 
-// *** These are the functions that can be called by the user: *** //
-
-// Write to the GP22 then read to check comms
-void testTDC(Vector<String> params, bool isQuery);
-
-// Perform a single measurement & return the outcome
-void timedMeasure(Vector<String> params, bool isQuery);
-
-// Perform a calibration routine and then return the number of LSBs in 2 clock cycles
-// The default clock setting is 4 MHz, so a measurement of x LSBs in 2 clock cycles corresponds to
-//	a precision of 1/4MHz * 2 cycles / x
-void calibrateTDC(Vector<String> params, bool isQuery);
-
-void calibrateResonator(Vector<String> params, bool isQuery);
-// Read status
-// The device's format is a 16 bit number
-// See p.36 of the ACAM datasheet
-void getStatus(Vector<String> params, bool isQuery);
-
-// Resets the microprocessor
-void reset(Vector<String> params, bool isQuery);
-
-// Returns an identifying string
-void identity(Vector<String> params, bool isQuery);
-
-// ********* End commands *********** //
-
 // Setup the GP22 with the currently stored config
-void updateTDC();
+void updateTDC(const uint32_t * registers);
+
+// Read the registers from the TDC
+void readTDC();
 
 // Registers all the above functions with the command handler, thus defining the commands required to call them
 void registerCommands(CommandHandler * h);
@@ -119,7 +95,7 @@ void setup() {
 	SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
 
 	// Load all the values stored in reg into the TDC's registers
-	updateTDC();
+	updateTDC(reg);
 
 	// Setup complete. Move to waiting for a command
 }
@@ -179,64 +155,68 @@ void timedMeasure(Vector<String> params, bool isQuery) {
 	Serial.println("");
 }
 
-//void loadRegisters(Vector<String> params, bool isQuery) {
-	
-// Command: "SETUp:REG1:REG2:REG3:REG4:REG5:REG6:REG7" Registers as base 10 numbers
+// Command: "SETUp REG1 REG2 REG3 REG4 REG5 REG6 REG7" Registers as base 10 numbers
+void setupRegisters(Vector<String> params, bool isQuery) {
 
-// 			// Reset the TDC
-// 			digitalWrite(TDC_CS, LOW);
-// 			SPI.transfer(TDC_RESET);
-// 			digitalWrite(TDC_CS, HIGH);
+	if (isQuery)
+	{
+		// Output the current register state
+		for (int i = 0; i < 7; i++) {
+			Serial.print(reg[i], HEX);
+			Serial.print('\t');
+		}
 
-// 			// Was this register read?
-// 			bool wasRead[7] = { false };
+		Serial.println("");
 
-// 			// Read all the params
-// 			for (int i = 0; i < 7 && Serial.findUntil(":", "\n"); i++) { // Advance to the next ':'
-// 				// Read the number that should follow
-// 				reg[i] = Serial.parseInt();
-// 				wasRead[i] = true;
-// 			}
+	} else {
 
-// 			// Store whether we're in calibration mode or not (bit 13 in reg 0)
-// 			if (wasRead[0])
-// 				autoCalibrate = (bool)(reg[0] & (1 << 13));
+		// Reset the TDC
+		digitalWrite(TDC_CS, LOW);
+		SPI.transfer(TDC_RESET);
+		digitalWrite(TDC_CS, HIGH);
 
-// 			// Write the values to the TDC's registers
-// 			for (int i = 0; i < 7 && wasRead[i]; i++) {
-// 				writeConfigReg(i, reg[i]);
-// 			}
+		for (int i = 0; i < params.size(); i++) {
+			reg[i] = strtol(params[i].c_str(), NULL, 0);
+		}
 
-// 			delay(1);
+		// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
+		autoCalibrate = (bool)(reg[0] & (1 << 13));
 
-// 			// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
-// 			// Command:
-// 			digitalWrite(TDC_CS, LOW);
-// 			SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
-// 			// Data:
-// 			byte commsCheck = SPI.transfer(0x00);
-// 			digitalWrite(TDC_CS, HIGH);
+		// Write the values to the TDC's registers
+		updateTDC(reg);
 
-// 			byte shouldBe = (reg[1] & 0xFF000000) >> 24;
+		delay(1);
 
-// 			if (commsCheck == shouldBe) {
-// 				Serial.print("DONE - CALIBRATION MODE ");
-// 				if (autoCalibrate)
-// 					Serial.print("ON - ");
-// 				else
-// 					Serial.print("OFF - ");
+		// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
+		// Command:
+		digitalWrite(TDC_CS, LOW);
+		SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
+		// Data:
+		byte commsCheck = SPI.transfer(0x00);
+		digitalWrite(TDC_CS, HIGH);
 
-// 				Serial.println(commsCheck, HEX);
+		byte shouldBe = (reg[1] & 0xFF000000) >> 24;
 
-// 			}
-// 			else {
-// 				Serial.print("Error. Read: 0x");
-// 				Serial.print(commsCheck, HEX);
-// 				Serial.print(" instead of 0x");
-// 				Serial.print(shouldBe, HEX);
-// 				Serial.print(" from reg[1] == ");
-// 				Serial.println(reg[1], HEX);
-// 			}
+		if (commsCheck == shouldBe) {
+			Serial.print("DONE - CALIBRATION MODE ");
+			if (autoCalibrate)
+				Serial.print("ON - ");
+			else
+				Serial.print("OFF - ");
+
+			Serial.println(commsCheck, HEX);
+
+		}
+		else {
+			Serial.print("Error. Read: 0x");
+			Serial.print(commsCheck, HEX);
+			Serial.print(" instead of 0x");
+			Serial.print(shouldBe, HEX);
+			Serial.print(" from reg[1] == ");
+			Serial.println(reg[1], HEX);
+		}
+	}
+}
 
 void singleMeasure(Vector<String> params, bool isQuery) {
 
@@ -276,7 +256,7 @@ void testConnection(Vector<String> params, bool isQuery) {
 	uint8_t testResult = testTDC();
 
 	// Restore the values changed during the test
-	updateTDC();
+	updateTDC(reg);
 
 	// Report the result
 	if (testResult) {
@@ -333,8 +313,9 @@ uint8_t testTDC() {
 			return 0xFF;
 }
 
-// Setup the GP22 with the default config
-void updateTDC() {
+// Setup the GP22 with the currently stored config
+// registers should be a 7 element array
+void updateTDC(const uint32_t * registers) {
 
 	// Send reset
 	digitalWrite(TDC_CS, LOW);
@@ -343,21 +324,15 @@ void updateTDC() {
 
 	// Wait 100ms
 	delay(100);
-
-	// Load config from EEPROM
-	// SPI.transfer(TDC_READ_CONFIG_FROM_EEPROM);
 	
 	// Set defaults
 	// Write the values to the TDC's registers
 	for (int i = 0; i < 7; i++) {
-		writeConfigReg(i, reg[i]);
+		writeConfigReg(i, registers[i]);
 	}
 	
 	// Wait 100ms
 	delay(100);
-
-	// Wait 500ms for load
-	// delay(500);
 }
 
 // Perform a single measurement & return the outcome
@@ -563,6 +538,10 @@ void registerCommands(CommandHandler* h) {
   passed &= h->registerCommand("MEAS", 1, 1, *timedMeasure);
   passed &= h->registerCommand("SING", 1, 1, *singleMeasure);
   passed &= h->registerCommand("STAT", 0, 0, *singleMeasure);
+  passed &= h->registerCommand("SETU", -1, 0, *setupRegisters);
+  passed &= h->registerCommand("*MEM", 0, 0, *availableMemory);
+  passed &= h->registerCommand("HCAL", 0, 0, *calibrateResonator);
+  passed &= h->registerCommand("CALI", 0, 0, *calibrateTDC);
   
   if (!passed)
     Serial.println(F("ERROR: too many commands! Init a larger CommandHandler object."));

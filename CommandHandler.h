@@ -73,7 +73,7 @@
 
 			#ifdef DEBUG
 			Serial.print(F("callStoredCommand with n="));
-			Serial.print(n);
+			Serial.print(params.size());
 			Serial.print(F(", isquery = "));
 			Serial.println(isQuery ? "TRUE" : "FALSE");
 			#endif
@@ -92,12 +92,19 @@
 
 			// Return error if too few parameters
 			if (isQuery) {
-				if (d.nq != params.size()) {
+				if (d.nq != params.size() && d.nq != -1) {
 					return WRONG_NUM_OF_PARAMS;
 				}
 			}
 			else {
-				if (d.n != params.size()) {
+				if (d.n != params.size() && d.n != -1) {
+					#ifdef DEBUG
+					Serial.print("ERROR: Expecting ");
+					Serial.print(d.n);
+					Serial.print(" parameters but got ");
+					Serial.println(params.size());
+					#endif
+
 					return WRONG_NUM_OF_PARAMS;
 				}
 			}
@@ -220,12 +227,10 @@
 			Serial.println(endOfCommand);
 			Serial.print("commandWord: ");
 			Serial.println(commandWord);
-			Serial.print("numParamsInCommand: ");
-			Serial.println(numParamsInCommand);
-			Serial.print("paramArraySize: ");
-			Serial.println(paramArraySize);
+			Serial.print("paramArray size: ");
+			Serial.println(paramArray.size());
 
-			for (int i=0; i<paramArraySize; i++)
+			for (int i=0; i<paramArray.size(); i++)
 				Serial.println(paramArray[i]);
 
 			Serial.println("Executing...");

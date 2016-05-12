@@ -23,6 +23,17 @@
 		commandFunction f; // Pointer to this function
 	};
 
+	// Error messages for executing a command
+	enum ExecuteError {
+		NO_ERROR = 0,
+		COMMAND_NOT_FOUND,
+		WRONG_NUM_OF_PARAMS,
+		ERROR_PARSING_COMMAND,
+		PARAMETER_ARRAY_SIZE_MISMATCH,
+		EMPTY_COMMAND_STRING,
+		NO_COMMAND_WAITING
+	};
+
 	class CommandLookup
 	{
 	public:
@@ -59,7 +70,7 @@
 		}
 
 		// Search the list of commands for the given command and execute it with the given double array as a parameter
-		int callStoredCommand(const char* command, int n, double * params, bool isQuery) {
+		ExecuteError callStoredCommand(const char* command, int n, double * params, bool isQuery) {
 
 			#ifdef DEBUG
 			Serial.print(F("callStoredCommand with n="));
@@ -68,7 +79,7 @@
 			Serial.println(isQuery ? "TRUE" : "FALSE");
 			#endif
 
-			if (!_commandTable.exists(command)) { return -101; }
+			if (!_commandTable.exists(command)) { return COMMAND_NOT_FOUND; }
 
 			dataStruct d = _commandTable.getValueOf(command);
 			commandFunction f = d.f;
@@ -83,18 +94,18 @@
 			// Return error if too few parameters
 			if (isQuery) {
 				if (d.nq != n) {
-					return -102;
+					return WRONG_NUM_OF_PARAMS;
 				}
 			}
 			else {
 				if (d.n != n) {
-					return -103;
+					return WRONG_NUM_OF_PARAMS;
 				}
 			}
 
 			f(n, params, isQuery);
 
-			return 0;
+			return NO_ERROR;
 		}
 
 	protected:
@@ -141,7 +152,7 @@
 		}
 
 		// Execute the next command in the queue
-		int executeCommand() {
+		ExecuteError executeCommand() {
 			
 			#ifdef DEBUG
 			Serial.println(F("Execute command"));
@@ -149,7 +160,7 @@
 
 			// Return error code -3 if no command waiting
 			if (_commandQueue.isEmpty())
-				return -3;
+				return NO_COMMAND_WAITING;
 
 			// Load and remove the next command from the queue
 			char * nextCommand = _commandQueue.pop();
@@ -158,7 +169,7 @@
 			if (nextCommand[0] == '\0')
 			{ 
 				free(nextCommand);
-				return -5;
+				return EMPTY_COMMAND_STRING;
 			}
 
 			// The location in the string where the command ends and the params start
@@ -176,7 +187,7 @@
 
 				free(nextCommand);
 
-				return -1;
+				return ERROR_PARSING_COMMAND;
 			}
 
 			// Allocate a space for the command word
@@ -219,7 +230,7 @@
 				free(paramArray);
 				free(nextCommand);
 				free(commandWord);
-				return -4;
+				return PARAMETER_ARRAY_SIZE_MISMATCH;
 			}
 
 			#ifdef DEBUG
@@ -238,7 +249,7 @@
 			Serial.println("Executing...");
 			#endif
 
-			int found = _lookupList.callStoredCommand(commandWord, paramArraySize, paramArray, isQuery);
+			ExecuteError found = _lookupList.callStoredCommand(commandWord, paramArraySize, paramArray, isQuery);
 
 			free(paramArray);
 			free(nextCommand);

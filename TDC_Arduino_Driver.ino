@@ -12,8 +12,8 @@
 /*----------------------------------*/
 
 
-#define TDC_CS A0
-#define TDC_INT A1
+#define TDC_CS A1
+#define TDC_INT A0
 
 #include <math.h>
 #include <SPI.h>
@@ -66,7 +66,8 @@ void setup() {
 	pinMode(TDC_INT, INPUT);
 
 	// Setup the Chip Select pin for output
-	pinMode(TDC_CS, OUTPUT);	
+	pinMode(TDC_CS, OUTPUT);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Initialize the SPI connection for the GP22 TDC:
 
@@ -223,17 +224,18 @@ void loop() {
 		else if (0 == strcmp("*TST", command)) { // Test connection
 
 			// Run the test
-			bool testResult = testTDC();
+			uint8_t testResult = testTDC();
 
 			// Restore the values changed during the test
 			initTDC();
 
 			// Report the result
 			if (testResult) {
-				Serial.println("PASSED");
+				Serial.print("FAILED with code returned ");
+				Serial.println(testResult);
 			}
 			else {
-				Serial.println("FAILED");
+				Serial.println("PASSED");
 			}
 		}
 
@@ -245,31 +247,41 @@ void loop() {
 }
 
 // Write to the GP22 then read to check comms
-bool testTDC() {
+uint8_t testTDC() {
 
 	// Send reset
 	digitalWrite(TDC_CS, LOW);
-	SPI.transfer(0x50);
+	SPI.transfer(TDC_RESET);
 	digitalWrite(TDC_CS, HIGH);
 
 	// Wait 100ms
 	delay(100);
 
 	// Write 0xAA800000 into register 1 (the defaults + test data)
-#define testData 0xAA
-#define reg1Config 0x8000
+  uint32_t testData = 0xAA;
+  uint32_t reg1Config = 0x8000;
 
-	writeConfigReg(TDC_REG1, ((testData << 16) | reg1Config) << 8);
-
+  uint32_t newReg1 = ((testData << 16) | reg1Config) << 8;
+	writeConfigReg(TDC_REG1, newReg1);
+  
 	// Read back from the first 8 bits of register 1 (should be 0xAA)
 	// Command:
 	digitalWrite(TDC_CS, LOW);
 	SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
 	// Data:
-	byte commsTest = SPI.transfer(0x00);
+	uint8_t commsTest = SPI.transfer(0x00);
 	digitalWrite(TDC_CS, HIGH);
 
-	return (commsTest == testData);
+  // Return 0 for success
+	if (commsTest == testData)
+		return 0;
+
+  // If we failed, return the value we just read, unless that value is 0 in which case return "0xFF"
+	else
+		if (commsTest != 0)
+			return commsTest;
+		else
+			return 0xFF;
 }
 
 // Setup the GP22 with the default config

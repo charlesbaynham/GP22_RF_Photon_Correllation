@@ -23,27 +23,27 @@
 // *** These are the functions that can be called by the user: *** //
 
 // Write to the GP22 then read to check comms
-void testTDC(int numParams, double * params, bool isQuery);
+void testTDC(Vector<String> params, bool isQuery);
 
 // Perform a single measurement & return the outcome
-void timedMeasure(int numParams, double * params, bool isQuery);
+void timedMeasure(Vector<String> params, bool isQuery);
 
 // Perform a calibration routine and then return the number of LSBs in 2 clock cycles
 // The default clock setting is 4 MHz, so a measurement of x LSBs in 2 clock cycles corresponds to
 //	a precision of 1/4MHz * 2 cycles / x
-void calibrateTDC(int numParams, double * params, bool isQuery);
+void calibrateTDC(Vector<String> params, bool isQuery);
 
-void calibrateResonator(int numParams, double * params, bool isQuery);
+void calibrateResonator(Vector<String> params, bool isQuery);
 // Read status
 // The device's format is a 16 bit number
 // See p.36 of the ACAM datasheet
-void getStatus(int numParams, double * params, bool isQuery);
+void getStatus(Vector<String> params, bool isQuery);
 
 // Resets the microprocessor
-void reset(int numParams, double * params, bool isQuery);
+void reset(Vector<String> params, bool isQuery);
 
 // Returns an identifying string
-void identity(int numParams, double * params, bool isQuery);
+void identity(Vector<String> params, bool isQuery);
 
 // ********* End commands *********** //
 
@@ -141,22 +141,22 @@ void serialEvent() {
 		handler.addCommandChar(Serial.read());
 }
 
-void reset(int numParams, double * params, bool isQuery) {
+void reset(Vector<String> params, bool isQuery) {
 	Serial.println("Resetting");
 	Serial.flush();
 	resetFunc();
 }
 
-void identity(int numParams, double * params, bool isQuery) {
+void identity(Vector<String> params, bool isQuery) {
 	Serial.print(PROG_IDN);
 	Serial.print(" - ");
 	Serial.println(PROG_VER);
 }
 
-void timedMeasure(int numParams, double * params, bool isQuery) {
+void timedMeasure(Vector<String> params, bool isQuery) {
 
 	// Number of ms to read for
-	uint32_t timePeriod = params[0];
+	uint32_t timePeriod = atoi(params[0].c_str());
 
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;
@@ -179,7 +179,7 @@ void timedMeasure(int numParams, double * params, bool isQuery) {
 	Serial.println("");
 }
 
-//void loadRegisters(int numParams, double * params, bool isQuery) {
+//void loadRegisters(Vector<String> params, bool isQuery) {
 	
 // Command: "SETUp:REG1:REG2:REG3:REG4:REG5:REG6:REG7" Registers as base 10 numbers
 
@@ -238,7 +238,7 @@ void timedMeasure(int numParams, double * params, bool isQuery) {
 // 				Serial.println(reg[1], HEX);
 // 			}
 
-void singleMeasure(int numParams, double * params, bool isQuery) {
+void singleMeasure(Vector<String> params, bool isQuery) {
 
 	// Do the measurement
 	uint32_t result = measure();
@@ -249,7 +249,7 @@ void singleMeasure(int numParams, double * params, bool isQuery) {
 }
 
 // Calibrate the TDC against the reference 32kHz clock and report the result
-void calibrateTDC(int numParams, double * params, bool isQuery) {
+void calibrateTDC(Vector<String> params, bool isQuery) {
 
 	// Do the calibration
 	uint16_t calib = calibrate();
@@ -261,7 +261,7 @@ void calibrateTDC(int numParams, double * params, bool isQuery) {
 
 // Calibrate the highspeed clock against the TDC and report the result
 // (i.e. number of high speed clock cycles in `ANZ_PER_CALRES` cycles of the ref clock)
-void calibrateResonator(int numParams, double * params, bool isQuery) {
+void calibrateResonator(Vector<String> params, bool isQuery) {
 
 	// Do the calibration
 	uint32_t calib = calibrateHF();
@@ -271,7 +271,7 @@ void calibrateResonator(int numParams, double * params, bool isQuery) {
 
 }
 
-void testConnection(int numParams, double * params, bool isQuery) {
+void testConnection(Vector<String> params, bool isQuery) {
 	// Run the test
 	uint8_t testResult = testTDC();
 
@@ -288,7 +288,7 @@ void testConnection(int numParams, double * params, bool isQuery) {
 	}
 }
 
-void getStatus(int numParams, double * params, bool isQuery) { 
+void getStatus(Vector<String> params, bool isQuery) { 
 
 	Serial.println(readStatus(), HEX);
 
@@ -560,7 +560,7 @@ void registerCommands(CommandHandler* h) {
   passed &= h->registerCommand("*IDN", 0, 0, *identity);
   passed &= h->registerCommand("*TST", 0, 0, *testConnection);
   passed &= h->registerCommand("*RST", 0, 0, *reset);
-  passed &= h->registerCommand("MEST", 1, 1, *timedMeasure);
+  passed &= h->registerCommand("MEAS", 1, 1, *timedMeasure);
   passed &= h->registerCommand("SING", 1, 1, *singleMeasure);
   passed &= h->registerCommand("STAT", 0, 0, *singleMeasure);
   
@@ -571,7 +571,7 @@ void registerCommands(CommandHandler* h) {
 // this function will return the number of bytes currently free in RAM
 // written by David A. Mellis
 // based on code by Rob Faludi http://www.faludi.com
-void availableMemory(int numParams, double * params, bool isQuery) {
+void availableMemory(Vector<String> params, bool isQuery) {
   //int size = 1024; // Use 2048 with ATmega328
   int size = 2048;
   byte *buf;

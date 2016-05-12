@@ -20,9 +20,38 @@
 
 #include "CommandHandler/CommandHandler.h"
 
+// *** These are the functions that can be called by the user: *** //
+
+// Write to the GP22 then read to check comms
+void testTDC(int numParams, double * params, bool isQuery);
+
+// Perform a single measurement & return the outcome
+void timedMeasure(int numParams, double * params, bool isQuery);
+
+// Perform a calibration routine and then return the number of LSBs in 2 clock cycles
+// The default clock setting is 4 MHz, so a measurement of x LSBs in 2 clock cycles corresponds to
+//	a precision of 1/4MHz * 2 cycles / x
+void calibrateTDC(int numParams, double * params, bool isQuery);
+
+void calibrateResonator(int numParams, double * params, bool isQuery);
+// Read status
+// The device's format is a 16 bit number
+// See p.36 of the ACAM datasheet
+void getStatus(int numParams, double * params, bool isQuery);
+
+// Resets the microprocessor
+void reset(int numParams, double * params, bool isQuery);
+
+// Returns an identifying string
+void identity(int numParams, double * params, bool isQuery);
+
+// ********* End commands *********** //
+
+// Setup the GP22 with the currently stored config
+void updateTDC();
+
 // Registers all the above functions with the command handler, thus defining the commands required to call them
 void registerCommands(CommandHandler * h);
-
 
 // Create a command handler with space for 10 commands
 CommandHandler handler(10);
@@ -112,60 +141,47 @@ void serialEvent() {
 		handler.addCommandChar(Serial.read());
 }
 
-// void loop() {
+void reset(int numParams, double * params, bool isQuery) {
+	Serial.println("Resetting");
+	Serial.flush();
+	resetFunc();
+}
 
-// 	if (Serial.available()) {
-// 		// If there's a command, read it.
-// 		char command[5];
-// 		command[Serial.readBytesUntil('\n', command, 4)] = 0;
+void identity(int numParams, double * params, bool isQuery) {
+	Serial.print(PROG_IDN);
+	Serial.print(" - ");
+	Serial.println(PROG_VER);
+}
 
-// 		// Identify and execute the command
-// 		if (0 == strcmp("*RST", command)) {
-// 			Serial.println("Resetting");
-// 			Serial.flush();
-// 			resetFunc(); // Reset
-// 		}
-// 		else if (0 == strcmp("*IDN", command)) { // Identify
-// 			Serial.print(PROG_IDN);
-// 			Serial.print(" - ");
-// 			Serial.println(PROG_VER);
-// 		}
-// 		else if (0 == strcmp("MEAS", command)) { // Do many measurements
+void timedMeasure(int numParams, double * params, bool isQuery) {
 
-// 			// Read the number of ms to time for
+	// Number of ms to read for
+	uint32_t timePeriod = params[0];
 
-// 			// Advance to the params (do nothing if no params given)
-// 			if (Serial.findUntil(":", "\n")) {
+	// Calculate stop time
+	uint32_t stop = millis() + timePeriod;
 
-// 				char timePeriodStr[32];
-// 				timePeriodStr[Serial.readBytesUntil('\n', timePeriodStr, 31)] = 0;
+	// Loop until stoptime
+	while (millis() < stop) {
 
-// 				// Convert string -> long int
-// 				uint32_t timePeriod = atol(timePeriodStr);
+		// Do the measurement
+		uint32_t result = measure();
 
-// 				// Calculate stop time
-// 				uint32_t stop = millis() + timePeriod;
+		// Check we didn't timeout
+		if (result != 0xFFFFFFFF) {
+			// Report result
+			Serial.print(result);
+			Serial.print('\t');
+		}
+	}
 
-// 				// Loop until stoptime
-// 				while (millis() < stop) {
+	// newline to terminate
+	Serial.println("");
+}
 
-// 					// Do the measurement
-// 					uint32_t result = measure();
-
-// 					// Check we didn't timeout
-// 					if (result != 0xFFFFFFFF) {
-// 						// Report result
-// 						Serial.print(result);
-// 						Serial.print('\t');
-// 					}
-// 				}
-
-// 				// newline to terminate
-// 				Serial.println("");
-// 			}
-// 		}
-// 		else if (0 == strcmp("SETU", command)) { // Setup the registers. 
-// 			// Command: "SETUp:REG1:REG2:REG3:REG4:REG5:REG6:REG7" Registers as base 10 numbers
+//void loadRegisters(int numParams, double * params, bool isQuery) {
+	
+// Command: "SETUp:REG1:REG2:REG3:REG4:REG5:REG6:REG7" Registers as base 10 numbers
 
 // 			// Reset the TDC
 // 			digitalWrite(TDC_CS, LOW);
@@ -222,58 +238,65 @@ void serialEvent() {
 // 				Serial.println(reg[1], HEX);
 // 			}
 
-// 		}
-// 		else if (0 == strcmp("SING", command)) { // Do a single measurement
+void singleMeasure(int numParams, double * params, bool isQuery) {
 
-// 			// Do the measurement
-// 			uint32_t result = measure();
+	// Do the measurement
+	uint32_t result = measure();
 
-// 			// Report result
-// 			Serial.println(result);
+	// Report result
+	Serial.println(result);
 
-// 		}
-// 		else if (0 == strcmp("CALI", command)) { // Calibrate the TDC and report the result
+}
 
-// 			// Do the calibration
-// 			uint16_t calib = calibrate();
+// Calibrate the TDC against the reference 32kHz clock and report the result
+void calibrateTDC(int numParams, double * params, bool isQuery) {
 
-// 			// Report result
-// 			Serial.println(calib);
+	// Do the calibration
+	uint16_t calib = calibrate();
 
-// 		}
-// 		else if (0 == strcmp("HCAL", command)) { // Calibrate the highspeed clock and report the result
+	// Report result
+	Serial.println(calib);
 
-// 			// Do the calibration
-// 			uint32_t calib = calibrateHF();
+}
 
-// 			// Report result
-// 			Serial.println(calib);
+// Calibrate the highspeed clock against the TDC and report the result
+// (i.e. number of high speed clock cycles in `ANZ_PER_CALRES` cycles of the ref clock)
+void calibrateResonator(int numParams, double * params, bool isQuery) {
 
-// 		}
-// 		else if (0 == strcmp("*TST", command)) { // Test connection
+	// Do the calibration
+	uint32_t calib = calibrateHF();
 
-// 			// Run the test
-// 			uint8_t testResult = testTDC();
+	// Report result
+	Serial.println(calib);
 
-// 			// Restore the values changed during the test
-// 			updateTDC();
+}
 
-// 			// Report the result
-// 			if (testResult) {
-// 				Serial.print("FAILED with code returned ");
-// 				Serial.println(testResult);
-// 			}
-// 			else {
-// 				Serial.println("PASSED");
-// 			}
-// 		}
+void testConnection(int numParams, double * params, bool isQuery) {
+	// Run the test
+	uint8_t testResult = testTDC();
 
-// 		// Empty the serial input
-// 		while (Serial.available()) Serial.read();
+	// Restore the values changed during the test
+	updateTDC();
 
-// 	}
+	// Report the result
+	if (testResult) {
+		Serial.print("FAILED with code returned ");
+		Serial.println(testResult);
+	}
+	else {
+		Serial.println("PASSED");
+	}
+}
 
-// }
+void getStatus(int numParams, double * params, bool isQuery) { 
+
+	Serial.println(readStatus(), HEX);
+
+}
+
+// ******* END OF COMMANDS ******* //
+
+// ******* START OF INTERNAL FUNCTIONS ******* //
 
 // Write to the GP22 then read to check comms
 uint8_t testTDC() {
@@ -287,13 +310,10 @@ uint8_t testTDC() {
 	delay(100);
 
 	// Write 0xAA800000 into register 1 (the defaults + test data)
-  uint32_t testData = 0xAA;
-  uint32_t reg1Config = 0x8000;
-
-  uint32_t newReg1 = ((testData << 16) | reg1Config) << 8;
+	uint32_t newReg1 = 0xAB800000;
 	writeConfigReg(TDC_REG1, newReg1);
   
-	// Read back from the first 8 bits of register 1 (should be 0xAA)
+	// Read back from the first 8 bits of register 1 (should be 0xAB)
 	// Command:
 	digitalWrite(TDC_CS, LOW);
 	SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
@@ -302,7 +322,7 @@ uint8_t testTDC() {
 	digitalWrite(TDC_CS, HIGH);
 
   // Return 0 for success
-	if (commsTest == testData)
+	if (commsTest == 0xAB)
 		return 0;
 
   // If we failed, return the value we just read, unless that value is 0 in which case return "0xFF"
@@ -537,7 +557,12 @@ void registerCommands(CommandHandler* h) {
   // N.B. commands are not case sensitive
   bool passed = true;
 
-  passed &= h->registerCommand("*MEM", 0, 0, *availableMemory);
+  passed &= h->registerCommand("*IDN", 0, 0, *identity);
+  passed &= h->registerCommand("*TST", 0, 0, *testConnection);
+  passed &= h->registerCommand("*RST", 0, 0, *reset);
+  passed &= h->registerCommand("MEST", 1, 1, *timedMeasure);
+  passed &= h->registerCommand("SING", 1, 1, *singleMeasure);
+  passed &= h->registerCommand("STAT", 0, 0, *singleMeasure);
   
   if (!passed)
     Serial.println(F("ERROR: too many commands! Init a larger CommandHandler object."));

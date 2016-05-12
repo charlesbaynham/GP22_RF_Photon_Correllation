@@ -77,8 +77,8 @@ void setup() {
 	Clock Polarity Bit = 0 "    =>          */
 	SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
 
-	// Order the GP22 to load its config
-	initTDC();
+	// Load all the values stored in reg into the TDC's registers
+	updateTDC();
 
 	// Setup complete. Move to waiting for a command
 }
@@ -227,7 +227,7 @@ void loop() {
 			uint8_t testResult = testTDC();
 
 			// Restore the values changed during the test
-			initTDC();
+			updateTDC();
 
 			// Report the result
 			if (testResult) {
@@ -285,7 +285,7 @@ uint8_t testTDC() {
 }
 
 // Setup the GP22 with the default config
-void initTDC() {
+void updateTDC() {
 
 	// Send reset
 	digitalWrite(TDC_CS, LOW);

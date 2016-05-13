@@ -107,9 +107,12 @@ public:
    		listItem<Data> *p = _first;
 
    		while (NULL != p) {
-   			Serial.println(p->getData());
+			Serial.print("'");
+			Serial.print(p->getData());
+			Serial.print("', ");
    			p = p->next();
    		}
+		Serial.println();
    	}
 
 };

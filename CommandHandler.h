@@ -76,6 +76,11 @@
 			return _commandQueue.size();
 		}
 
+		// Dump the whole command queue for debugging
+		void debug() {
+			_commandQueue.debug();
+		}
+
 		// Execute the next command in the queue
 		ExecuteError executeCommand() ;
 

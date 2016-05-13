@@ -182,7 +182,7 @@ ExecuteError CommandHandler::executeCommand() {
 }
 
 // Add a char from the serial connection to be processed and added to the queue
-bool CommandHandler::addCommandChar(const char c) {
+void CommandHandler::addCommandChar(const char c) {
 	
 	// If c is a newline, store the buffer in the queue and start a new buffer
 	if (c == '\n') {
@@ -214,7 +214,9 @@ bool CommandHandler::addCommandChar(const char c) {
 	// else c is a normal char, so add it to the buffer
 	else {
 		if (_bufferLength >= COMMAND_SIZE_MAX)
-			{ return false; }
+		{
+			return;
+		}
 		else
 		{
 			_inputBuffer[_bufferLength] = c;
@@ -225,8 +227,6 @@ bool CommandHandler::addCommandChar(const char c) {
 			
 		}
 	}
-
-	return true;
 }
 
 

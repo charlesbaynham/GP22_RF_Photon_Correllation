@@ -87,7 +87,7 @@
 		}
 
 		// Add a char from the serial connection to be processed and added to the queue
-		bool addCommandChar(const char c) ;
+		void addCommandChar(const char c) ;
 
 	private:
 		CommandLookup _lookupList;

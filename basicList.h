@@ -74,8 +74,6 @@ public:
 
 		// Increment size
 		_list_size++;
-
-		debug();
    	}
 
    	void pop_back() {

@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEBUG
+// #define DEBUG
 
 // Basic Hashmap implementation
 #include "Hashmap.h"
@@ -14,10 +14,11 @@
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
 	// Template for the functions we'll be calling
-	typedef void (*commandFunction) (Vector<String> params, bool isQuery);
+	typedef void (*commandFunction) (List<String> params, bool isQuery);
 
 	// Structure of the data to be stored for each command
 	struct dataStruct {
+		char * key; // Keyword for this command
 		int n; // Number of params this function takes
 		int nq; // Number of params when called as a query
 		commandFunction f; // Pointer to this function
@@ -38,36 +39,20 @@
 	{
 	public:
 
-		CommandLookup(int maxNumCommands) :
-			_numCommandsMax(maxNumCommands),
-			// Allocate storage space for the hashmap
-			_hashRawArray((HashType<dataStruct>*)malloc(maxNumCommands * sizeof(HashType<dataStruct>))),
-			// Init the commands hash map using the allocated storage space
-			_commandTable(HashMap<dataStruct>( _hashRawArray, maxNumCommands )),
-			_numCommandsAdded(0)
-		{}
+		CommandLookup() {}
 
-		CommandLookup() : CommandLookup(DEFAULT_NUM_COMMANDS_MAX) {}
+		~CommandLookup();
 
 		// Add a new command to the list
-		bool registerCommand(const char* command, int num_of_parameters,
+		void registerCommand(const char* command, int num_of_parameters,
 			int num_of_query_parameters, commandFunction pointer_to_function);
 
 		// Search the list of commands for the given command and execute it with the given parameter array
-		ExecuteError callStoredCommand(const char* command, Vector<String> params, bool isQuery) ;
+		ExecuteError callStoredCommand(const char* command, List<String> params, bool isQuery) ;
 
 	protected:
 
-		// Storage space for the hashMap 
-		HashType<dataStruct> * _hashRawArray;
-		// Hash map to store command info
-		// Format will be "string" -> struct(int(num_of_parameters), void*(pointer_to_function))
-		HashMap<dataStruct> _commandTable;
-
-		// Make sure we don't overflow
-		int _numCommandsAdded;
-
-		int _numCommandsMax;
+		Vector<dataStruct> _commands;
 	};
 
 //////////////////////  COMMAND HANDLER  //////////////////////
@@ -75,8 +60,8 @@
 	class CommandHandler
 	{
 	public:
-		CommandHandler(int maxCommands = DEFAULT_NUM_COMMANDS_MAX) :
-			_lookupList(maxCommands),
+		CommandHandler() :
+			_lookupList(),
 			_bufferLength(0) { _inputBuffer[0] = '\0'; }
 
 		// Wipe any char*s left in the queue or buffer
@@ -98,9 +83,9 @@
 		ExecuteError executeCommand() ;
 
 		// Register a command
-		bool registerCommand(const char* command, int num_of_parameters,
+		void registerCommand(const char* command, int num_of_parameters,
 				int num_of_query_parameters, commandFunction pointer_to_function) {
-			return _lookupList.registerCommand(command, num_of_parameters,
+			_lookupList.registerCommand(command, num_of_parameters,
 					num_of_query_parameters, pointer_to_function);
 		}
 
@@ -123,7 +108,7 @@
 		// Loop from the first space onwards, counting the params
 		int numParamsInCommandStr(const char* str, int endOfCommand) ;
 
-		Vector<String> readParamsFromStr(const char* str, int endOfCommand) ;
+		List<String> readParamsFromStr(const char* str, int endOfCommand) ;
 		
 	};
 

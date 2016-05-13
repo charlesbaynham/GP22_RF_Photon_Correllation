@@ -3,27 +3,45 @@
 #include "CommandHandler.h"
 
 // Add a new command to the list
-bool CommandLookup::registerCommand(const char* command, int num_of_parameters,
+void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 	int num_of_query_parameters, commandFunction pointer_to_function)
 {
-	if (_numCommandsAdded < _numCommandsMax) {
+	
+	// Set up a struct containing the number of params and a pointer to the function
+	dataStruct d;
 
-		// Set up a struct containing the number of params and a pointer to the function
-		dataStruct d;
-		d.n = num_of_parameters;
-		d.nq = num_of_query_parameters;
-		d.f = pointer_to_function;
+	// Get length of command
+	int keyLen = strlen(command);
 
-		// Store it in the HashMap, referenced by the command name
-		_commandTable[_numCommandsAdded++](command, d);
+	// Allocate enough space for string
+	d.key = (char*)calloc(keyLen + 1, sizeof(char));
 
-		return true;
+	// Copy string into data struct
+	strcpy(d.key, command);
+
+	// Make lower case
+	for (int i = 0; d.key[i]; i++) {
+		d.key[i] = tolower(d.key[i]);
 	}
-	return false;
+
+	// Save other params
+	d.n = num_of_parameters;
+	d.nq = num_of_query_parameters;
+	d.f = pointer_to_function;
+
+	// Store it in the Vector
+	_commands.push_back(d);
+	
+}
+// Destructor: remove all the dataStructs' strings
+CommandLookup::~CommandLookup() {
+	for (int i = 0; i < _commands.size(); i++) {
+		free(_commands[i].key);
+	}
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const char* command, Vector<String> params, bool isQuery) {
+ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> params, bool isQuery) {
 
 	#ifdef DEBUG
 	Serial.print(F("callStoredCommand with n="));
@@ -32,9 +50,27 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, Vector<String
 	Serial.println(isQuery ? "TRUE" : "FALSE");
 	#endif
 
-	if (!_commandTable.exists(command)) { return COMMAND_NOT_FOUND; }
+	// Make lower case copy of command
+	char *lower_command;
+	lower_command = (char*)calloc(strlen(command) + 1, sizeof(char));
+	strcpy(lower_command, command);
+	
+	for (int i = 0; lower_command[i]; i++) {
+		lower_command[i] = tolower(lower_command[i]);
+	}
 
-	dataStruct d = _commandTable.getValueOf(command);
+	int foundInd = -1;
+	// Loop over vector searching for key
+	for (int i = 0; i < _commands.size(); i++) {
+		if (0 == strcmp(lower_command, _commands[i].key)) {
+			foundInd = i;
+			break;
+		}
+	}
+
+	if (foundInd == -1) { return COMMAND_NOT_FOUND; }
+
+	dataStruct d = _commands[foundInd];
 	commandFunction f = d.f;
 
 	#ifdef DEBUG
@@ -127,7 +163,7 @@ ExecuteError CommandHandler::executeCommand() {
 	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
 
 	// Declare a vector of Strings for the params and loop through command
-	Vector<String> paramArray = readParamsFromStr(nextCommand.c_str(), endOfCommand);
+	List<String> params = readParamsFromStr(nextCommand.c_str(), endOfCommand);
 
 	#ifdef DEBUG
 	Serial.print(F("endOfCommand: "));
@@ -135,15 +171,12 @@ ExecuteError CommandHandler::executeCommand() {
 	Serial.print(F("commandWord: "));
 	Serial.println(commandWord);
 	Serial.print(F("paramArray size: "));
-	Serial.println(paramArray.size());
-	Serial.print(F("paramArray contents: "));
-	for (int i=0; i<paramArray.size(); i++)
-		Serial.println(paramArray[i]);
+	Serial.println(params.size());
 
 	Serial.println(F("Executing..."));
 	#endif
 
-	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), paramArray, isQuery);
+	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params, isQuery);
 
 	return found;
 }
@@ -240,14 +273,14 @@ int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
 	return numParamsInCommand;
 }
 
-Vector<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand) {
+List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand) {
 
 	// Loop through the string
 	bool lastWasSpace = true;
 	int startParam = 0;
 	int endParam = 0;
 	char theParam[128]; // Buffer for the string conversion
-	Vector<String> output;
+	List<String> output;
 
 	int destInd = 0;
 
@@ -274,7 +307,7 @@ Vector<String> CommandHandler::readParamsFromStr(const char* str, int endOfComma
 				// Null terminate
 				theParam[endParam - startParam] = '\0';
 
-				// Add to vector
+				// Add to List
 				output.push_back(theParam);
 
 				// Increase index

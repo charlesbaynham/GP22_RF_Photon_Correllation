@@ -105,7 +105,6 @@ public:
 
    	size_t size() { return _list_size; }
 
-   	#ifdef DEBUG
    	void debug() {
    		listItem<Data> *p = _first;
 
@@ -114,7 +113,6 @@ public:
    			p = p->next();
    		}
    	}
-   	#endif
 
 };
 

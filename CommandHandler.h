@@ -2,9 +2,6 @@
 
 // #define DEBUG
 
-// Basic Hashmap implementation
-#include "Hashmap.h"
-
 #define COMMAND_SIZE_MAX 128 // num chars
 #define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored
 

@@ -15,10 +15,12 @@
 #define TDC_CS A1
 #define TDC_INT A0
 
+// #define DEBUG
+
 #include <math.h>
 #include <SPI.h>
 
-#include "CommandHandler/CommandHandler.h"
+#include "CommandHandler\CommandHandler.h"
 
 // Setup the GP22 with the currently stored config
 void updateTDC(const uint32_t * registers);
@@ -29,8 +31,8 @@ void readTDC();
 // Registers all the above functions with the command handler, thus defining the commands required to call them
 void registerCommands(CommandHandler * h);
 
-// Create a command handler with space for 10 commands
-CommandHandler handler(10);
+// Create a command handler
+CommandHandler handler;
 
 // Hold TDC settings
 uint32_t reg[7];
@@ -103,6 +105,10 @@ void setup() {
 void loop() {
 	if (handler.commandWaiting()) {
 		
+#ifdef DEBUG
+		Serial.println(F("Command received."));
+#endif
+
 		ExecuteError out = handler.executeCommand();
 
 		if (out) {
@@ -113,26 +119,35 @@ void loop() {
 }
 
 void serialEvent() {
-	while (Serial.available())
-		handler.addCommandChar(Serial.read());
+	while (Serial.available()) {
+		char c = Serial.read();
+
+#ifdef DEBUG
+		Serial.print(F("Adding: ["));
+		Serial.print(c, DEC);
+		Serial.println(F("]"));
+#endif
+
+		handler.addCommandChar(c);
+	}
 }
 
-void reset(Vector<String> params, bool isQuery) {
+void reset(List<String> params, bool isQuery) {
 	Serial.println("Resetting");
 	Serial.flush();
 	resetFunc();
 }
 
-void identity(Vector<String> params, bool isQuery) {
+void identity(List<String> params, bool isQuery) {
 	Serial.print(PROG_IDN);
 	Serial.print(" - ");
 	Serial.println(PROG_VER);
 }
 
-void timedMeasure(Vector<String> params, bool isQuery) {
+void timedMeasure(List<String> params, bool isQuery) {
 
 	// Number of ms to read for
-	uint32_t timePeriod = atoi(params[0].c_str());
+	uint32_t timePeriod = atoi(params.front().c_str());
 
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;
@@ -156,7 +171,7 @@ void timedMeasure(Vector<String> params, bool isQuery) {
 }
 
 // Command: "SETUp REG1 REG2 REG3 REG4 REG5 REG6 REG7" Registers as base 10 numbers
-void setupRegisters(Vector<String> params, bool isQuery) {
+void setupRegisters(List<String> params, bool isQuery) {
 
 	if (isQuery)
 	{
@@ -176,7 +191,8 @@ void setupRegisters(Vector<String> params, bool isQuery) {
 		digitalWrite(TDC_CS, HIGH);
 
 		for (int i = 0; i < params.size(); i++) {
-			reg[i] = strtol(params[i].c_str(), NULL, 0);
+			reg[i] = strtol(params.front().c_str(), NULL, 0);
+			params.pop_front();
 		}
 
 		// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
@@ -218,7 +234,7 @@ void setupRegisters(Vector<String> params, bool isQuery) {
 	}
 }
 
-void singleMeasure(Vector<String> params, bool isQuery) {
+void singleMeasure(List<String> params, bool isQuery) {
 
 	// Do the measurement
 	uint32_t result = measure();
@@ -229,7 +245,7 @@ void singleMeasure(Vector<String> params, bool isQuery) {
 }
 
 // Calibrate the TDC against the reference 32kHz clock and report the result
-void calibrateTDC(Vector<String> params, bool isQuery) {
+void calibrateTDC(List<String> params, bool isQuery) {
 
 	// Do the calibration
 	uint16_t calib = calibrate();
@@ -241,7 +257,7 @@ void calibrateTDC(Vector<String> params, bool isQuery) {
 
 // Calibrate the highspeed clock against the TDC and report the result
 // (i.e. number of high speed clock cycles in `ANZ_PER_CALRES` cycles of the ref clock)
-void calibrateResonator(Vector<String> params, bool isQuery) {
+void calibrateResonator(List<String> params, bool isQuery) {
 
 	// Do the calibration
 	uint32_t calib = calibrateHF();
@@ -251,7 +267,7 @@ void calibrateResonator(Vector<String> params, bool isQuery) {
 
 }
 
-void testConnection(Vector<String> params, bool isQuery) {
+void testConnection(List<String> params, bool isQuery) {
 	// Run the test
 	uint8_t testResult = testTDC();
 
@@ -268,7 +284,7 @@ void testConnection(Vector<String> params, bool isQuery) {
 	}
 }
 
-void getStatus(Vector<String> params, bool isQuery) { 
+void getStatus(List<String> params, bool isQuery) { 
 
 	Serial.println(readStatus(), HEX);
 
@@ -528,38 +544,36 @@ uint32_t read_bytes(uint8_t reg, bool read16bits) {
 	return result.proc32;
 }
 
-void registerCommands(CommandHandler* h) {
-  // N.B. commands are not case sensitive
-  bool passed = true;
-
-  passed &= h->registerCommand("*IDN", 0, 0, *identity);
-  passed &= h->registerCommand("*TST", 0, 0, *testConnection);
-  passed &= h->registerCommand("*RST", 0, 0, *reset);
-  passed &= h->registerCommand("MEAS", 1, 1, *timedMeasure);
-  passed &= h->registerCommand("SING", 1, 1, *singleMeasure);
-  passed &= h->registerCommand("STAT", 0, 0, *singleMeasure);
-  passed &= h->registerCommand("SETU", -1, 0, *setupRegisters);
-  passed &= h->registerCommand("*MEM", 0, 0, *availableMemory);
-  passed &= h->registerCommand("HCAL", 0, 0, *calibrateResonator);
-  passed &= h->registerCommand("CALI", 0, 0, *calibrateTDC);
-  
-  if (!passed)
-    Serial.println(F("ERROR: too many commands! Init a larger CommandHandler object."));
-}
-
 // this function will return the number of bytes currently free in RAM
 // written by David A. Mellis
 // based on code by Rob Faludi http://www.faludi.com
-void availableMemory(Vector<String> params, bool isQuery) {
-  //int size = 1024; // Use 2048 with ATmega328
-  int size = 2048;
-  byte *buf;
+void availableMemory(List<String> params, bool isQuery) {
+	//int size = 1024; // Use 2048 with ATmega328
+	int size = 2048;
+	byte *buf;
 
-  while ((buf = (byte *) malloc(--size)) == NULL)
-    ;
+	while ((buf = (byte *)malloc(--size)) == NULL)
+		;
 
-  free(buf);
+	free(buf);
 
-  Serial.print(size);
-  Serial.println(F(" bytes remain"));
+	Serial.print(size);
+	Serial.println(F(" bytes remain"));
+}
+
+
+void registerCommands(CommandHandler* h) {
+  // N.B. commands are not case sensitive
+
+	h->registerCommand("*IDN", 0, 0, *identity);
+	h->registerCommand("*TST", 0, 0, *testConnection);
+	h->registerCommand("*RST", 0, 0, *reset);
+	h->registerCommand("MEAS", 1, 1, *timedMeasure);
+	h->registerCommand("SING", 1, 1, *singleMeasure);
+	h->registerCommand("STAT", 0, 0, *singleMeasure);
+	h->registerCommand("SETU", -1, 0, *setupRegisters);
+	h->registerCommand("*MEM", 0, 0, *availableMemory);
+	h->registerCommand("HCAL", 0, 0, *calibrateResonator);
+	h->registerCommand("CALI", 0, 0, *calibrateTDC);
+  
 }

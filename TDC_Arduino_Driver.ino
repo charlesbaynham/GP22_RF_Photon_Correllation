@@ -4,10 +4,39 @@
 
 CommandHandler handler;
 
+long timer, i;
+
 void setup() {
 	Serial.begin(250000);
 	Serial.println("Launched");
 	registerCommands(&handler);
+
+	handler.addCommandChar('*');
+	handler.addCommandChar('I');
+	handler.addCommandChar('D');
+	handler.addCommandChar('n');
+	handler.addCommandChar('\n');
+
+	handler.addCommandChar('*');
+	handler.addCommandChar('i');
+	handler.addCommandChar('D');
+	handler.addCommandChar('n');
+	handler.addCommandChar('\n');
+
+	handler.addCommandChar('*');
+	handler.addCommandChar('i');
+	handler.addCommandChar('D');
+	handler.addCommandChar('n');
+	handler.addCommandChar('\n');
+
+	handler.addCommandChar('*');
+	handler.addCommandChar('i');
+	handler.addCommandChar('D');
+	handler.addCommandChar('n');
+	handler.addCommandChar('\n');
+
+	timer = millis() + 1000;
+	i = 0;
 }
 
 void loop() {
@@ -22,16 +51,20 @@ void loop() {
 			Serial.println(out);
 		}
 	}
+
+	if (millis() > timer) {
+		timer = millis() + 1000;
+
+		Serial.print(i++);
+		Serial.print(" Debug: ");
+		handler.debug();
+	}
+
 }
 
 void serialEvent() {
 	while (Serial.available()) {
 		char c = Serial.read();
-
-		Serial.print(F("Adding: ["));
-		Serial.print(c, DEC);
-		Serial.println(F("]"));
-
 		handler.addCommandChar(c);
 	}
 }

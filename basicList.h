@@ -43,15 +43,7 @@ public:
 
 	// Copy constuctor. This makes a copy of each element in the list. 
 	// If the list is large, this takes up lots of memory. To avoid this being called, use the const functions and const iterator
-	List(List const& other) {
-#ifdef DEBUG
-		if (Serial) {
-			CONSOLE_LOG(F("*** List being copied from list with first element: 0x"));
-			Serial.println((uint32_t)other._first, HEX);
-		}
-#endif
-
-	}
+	List(List const& other) = delete;
 
 	// Destructor: iterate through list and delete each ListItem
 	~List() {
@@ -192,9 +184,19 @@ public:
 		return Iterator(_first);
 	}
 
+	const Iterator begin() const {
+		// Return the first iterator
+		return Iterator_const(_first);
+	}
+
 	Iterator end() {
 		// Return a "past the end" iterator
 		return Iterator(true, _last);
+	}
+
+	Iterator_const end() const{
+		// Return a "past the end" iterator
+		return Iterator_const(true, _last);
 	}
 
    	bool isEmpty() { return _list_size == 0; }
@@ -282,6 +284,16 @@ public:
 		_isPastTheEnd(true)
 	{}
 
+	// Cast to const iterator
+	operator Iterator_const() const {
+		if (_isPastTheEnd) {
+			return Iterator_const(true, _prevItem);
+		}
+		else {
+			return Iterator_const(_currentItem);
+		}
+	}
+
 	// Postfix increment
 	Iterator operator++(int) {
 		
@@ -357,18 +369,26 @@ public:
 
 template<typename Data>
 class List<Data>::Iterator_const : public List<Data>::Iterator {
-	
+
+public:
+	// Normal constructor
+	Iterator_const(ListItem * startingItem) :
+		Iterator(startingItem) {}
+
+	// Constuctor for "past the end" iterators
+	Iterator_const(bool pastTheEnd, ListItem * lastItem) :
+		Iterator(pastTheEnd, lastItem) {}
 	
 	// Redefine dereferencing as a const operation
-	Data test() {
-		if (NULL != _currentItem) {
-			return _currentItem->getData();
+	const Data operator*() const {
+		if (NULL != this->_currentItem) {
+			return this->_currentItem->getData();
 		}
 		else
 		{
 			// Error! This should never happen but, if it does, reset the microprocessor
 			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator");
-			resetFunc();
+			this->resetFunc();
 		}
 	}
 

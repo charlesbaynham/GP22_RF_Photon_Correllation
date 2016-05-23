@@ -297,21 +297,20 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 	CONSOLE_LOG(F("readParamsFromStr: Running with command str: "));
 	CONSOLE_LOG_LN(str);
 
-	int destInd = 0;
 
 	for (int i = endOfCommand + 1; i <= strlen(str); i++) {
-		if (str[i] != ' ' && str[i] != '\0') {
+		if (str[i] != ' ' && str[i] != '\0') { // if this char is NOT a space or NULL char
 
 			if (lastWasSpace) {
 				// We found the start of a param
 				startParam = i;
 				CONSOLE_LOG(F("readParamsFromStr: Start of param found at "));
 				CONSOLE_LOG_LN(startParam);
-			}
 
-			lastWasSpace = false;
+				lastWasSpace = false;
+			}
 		}
-		else // if this char is a normal char (not a space or NULL char)
+		else // if this char is a space or NULL char
 		{
 			if (! lastWasSpace) {
 				// We found the end of a param

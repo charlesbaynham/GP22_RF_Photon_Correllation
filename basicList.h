@@ -39,6 +39,17 @@ public:
 		}
 	};
 
+	// Copy constuctor. This makes a copy of each element in the list. 
+	// If the list is large, this takes up lots of memory. To avoid this being called, use the const functions and const iterator
+	List(List const& other) {
+#ifdef DEBUG
+		if (Serial) {
+			CONSOLE_LOG(F("*** List being copied from list with first element: 0x"));
+			Serial.println((uint32_t)other._first, HEX);
+		}
+#endif
+	}
+
 	// Destructor: iterate through list and delete each ListItem
 	~List() {
 		

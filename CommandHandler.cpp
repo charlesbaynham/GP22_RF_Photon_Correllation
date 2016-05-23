@@ -1,6 +1,6 @@
 #pragma once
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define CONSOLE_LOG(s)  Serial.print(s)
@@ -39,7 +39,7 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 	d.nq = num_of_query_parameters;
 	d.f = pointer_to_function;
 
-	// Store it in the Vector
+	// Store it in the List
 	_commandList.push_back(d);
 	
 }
@@ -85,6 +85,11 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 	// Return error if too few parameters
 	if (isQuery) {
 		if (d.nq != params.size() && d.nq != -1) {
+			CONSOLE_LOG(F("ERROR: Expecting "));
+			CONSOLE_LOG(d.nq);
+			CONSOLE_LOG(F(" parameters but got "));
+			CONSOLE_LOG_LN(params.size()); 
+			
 			return WRONG_NUM_OF_PARAMS;
 		}
 	}
@@ -113,6 +118,8 @@ ExecuteError CommandHandler::executeCommand() {
 	if (_commandQueue.isEmpty())
 		return NO_COMMAND_WAITING;
 
+	CONSOLE_LOG_LN(F("executeCommand: Popping from _commandQueue"));
+
 	// Load and remove the next command from the queue
 	String nextCommand = _commandQueue.front();
 	_commandQueue.pop_front();
@@ -131,17 +138,14 @@ ExecuteError CommandHandler::executeCommand() {
 		return EMPTY_COMMAND_STRING;
 	}
 
+	CONSOLE_LOG_LN(F("Running findEndOfCommand..."));
 	// The location in the string where the command ends and the params start
 	int endOfCommand = findEndOfCommand(nextCommand.c_str());
 
 	// If this failed, quit with an error
 	if (endOfCommand < 0) {
 
-		CONSOLE_LOG(F("NextCommand: "));
-		CONSOLE_LOG_LN(nextCommand);
-		CONSOLE_LOG(F("endOfCommand: "));
-		CONSOLE_LOG_LN(endOfCommand);
-
+		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));	
 		return ERROR_PARSING_COMMAND;
 	}
 
@@ -158,17 +162,16 @@ ExecuteError CommandHandler::executeCommand() {
 	// Count the number of parameters in the string
 	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
 
-	// Declare a vector of Strings for the params and loop through command
+	CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
+	// Declare a List of Strings for the params and loop through command
 	List<String> params = readParamsFromStr(nextCommand.c_str(), endOfCommand);
 
-	CONSOLE_LOG(F("endOfCommand: "));
-	CONSOLE_LOG_LN(endOfCommand);
 	CONSOLE_LOG(F("commandWord: "));
 	CONSOLE_LOG_LN(commandWord);
 	CONSOLE_LOG(F("paramArray size: "));
 	CONSOLE_LOG_LN(params.size());
 
-	CONSOLE_LOG_LN(F("Executing..."));
+	CONSOLE_LOG_LN(F("Running callStoredCommand..."));
 
 	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params, isQuery);
 
@@ -291,6 +294,9 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 	char theParam[128]; // Buffer for the string conversion
 	List<String> output;
 
+	CONSOLE_LOG(F("readParamsFromStr: Running with command str: "));
+	CONSOLE_LOG_LN(str);
+
 	int destInd = 0;
 
 	for (int i = endOfCommand + 1; i <= strlen(str); i++) {
@@ -299,6 +305,8 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 			if (lastWasSpace) {
 				// We found the start of a param
 				startParam = i;
+				CONSOLE_LOG(F("readParamsFromStr: Start of param found at "));
+				CONSOLE_LOG_LN(startParam);
 			}
 
 			lastWasSpace = false;
@@ -308,6 +316,10 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 			if (! lastWasSpace) {
 				// We found the end of a param
 				endParam = i;
+
+				CONSOLE_LOG(F("readParamsFromStr: End of param found at "));
+				CONSOLE_LOG_LN(endParam);
+
 				// ...so process it
 
 				// Copy the param into a new string, `theParam`
@@ -316,8 +328,18 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 				// Null terminate
 				theParam[endParam - startParam] = '\0';
 
+				CONSOLE_LOG(F("readParamsFromStr: theParam contains: "));
+				CONSOLE_LOG(theParam);
+				CONSOLE_LOG(F(" with strlen: "));
+				CONSOLE_LOG_LN(strlen(theParam));
+
 				// Add to List
-				output.push_back(theParam);
+				output.push_back(String(theParam));
+
+				CONSOLE_LOG(F("readParamsFromStr: output contains: "));
+#ifdef DEBUG
+				output.debug();
+#endif
 
 				// Increase index
 				destInd++;

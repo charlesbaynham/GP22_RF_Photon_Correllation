@@ -19,7 +19,9 @@ class List {
 
 public:
 	// Class for an iterator to iterate over this list
-	class Iterator; 
+	class Iterator;
+	// Class for a constant iterator, guaranteeing no changes to the list
+	class Iterator_const;
 
 protected:
 	// Class for items in this list
@@ -48,6 +50,7 @@ public:
 			Serial.println((uint32_t)other._first, HEX);
 		}
 #endif
+
 	}
 
 	// Destructor: iterate through list and delete each ListItem
@@ -240,6 +243,8 @@ class List<Data>::ListItem {
 
 		Data getData() { return _d; }
 
+		const Data getConstData() { return _d; }
+
 		void setPrevPointer(ListItem * newPrev) { _prevItem = newPrev; }
 		void setNextPointer(ListItem * newNext) { _nextItem = newNext; }
 		
@@ -250,6 +255,8 @@ class List<Data>::ListItem {
 
 template<typename Data>
 class List<Data>::Iterator {
+
+protected:
 
 	ListItem *_prevItem, *_nextItem, *_currentItem;
 	bool _isPastTheEnd;
@@ -321,7 +328,7 @@ public:
 	}
 
 	// Overload dereferencing
-	Data operator*() {
+	virtual Data operator*() {
 		if (NULL != _currentItem) {
 			return _currentItem->getData();
 		}
@@ -345,5 +352,24 @@ public:
 
 	// Check inequality
 	bool operator!=(const Iterator a) const { return !(a == *this); }
+
+};
+
+template<typename Data>
+class List<Data>::Iterator_const : public List<Data>::Iterator {
+	
+	
+	// Redefine dereferencing as a const operation
+	Data test() {
+		if (NULL != _currentItem) {
+			return _currentItem->getData();
+		}
+		else
+		{
+			// Error! This should never happen but, if it does, reset the microprocessor
+			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator");
+			resetFunc();
+		}
+	}
 
 };

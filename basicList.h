@@ -21,6 +21,10 @@ protected:
 	// Class for items in this list
 	class ListItem;
 
+public:
+	// Class for an iterator to iterate over this list
+	class Iterator;
+
 private:
 	size_t _list_size; // Stores no. of actually stored objects
 
@@ -200,5 +204,33 @@ class List<Data>::ListItem {
 		
 		ListItem *next() { return _nextItem; }
 		ListItem *prev() { return _prevItem; }
+
+};
+
+template<typename Data>
+class List<Data>::Iterator {
+
+	ListItem * _currentItem;
+
+	Iterator(ListItem * startingItem) :
+		_currentItem(startingItem) {}
+
+	// Overload addition
+	Iterator operator++() {
+		if (NULL != _currentItem) {
+			_currentItem = _currentItem->next();
+		}
+
+		return *this;
+	}
+
+	// Overload subtraction
+	Iterator operator--() {
+		if (NULL != _currentItem) {
+			_currentItem = _currentItem->prev();
+		}
+
+		return *this;
+	}
 
 };

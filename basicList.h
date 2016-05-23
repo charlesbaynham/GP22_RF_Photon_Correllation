@@ -15,30 +15,35 @@
 #endif
 
 template<typename Data>
-class listItem;
-
-template<typename Data>
 class List {
 
-    size_t _list_size; // Stores no. of actually stored objects
-    
-    // Pointers to first and last objects
-    listItem<Data> *_first;
-    listItem<Data> *_last;
+protected:
+	// Class for items in this list
+	class ListItem;
+
+private:
+	size_t _list_size; // Stores no. of actually stored objects
+
+	// Pointers to first and last objects
+	ListItem *_first;
+	ListItem *_last;
+
 public:
     List() : _list_size(0), _first(NULL), _last(NULL) {}; // Default constructor
 
+	
+
 	void push_front(Data item) {
 		// Get pointer to current first item
-		listItem<Data> *previousFirst = _first;
+		ListItem *previousFirst = _first;
 
 		CONSOLE_LOG(F("push_front: Pointer to current first item is: "));
 #ifdef DEBUG
 		Serial.println((uint32_t)previousFirst, HEX);
 #endif
 
-		// Make new listItem
-		listItem<Data> *newFirst = new listItem<Data> (item, NULL, previousFirst);
+		// Make new ListItem
+		ListItem *newFirst = new ListItem (item, NULL, previousFirst);
 
 		// Point old front item at the new one
 		if (NULL != previousFirst) {
@@ -62,7 +67,7 @@ public:
    	void pop_front() {
 
 		// Get pointer to second item
-		listItem<Data> *second = _first->next();
+		ListItem *second = _first->next();
 
 		// Free first item
 		delete _first;
@@ -87,10 +92,10 @@ public:
 
    	void push_back(Data item) {
 		// Get pointer to current last item
-		listItem<Data> *previousLast = _last;
+		ListItem *previousLast = _last;
 
-		// Make new listItem
-		listItem<Data> *newLast = new listItem<Data> (item, previousLast, NULL);
+		// Make new ListItem
+		ListItem *newLast = new ListItem (item, previousLast, NULL);
 
 		// Point old back item at the new one
 		if (NULL != previousLast) {
@@ -114,7 +119,7 @@ public:
    	void pop_back() {
 
 		// Get pointer to penultimate item
-		listItem<Data> *penult = _last->prev();
+		ListItem *penult = _last->prev();
 
 		// Free Last item
 		delete _last;
@@ -149,7 +154,7 @@ public:
    	size_t size() { return _list_size; }
 
    	void debug() {
-   		listItem<Data> *p = _first;
+   		ListItem *p = _first;
 
    		while (NULL != p) {
 			Serial.print("'");
@@ -172,30 +177,28 @@ public:
 		Serial.println(_list_size);
 	}
 
+	
+
 };
 
 template<typename Data>
-class listItem {
-
-	friend class List<Data>;
+class List<Data>::ListItem {
 
 	Data _d;
-	listItem<Data> *_nextItem;
-	listItem<Data> *_prevItem;
+	ListItem *_nextItem;
+	ListItem *_prevItem;
 
 	public:
 
-		listItem(Data d, listItem *prev, listItem *next) :
+		ListItem(Data d, ListItem *prev, ListItem *next) :
 		_d(d), _nextItem(next), _prevItem(prev) {}
 
 		Data getData() { return _d; }
 
-	private:
-
-		void setPrevPointer(listItem * newPrev) { _prevItem = newPrev; }
-		void setNextPointer(listItem * newNext) { _nextItem = newNext; }
+		void setPrevPointer(ListItem * newPrev) { _prevItem = newPrev; }
+		void setNextPointer(ListItem * newNext) { _nextItem = newNext; }
 		
-		listItem *next() { return _nextItem; }
-		listItem *prev() { return _prevItem; }
+		ListItem *next() { return _nextItem; }
+		ListItem *prev() { return _prevItem; }
 
 };

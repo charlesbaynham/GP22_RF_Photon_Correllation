@@ -201,8 +201,10 @@ void CommandHandler::addCommandChar(const char c) {
 			_commandQueue.push_back(String(_inputBuffer));
 		}
 
+#ifdef DEBUG
 		CONSOLE_LOG_LN(F("_commandQueue contains:"));
 		_commandQueue.debug();
+#endif
 
 		// Clear the input buffer
 		_inputBuffer[0] = '\0';

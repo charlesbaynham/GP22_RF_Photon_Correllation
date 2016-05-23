@@ -196,11 +196,6 @@ void CommandHandler::addCommandChar(const char c) {
 		_commandQueue.push_back(String(_inputBuffer));
 
 		#ifdef DEBUG
-		// Add twice for debugging
-		_commandQueue.push_back(String(_inputBuffer));
-		#endif
-
-		#ifdef DEBUG
 		Serial.println(F("_commandQueue contains:"));
 		_commandQueue.debug();
 		#endif

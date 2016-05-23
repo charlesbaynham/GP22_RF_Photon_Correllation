@@ -21,5 +21,8 @@
     <ClInclude Include="Visual Micro\.TDC_Arduino_Driver.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="__vm\.TDC_Arduino_Driver.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

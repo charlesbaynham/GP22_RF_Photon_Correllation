@@ -23,6 +23,9 @@ void setup() {
 	handler.addCommandChar('n');
 	handler.addCommandChar('\n');
 
+	handler.executeCommand();
+	handler.executeCommand();
+
 	handler.addCommandChar('*');
 	handler.addCommandChar('i');
 	handler.addCommandChar('D');
@@ -52,14 +55,6 @@ void loop() {
 		}
 	}
 
-	if (millis() > timer) {
-		timer = millis() + 1000;
-
-		Serial.print(i++);
-		Serial.print(" Debug: ");
-		handler.debug();
-	}
-
 }
 
 void serialEvent() {
@@ -70,7 +65,7 @@ void serialEvent() {
 }
 
 void doNothing(List<String> params, bool isQuery) {
-	Serial.println("Nothing done");
+	Serial.println(" ***** Nothing done ***** ");
 }
 
 void registerCommands(CommandHandler* h) {

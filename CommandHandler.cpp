@@ -40,14 +40,8 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 	d.f = pointer_to_function;
 
 	// Store it in the Vector
-	_commands.push_back(d);
+	_commandList.push_back(d);
 	
-}
-// Destructor: remove all the dataStructs' strings
-CommandLookup::~CommandLookup() {
-	for (int i = 0; i < _commands.size(); i++) {
-		free(_commands[i].key);
-	}
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
@@ -67,18 +61,17 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 		lower_command[i] = tolower(lower_command[i]);
 	}
 
-	int foundInd = -1;
-	// Loop over vector searching for key
-	for (int i = 0; i < _commands.size(); i++) {
-		if (0 == strcmp(lower_command, _commands[i].key)) {
-			foundInd = i;
+	// Iterate through list searching for key
+	List<dataStruct>::Iterator it = _commandList.begin();
+	for (; it != _commandList.end(); it++) {
+		if (0 == strcmp(lower_command, (*it).key)) {
 			break;
 		}
 	}
 
-	if (foundInd == -1) { return COMMAND_NOT_FOUND; }
+	if (it == _commandList.end()) { return COMMAND_NOT_FOUND; }
 
-	dataStruct d = _commands[foundInd];
+	dataStruct d = *it;
 	commandFunction f = d.f;
 
 	CONSOLE_LOG(F("Recalled data: d.n = "));

@@ -5,7 +5,6 @@
 #define COMMAND_SIZE_MAX 128 // num chars
 #define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored
 
-#include "basicVector.h"
 #include "basicList.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
@@ -38,8 +37,6 @@
 
 		CommandLookup() {}
 
-		~CommandLookup();
-
 		// Add a new command to the list
 		void registerCommand(const char* command, int num_of_parameters,
 			int num_of_query_parameters, commandFunction pointer_to_function);
@@ -49,7 +46,7 @@
 
 	protected:
 
-		Vector<dataStruct> _commands;
+		List<dataStruct> _commandList;
 	};
 
 //////////////////////  COMMAND HANDLER  //////////////////////

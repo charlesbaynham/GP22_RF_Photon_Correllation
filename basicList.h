@@ -35,6 +35,18 @@ public:
 	// Default constructor
 	List() : _list_size(0), _first(NULL), _last(NULL) {};
 
+	// Destructor: iterate through list and delete each ListItem
+	~List() {
+		ListItem * currentItem = _first;
+
+		while (currentItem != NULL) {
+			ListItem * nextItem = currentItem->next();
+			delete currentItem;
+			currentItem = nextItem;
+		}
+	}
+
+
 	void push_front(Data item) {
 		// Get pointer to current first item
 		ListItem *previousFirst = _first;
@@ -295,7 +307,7 @@ public:
 		else
 		{
 			// Error! This should never happen but, if it does, reset the microprocessor
-			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator")
+			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator");
 			resetFunc();
 		}
 	}

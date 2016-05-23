@@ -1,57 +1,32 @@
 // Test command handler
 
-#include "CommandHandler/CommandHandler.h"
+#include "CommandHandler/basicList.h"
 
-CommandHandler handler;
-
+void loopFunc(const List<String>& testList);
+		
 void setup() {
+
 	Serial.begin(250000);
 	Serial.println("Launched");
-	registerCommands(&handler);
+
+	List<String> testList;
+
+	testList.push_back("Hello");
+	testList.push_back("world");
+	testList.push_back("again!");
+
+	loopFunc(testList);
 }
 
-void loop() {
-	if (handler.commandWaiting()) {
+void loop() {}
 
-		ExecuteError out = handler.executeCommand();
+void loopFunc(const List<String>& testList)  {
 
-		if (out) {
-			Serial.print(F("Error in command: ExecuteError code "));
-			Serial.println(out);
-		}
+	List<String>::Iterator_const it = testList.begin();
+
+	for (; it != testList.end(); it++) {
+		Serial.print("Looping: ");
+		Serial.println(*it);
 	}
-}
-
-void serialEvent() {
-	while (Serial.available()) {
-		char c = Serial.read();
-
-		handler.addCommandChar(c);
-	}
-}
-
-void doNothing(List<String> params, bool isQuery) {
-	extern int *__brkval;
-	int testVar;
-
-	Serial.print(F("End of heap: "));
-	Serial.print((uint32_t)__brkval);
-	Serial.print(F(", start of stack: "));
-	Serial.println((uint32_t)&testVar);
-}
-
-void registerCommands(CommandHandler* h) {
-	// N.B. commands are not case sensitive
-
-	h->registerCommand("*IDN", 0, 0, *doNothing);
-	h->registerCommand("*TST", 0, 0, *doNothing);
-	h->registerCommand("*RST", 0, 0, *doNothing);
-	h->registerCommand("MEAS", 1, 1, *doNothing);
-	h->registerCommand("SING", 1, 1, *doNothing);
-	h->registerCommand("STAT", 0, 0, *doNothing);
-	h->registerCommand("SETU", -1, 0, *doNothing);
-	h->registerCommand("*MEM", 0, 0, *doNothing);
-	h->registerCommand("HCAL", 0, 0, *doNothing);
-	h->registerCommand("CALI", 0, 0, *doNothing);
 
 }

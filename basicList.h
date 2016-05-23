@@ -17,15 +17,14 @@
 template<typename Data>
 class List {
 
+public:
+	// Class for an iterator to iterate over this list
+	class Iterator; 
+
 protected:
 	// Class for items in this list
 	class ListItem;
 
-public:
-	// Class for an iterator to iterate over this list
-	class Iterator;
-
-private:
 	size_t _list_size; // Stores no. of actually stored objects
 
 	// Pointers to first and last objects
@@ -33,9 +32,8 @@ private:
 	ListItem *_last;
 
 public:
-    List() : _list_size(0), _first(NULL), _last(NULL) {}; // Default constructor
-
-	
+	// Default constructor
+	List() : _list_size(0), _first(NULL), _last(NULL) {};
 
 	void push_front(Data item) {
 		// Get pointer to current first item
@@ -153,6 +151,16 @@ public:
    		return _last->getData();
    	}
 
+	Iterator begin() {
+		// Return the first iterator
+		return Iterator(_first);
+	}
+
+	Iterator end() {
+		// Return a "past the end" iterator
+		return Iterator(true, _last);
+	}
+
    	bool isEmpty() { return _list_size == 0; }
 
    	size_t size() { return _list_size; }
@@ -195,7 +203,7 @@ class List<Data>::ListItem {
 	public:
 
 		ListItem(Data d, ListItem *prev, ListItem *next) :
-		_d(d), _nextItem(next), _prevItem(prev) {}
+			_d(d), _nextItem(next), _prevItem(prev) {}
 
 		Data getData() { return _d; }
 
@@ -210,27 +218,99 @@ class List<Data>::ListItem {
 template<typename Data>
 class List<Data>::Iterator {
 
-	ListItem * _currentItem;
+	ListItem *_prevItem, *_nextItem, *_currentItem;
+	bool _isPastTheEnd;
 
+	// Reset the microprocessor in case of emergency segfault
+	void(*resetFunc) (void) = 0;
+
+public:
+
+	// Normal constructor
 	Iterator(ListItem * startingItem) :
-		_currentItem(startingItem) {}
+		_currentItem(startingItem),
+		_prevItem(startingItem->prev()),
+		_nextItem(startingItem->next()), 
+		_isPastTheEnd(false) 
+	{}
 
-	// Overload addition
-	Iterator operator++() {
-		if (NULL != _currentItem) {
-			_currentItem = _currentItem->next();
+	// Constuctor for "past the end" iterators
+	Iterator(bool pastTheEnd, ListItem * lastItem) :
+		_currentItem(NULL),
+		_prevItem(lastItem),
+		_nextItem(NULL),
+		_isPastTheEnd(true)
+	{}
+
+	// Postfix increment
+	Iterator operator++(int) {
+		
+		// If there's a next element, iterate to it
+		if (NULL != _nextItem) {
+
+			_prevItem = _currentItem;
+			_currentItem = _nextItem;
+			_nextItem = _nextItem->next();
+
+		}
+		else {
+			// If not, we've reached the end, so become a past the end iterator
+			_prevItem = _prevItem->next();
+			_currentItem = NULL;
+			_nextItem = NULL;
+
+			_isPastTheEnd = true;
 		}
 
 		return *this;
 	}
 
-	// Overload subtraction
-	Iterator operator--() {
-		if (NULL != _currentItem) {
-			_currentItem = _currentItem->prev();
+	// Postfix decrement
+	Iterator operator--(int) {
+		
+		// If there's a previous element, iterate to it
+		if (NULL != _prevItem) {
+			
+			_nextItem = _currentItem;
+			_currentItem = _prevItem;
+			_prevItem = _prevItem->prev();
+
+			_isPastTheEnd = false;
+		}
+		else {
+			// If not, we've reached the front so this behaviour is undefined! 
+			_prevItem = NULL;
+			_currentItem = NULL;
+			_nextItem = _currentItem;
 		}
 
 		return *this;
 	}
+
+	// Overload dereferencing
+	Data operator*() {
+		if (NULL != _currentItem) {
+			return _currentItem->getData();
+		}
+		else
+		{
+			// Error! This should never happen but, if it does, reset the microprocessor
+			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator")
+			resetFunc();
+		}
+	}
+
+	// Check equality
+	bool operator==(const Iterator a) const {
+		
+		if (_isPastTheEnd && a._isPastTheEnd) {
+			return _prevItem == a._prevItem;
+		}
+
+		return a._currentItem == _currentItem;
+	}
+
+	// Check inequality
+	bool operator!=(const Iterator a) const { return !(a == *this); }
 
 };

@@ -59,6 +59,7 @@
 	public:
 		CommandHandler() :
 			_lookupList(),
+			_command_too_long(false),
 			_bufferLength(0) { _inputBuffer[0] = '\0'; }
 
 		// Wipe any char*s left in the queue or buffer
@@ -103,6 +104,9 @@
 		// A buffer for receiving new commands
 		char _inputBuffer[COMMAND_SIZE_MAX + 1];
 		int _bufferLength;
+
+		// A flag to report that the command currently being received has overrun
+		bool _command_too_long;
 
 		// Find the location in a command string where the command ends and the params start
 		int findEndOfCommand(const char* str) ;

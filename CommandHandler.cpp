@@ -1,5 +1,15 @@
 #pragma once
 
+// #define DEBUG
+
+#ifdef DEBUG
+#define CONSOLE_LOG(s)  Serial.print(s)
+#define CONSOLE_LOG_LN(s)  Serial.println(s)
+#else
+#define CONSOLE_LOG(s) 
+#define CONSOLE_LOG_LN(s)
+#endif
+
 #include "CommandHandler.h"
 
 // Add a new command to the list
@@ -43,13 +53,11 @@ CommandLookup::~CommandLookup() {
 // Search the list of commands for the given command and execute it with the given parameter array
 ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> params, bool isQuery) {
 
-	#ifdef DEBUG
-	Serial.print(F("callStoredCommand with n="));
-	Serial.print(params.size());
-	Serial.print(F(", isquery = "));
-	Serial.println(isQuery ? "TRUE" : "FALSE");
-	#endif
-
+	CONSOLE_LOG(F("callStoredCommand with n="));
+	CONSOLE_LOG(params.size());
+	CONSOLE_LOG(F(", isquery = "));
+	CONSOLE_LOG_LN(isQuery ? "TRUE" : "FALSE");
+	
 	// Make lower case copy of command
 	char *lower_command;
 	lower_command = (char*)calloc(strlen(command) + 1, sizeof(char));
@@ -73,12 +81,10 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 	dataStruct d = _commands[foundInd];
 	commandFunction f = d.f;
 
-	#ifdef DEBUG
-	Serial.print(F("Recalled data: d.n = "));
-	Serial.print(d.n);
-	Serial.print(F(", d.nq = "));
-	Serial.println(d.nq);
-	#endif
+	CONSOLE_LOG(F("Recalled data: d.n = "));
+	CONSOLE_LOG(d.n);
+	CONSOLE_LOG(F(", d.nq = "));
+	CONSOLE_LOG_LN(d.nq);
 
 	// Return error if too few parameters
 	if (isQuery) {
@@ -88,12 +94,10 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 	}
 	else {
 		if (d.n != params.size() && d.n != -1) {
-			#ifdef DEBUG
-			Serial.print(F("ERROR: Expecting "));
-			Serial.print(d.n);
-			Serial.print(F(" parameters but got "));
-			Serial.println(params.size());
-			#endif
+			CONSOLE_LOG(F("ERROR: Expecting "));
+			CONSOLE_LOG(d.n);
+			CONSOLE_LOG(F(" parameters but got "));
+			CONSOLE_LOG_LN(params.size());
 
 			return WRONG_NUM_OF_PARAMS;
 		}
@@ -107,9 +111,7 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 // Execute the next command in the queue
 ExecuteError CommandHandler::executeCommand() {
 	
-	#ifdef DEBUG
-	Serial.println(F("Execute command"));
-	#endif
+	CONSOLE_LOG_LN(F("Execute command"));
 
 	// Return error code -3 if no command waiting
 	if (_commandQueue.isEmpty())
@@ -119,13 +121,13 @@ ExecuteError CommandHandler::executeCommand() {
 	String nextCommand = _commandQueue.front();
 	_commandQueue.pop_front();
 
-	#ifdef DEBUG
-	Serial.print(F("Command is: "));
-	Serial.println(nextCommand);
+	CONSOLE_LOG(F("Command is: "));
+	CONSOLE_LOG_LN(nextCommand);
 
-	Serial.println(F("_commandQueue now contains:"));
+	CONSOLE_LOG_LN(F("_commandQueue now contains:"));
+#ifdef DEBUG
 	_commandQueue.debug();
-	#endif
+#endif
 
 	// Return error code if string is empty
 	if (nextCommand.length() == 0)
@@ -139,12 +141,10 @@ ExecuteError CommandHandler::executeCommand() {
 	// If this failed, quit with an error
 	if (endOfCommand < 0) {
 
-		#ifdef DEBUG
-		Serial.print(F("NextCommand: "));
-		Serial.println(nextCommand);
-		Serial.print(F("endOfCommand: "));
-		Serial.println(endOfCommand);
-		#endif
+		CONSOLE_LOG(F("NextCommand: "));
+		CONSOLE_LOG_LN(nextCommand);
+		CONSOLE_LOG(F("endOfCommand: "));
+		CONSOLE_LOG_LN(endOfCommand);
 
 		return ERROR_PARSING_COMMAND;
 	}
@@ -165,16 +165,14 @@ ExecuteError CommandHandler::executeCommand() {
 	// Declare a vector of Strings for the params and loop through command
 	List<String> params = readParamsFromStr(nextCommand.c_str(), endOfCommand);
 
-	#ifdef DEBUG
-	Serial.print(F("endOfCommand: "));
-	Serial.println(endOfCommand);
-	Serial.print(F("commandWord: "));
-	Serial.println(commandWord);
-	Serial.print(F("paramArray size: "));
-	Serial.println(params.size());
+	CONSOLE_LOG(F("endOfCommand: "));
+	CONSOLE_LOG_LN(endOfCommand);
+	CONSOLE_LOG(F("commandWord: "));
+	CONSOLE_LOG_LN(commandWord);
+	CONSOLE_LOG(F("paramArray size: "));
+	CONSOLE_LOG_LN(params.size());
 
-	Serial.println(F("Executing..."));
-	#endif
+	CONSOLE_LOG_LN(F("Executing..."));
 
 	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params, isQuery);
 
@@ -187,29 +185,42 @@ void CommandHandler::addCommandChar(const char c) {
 	// If c is a newline, store the buffer in the queue and start a new buffer
 	if (c == '\n') {
 
-		#ifdef DEBUG
-		Serial.print(F("Storing in _commandQueue: "));
-		Serial.println(_inputBuffer);
-		#endif
+		CONSOLE_LOG(F("Newline received: storing in _commandQueue: "));
+		CONSOLE_LOG_LN(String(_inputBuffer));
 
-		// Add the new command to the queue
-		_commandQueue.push_back(String(_inputBuffer));
+		// Should we ignore this command?
+		if (_command_too_long) {
+			// Reset the `_command_too_long` flag
+			_command_too_long = false;
 
-		#ifdef DEBUG
-		Serial.println(F("_commandQueue contains:"));
+			CONSOLE_LOG_LN(F("Ignoring command since too long"));
+		}
+		else {
+			CONSOLE_LOG_LN(F("Adding command to queue"));
+			// Add the new command to the queue
+			_commandQueue.push_back(String(_inputBuffer));
+		}
+
+		CONSOLE_LOG_LN(F("_commandQueue contains:"));
 		_commandQueue.debug();
-		#endif
 
 		// Clear the input buffer
 		_inputBuffer[0] = '\0';
 		_bufferLength = 0;
 	}
 	// if c is a carridge return, ignore it
-	else if (c == '\r') {}
+	else if (c == '\r') {
+		CONSOLE_LOG_LN(F("Ignoring a \r"));
+	}
 	// else c is a normal char, so add it to the buffer
 	else {
-		if (_bufferLength >= COMMAND_SIZE_MAX)
+		if (_command_too_long || _bufferLength >= COMMAND_SIZE_MAX)
 		{
+			// Command was too long! Set the `_command_too_long` flag to chuck away all subsequent chars until next newline
+			CONSOLE_LOG_LN(F("ERROR: command too long!"));
+
+			_command_too_long = true;
+
 			return;
 		}
 		else
@@ -219,6 +230,11 @@ void CommandHandler::addCommandChar(const char c) {
 			_bufferLength++;
 
 			_inputBuffer[_bufferLength] = '\0';
+
+			CONSOLE_LOG(F("Char received: '"));
+			CONSOLE_LOG(c);
+			CONSOLE_LOG(F("', Buffer length: "));
+			CONSOLE_LOG_LN(_bufferLength);
 			
 		}
 	}

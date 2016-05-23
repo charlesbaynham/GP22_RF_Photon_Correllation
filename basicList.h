@@ -2,6 +2,16 @@
 
 // Minimal class to replace std::list
 
+// #define DEBUG
+
+#ifdef DEBUG
+#define CONSOLE_LOG(s)  Serial.print(s)
+#define CONSOLE_LOG_LN(s)  Serial.println(s)
+#else
+#define CONSOLE_LOG(s) 
+#define CONSOLE_LOG_LN(s)
+#endif
+
 template<typename Data>
 class listItem;
 
@@ -20,6 +30,11 @@ public:
 		// Get pointer to current first item
 		listItem<Data> *previousFirst = _first;
 
+		CONSOLE_LOG(F("push_front: Pointer to current first item is: "));
+#ifdef DEBUG
+		Serial.println((uint32_t)previousFirst, HEX);
+#endif
+
 		// Make new listItem
 		listItem<Data> *newFirst = new listItem<Data> (item, NULL, previousFirst);
 
@@ -36,6 +51,10 @@ public:
 
 		// Increment size
 		_list_size++;
+
+#ifdef DEBUG
+		debug_front_back("push_front");
+#endif
    	}
 
    	void pop_front() {
@@ -46,12 +65,22 @@ public:
 		// Free first item
 		delete _first;
 
-		// Update pointers
-		second->setPrevPointer(NULL);
+		// If there's a second element, update its pointers
+		if (NULL != second) {
+			second->setPrevPointer(NULL);
+		} // If there was no other element, this is the only one so it's also the last
+		else {
+			_last = NULL;
+		}
+		
 		_first = second;
 
 		// Update count
 		_list_size--;
+
+#ifdef DEBUG
+		debug_front_back("pop_front");
+#endif
    	}
 
    	void push_back(Data item) {
@@ -74,6 +103,10 @@ public:
 
 		// Increment size
 		_list_size++;
+
+#ifdef DEBUG
+		debug_front_back("push_back");
+#endif
    	}
 
    	void pop_back() {
@@ -84,12 +117,22 @@ public:
 		// Free Last item
 		delete _last;
 
-		// Update pointers
-		penult->setNextPointer(NULL);
+		// If there's a penultimate element, update its pointers
+		if (NULL != penult) {
+			penult->setNextPointer(NULL);
+		} // If there was no other element, this is the only one so it's also the first
+		else {
+			_first = NULL;
+		}
+
 		_last = penult;
 
 		// Update count
 		_list_size--;
+
+#ifdef DEBUG
+		debug_front_back("pop_back");
+#endif
    	}
 
    	Data front() {
@@ -114,6 +157,20 @@ public:
    		}
 		Serial.println();
    	}
+
+#ifdef DEBUG
+	void debug_front_back(const char * ident) {
+		CONSOLE_LOG(ident); 
+		CONSOLE_LOG(F(": first: 0x"));
+		Serial.println((uint32_t)_first, HEX);
+		CONSOLE_LOG(ident);
+		CONSOLE_LOG(F(": last: 0x"));
+		Serial.println((uint32_t)_last, HEX);
+		CONSOLE_LOG(ident); 
+		CONSOLE_LOG(F(": length: "));
+		CONSOLE_LOG_LN(_list_size);
+	}
+#endif
 
 };
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 // Minimal class to replace std::list
 
 // #define DEBUG
@@ -158,19 +160,17 @@ public:
 		Serial.println();
    	}
 
-#ifdef DEBUG
 	void debug_front_back(const char * ident) {
-		CONSOLE_LOG(ident); 
-		CONSOLE_LOG(F(": first: 0x"));
-		Serial.println((uint32_t)_first, HEX);
-		CONSOLE_LOG(ident);
-		CONSOLE_LOG(F(": last: 0x"));
-		Serial.println((uint32_t)_last, HEX);
-		CONSOLE_LOG(ident); 
-		CONSOLE_LOG(F(": length: "));
-		CONSOLE_LOG_LN(_list_size);
+		Serial.print(ident); 
+		Serial.print(F(": first: 0x"));
+		Serial.print((uint32_t)_first, HEX);
+		Serial.print(", ");
+		Serial.print(F(": last: 0x"));
+		Serial.print((uint32_t)_last, HEX);
+		Serial.print(", ");
+		Serial.print(F(": length: "));
+		Serial.println(_list_size);
 	}
-#endif
 
 };
 

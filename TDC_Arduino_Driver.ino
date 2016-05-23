@@ -34,9 +34,9 @@ void doNothing(List<String> params, bool isQuery) {
 	extern int *__brkval;
 	int testVar;
 
-	Serial.print(F("End of heap: 0x"));
+	Serial.print(F("End of heap: "));
 	Serial.print((uint32_t)__brkval);
-	Serial.print(F(", start of stack: 0x"));
+	Serial.print(F(", start of stack: "));
 	Serial.println((uint32_t)&testVar);
 }
 

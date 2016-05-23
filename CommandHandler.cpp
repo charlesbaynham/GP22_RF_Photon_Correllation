@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEBUG
+#include "CommandHandler.h"
 
 #ifdef DEBUG
 #define CONSOLE_LOG(s)  Serial.print(s)
@@ -9,8 +9,6 @@
 #define CONSOLE_LOG(s) 
 #define CONSOLE_LOG_LN(s)
 #endif
-
-#include "CommandHandler.h"
 
 // Add a new command to the list
 void CommandLookup::registerCommand(const char* command, int num_of_parameters,
@@ -294,9 +292,10 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 	char theParam[128]; // Buffer for the string conversion
 	List<String> output;
 
-	CONSOLE_LOG(F("readParamsFromStr: Running with command str: "));
-	CONSOLE_LOG_LN(str);
-
+	CONSOLE_LOG(F("readParamsFromStr: Running with command str: '"));
+	CONSOLE_LOG(str);
+	CONSOLE_LOG("', strlen = ");
+	CONSOLE_LOG_LN(strlen(str));
 
 	for (int i = endOfCommand + 1; i <= strlen(str); i++) {
 		if (str[i] != ' ' && str[i] != '\0') { // if this char is NOT a space or NULL char
@@ -339,9 +338,6 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 #ifdef DEBUG
 				output.debug();
 #endif
-
-				// Increase index
-				destInd++;
 
 				// Reset the string
 				theParam[0] = '\0';

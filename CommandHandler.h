@@ -1,6 +1,6 @@
 #pragma once
 
-// #define DEBUG
+#define DEBUG
 
 #define COMMAND_SIZE_MAX 128 // num chars
 #define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored

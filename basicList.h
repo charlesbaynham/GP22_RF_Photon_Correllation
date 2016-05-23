@@ -4,9 +4,9 @@
 
 // Minimal class to replace std::list
 
-// #define DEBUG
+#define LIST_DEBUG
 
-#ifdef DEBUG
+#ifdef LIST_DEBUG
 #define CONSOLE_LOG(s)  Serial.print(s)
 #define CONSOLE_LOG_LN(s)  Serial.println(s)
 #else
@@ -33,10 +33,20 @@ protected:
 
 public:
 	// Default constructor
-	List() : _list_size(0), _first(NULL), _last(NULL) {};
+	List() : _list_size(0), _first(NULL), _last(NULL) {
+		if (Serial) {
+			CONSOLE_LOG_LN("*** List created ***");
+		}
+	};
 
 	// Destructor: iterate through list and delete each ListItem
 	~List() {
+		
+		CONSOLE_LOG(F("~List called on list with first entry at 0x"));
+#ifdef LIST_DEBUG
+		Serial.println((uint32_t)_first, HEX);
+#endif
+
 		ListItem * currentItem = _first;
 
 		while (currentItem != NULL) {
@@ -52,7 +62,7 @@ public:
 		ListItem *previousFirst = _first;
 
 		CONSOLE_LOG(F("push_front: Pointer to current first item is: "));
-#ifdef DEBUG
+#ifdef LIST_DEBUG
 		Serial.println((uint32_t)previousFirst, HEX);
 #endif
 
@@ -73,7 +83,7 @@ public:
 		// Increment size
 		_list_size++;
 
-#ifdef DEBUG
+#ifdef LIST_DEBUG
 		debug_front_back("push_front");
 #endif
    	}
@@ -99,7 +109,7 @@ public:
 		// Update count
 		_list_size--;
 
-#ifdef DEBUG
+#ifdef LIST_DEBUG
 		debug_front_back("pop_front");
 #endif
    	}
@@ -125,7 +135,7 @@ public:
 		// Increment size
 		_list_size++;
 
-#ifdef DEBUG
+#ifdef LIST_DEBUG
 		debug_front_back("push_back");
 #endif
    	}
@@ -151,7 +161,7 @@ public:
 		// Update count
 		_list_size--;
 
-#ifdef DEBUG
+#ifdef LIST_DEBUG
 		debug_front_back("pop_back");
 #endif
    	}

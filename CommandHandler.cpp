@@ -52,7 +52,7 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 	CONSOLE_LOG(F(", isquery = "));
 	CONSOLE_LOG_LN(isQuery ? "TRUE" : "FALSE");
 	
-	// Make lower case copy of command
+	// Make lower case copy of command requested
 	char *lower_command;
 	lower_command = (char*)calloc(strlen(command) + 1, sizeof(char));
 	strcpy(lower_command, command);
@@ -68,6 +68,9 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 			break;
 		}
 	}
+
+	// Discard the lower case copy string
+	free(lower_command);
 
 	if (it == _commandList.end()) { return COMMAND_NOT_FOUND; }
 

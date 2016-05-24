@@ -4,7 +4,7 @@
 
 // Minimal class to replace std::list
 
-// #define LIST_DEBUG
+#define LIST_DEBUG
 
 #ifdef LIST_DEBUG
 #define CONSOLE_LOG(s)  Serial.print(s)
@@ -37,12 +37,25 @@ protected:
 	ListItem *_first;
 	ListItem *_last;
 
+#ifdef LIST_DEBUG
+	// An ID for this list for debugging purposes
+	int _ID;
+	static int _nextID;
+#endif
+
 public:
 	// Default constructor
-	List() : _list_size(0), _first(NULL), _last(NULL) {
+	List() : _list_size(0), _first(NULL), _last(NULL)
+#ifdef LIST_DEBUG
+		, _ID(_nextID++)
+#endif
+	{
+#ifdef LIST_DEBUG
 		if (Serial) {
-			CONSOLE_LOG_LN("*** List created ***");
+			CONSOLE_LOG("*** List created with ID: ");
+			CONSOLE_LOG_LN(_ID);
 		}
+#endif
 	};
 
 	// Copy constuctor. This makes a copy of each element in the list. 
@@ -52,10 +65,10 @@ public:
 	// Destructor: iterate through list and delete each ListItem
 	~List() {
 		
-		CONSOLE_LOG(F("~List called on list with first entry at 0x"));
-#ifdef LIST_DEBUG
-		Serial.println((uint32_t)_first, HEX);
-#endif
+		if (Serial) {
+			CONSOLE_LOG(F("*** ~List called on list with ID: "));
+			CONSOLE_LOG_LN(_ID);
+		}
 
 		ListItem * currentItem = _first;
 
@@ -207,21 +220,28 @@ public:
 
    	size_t size() { return _list_size; }
 
-   	void debug() {
+   	void debug() const {
    		ListItem *p = _first;
 
    		while (NULL != p) {
 			Serial.print("'");
-			Serial.print(p->getData());
+			Serial.print(p->getConstData());
 			Serial.print("', ");
    			p = p->next();
    		}
 		Serial.println();
    	}
 
-	void debug_front_back(const char * ident) {
-		Serial.print(ident); 
-		Serial.print(F(": first: 0x"));
+	void debug_front_back(const char * ident) const {
+#ifdef LIST_DEBUG
+		Serial.print(F("List (id="));
+		Serial.print(_ID);
+		Serial.print(F("): "));
+#else
+		Serial.print(F("List: "));
+#endif
+		Serial.print(ident);
+		Serial.print(F(" - first: 0x"));
 		Serial.print((uint32_t)_first, HEX);
 		Serial.print(", ");
 		Serial.print(F(": last: 0x"));
@@ -392,6 +412,9 @@ public:
 
 	// Cast to const iterator
 	operator Iterator_const() const {
+		
+		CONSOLE_LOG_LN(F("Iterator: casting Iterator to Iterator_Const..."));
+
 		if (this->_isPastTheEnd) {
 			return Iterator_const(true, this->_prevItem);
 		}
@@ -418,7 +441,7 @@ public:
 	// Return a const reference to the current item
 	const Data& operator*() const {
 		if (NULL != this->_currentItem) {
-			CONSOLE_LOG_LN(F("List: Returning const reference to object"));
+			CONSOLE_LOG_LN(F("List: Returning const reference to ListItem's Data"));
 			return this->_currentItem->getConstData();
 		}
 		else
@@ -432,3 +455,7 @@ public:
 	// Explicitly disallow typecast to non-const Iterator
 	operator Iterator() = delete;
 };
+
+// Start the List ID off at 0
+template<typename Data>
+int List<Data>::_nextID = 0;

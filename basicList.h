@@ -17,8 +17,12 @@
 template<typename Data>
 class List {
 
+protected:
+	// Base class for iterators to iterate over this list
+	class Iterator_base;
+
 public:
-	// Class for an iterator to iterate over this list
+	// Class for a non-constant iterator
 	class Iterator;
 	// Class for a constant iterator, guaranteeing no changes to the list
 	class Iterator_const;
@@ -184,7 +188,7 @@ public:
 		return Iterator(_first);
 	}
 
-	const Iterator begin() const {
+	Iterator_const begin() const {
 		// Return the first iterator
 		return Iterator_const(_first);
 	}
@@ -243,9 +247,25 @@ class List<Data>::ListItem {
 		ListItem(Data d, ListItem *prev, ListItem *next) :
 			_d(d), _nextItem(next), _prevItem(prev) {}
 
-		Data getData() { return _d; }
+		Data getData() {
 
-		const Data getConstData() { return _d; }
+#ifdef LIST_DEBUG
+			CONSOLE_LOG(F("ListItem: returning copy of data in location: 0x"));
+			Serial.println((uint32_t) &_d, HEX);
+#endif
+			
+			return _d;
+		}
+
+		const Data& getConstData() const {
+
+#ifdef LIST_DEBUG
+			CONSOLE_LOG(F("ListItem: returning const reference to location: 0x"));
+			Serial.println((uint32_t) &_d, HEX);
+#endif
+
+			return _d;
+		}
 
 		void setPrevPointer(ListItem * newPrev) { _prevItem = newPrev; }
 		void setNextPointer(ListItem * newNext) { _nextItem = newNext; }
@@ -256,7 +276,7 @@ class List<Data>::ListItem {
 };
 
 template<typename Data>
-class List<Data>::Iterator {
+class List<Data>::Iterator_base {
 
 protected:
 
@@ -269,7 +289,7 @@ protected:
 public:
 
 	// Normal constructor
-	Iterator(ListItem * startingItem) :
+	Iterator_base(ListItem * startingItem) :
 		_currentItem(startingItem),
 		_prevItem(startingItem->prev()),
 		_nextItem(startingItem->next()), 
@@ -277,25 +297,15 @@ public:
 	{}
 
 	// Constuctor for "past the end" iterators
-	Iterator(bool pastTheEnd, ListItem * lastItem) :
+	Iterator_base(bool pastTheEnd, ListItem * lastItem) :
 		_currentItem(NULL),
 		_prevItem(lastItem),
 		_nextItem(NULL),
 		_isPastTheEnd(true)
 	{}
-
-	// Cast to const iterator
-	operator Iterator_const() const {
-		if (_isPastTheEnd) {
-			return Iterator_const(true, _prevItem);
-		}
-		else {
-			return Iterator_const(_currentItem);
-		}
-	}
-
+	
 	// Postfix increment
-	Iterator operator++(int) {
+	Iterator_base operator++(int) {
 		
 		// If there's a next element, iterate to it
 		if (NULL != _nextItem) {
@@ -318,7 +328,7 @@ public:
 	}
 
 	// Postfix decrement
-	Iterator operator--(int) {
+	Iterator_base operator--(int) {
 		
 		// If there's a previous element, iterate to it
 		if (NULL != _prevItem) {
@@ -339,21 +349,8 @@ public:
 		return *this;
 	}
 
-	// Overload dereferencing
-	virtual Data operator*() {
-		if (NULL != _currentItem) {
-			return _currentItem->getData();
-		}
-		else
-		{
-			// Error! This should never happen but, if it does, reset the microprocessor
-			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator");
-			resetFunc();
-		}
-	}
-
 	// Check equality
-	bool operator==(const Iterator a) const {
+	bool operator==(const Iterator_base a) const {
 		
 		if (_isPastTheEnd && a._isPastTheEnd) {
 			return _prevItem == a._prevItem;
@@ -363,25 +360,26 @@ public:
 	}
 
 	// Check inequality
-	bool operator!=(const Iterator a) const { return !(a == *this); }
+	bool operator!=(const Iterator_base a) const { return !(a == *this); }
 
 };
 
 template<typename Data>
-class List<Data>::Iterator_const : public List<Data>::Iterator {
+class List<Data>::Iterator : public List<Data>::Iterator_base {
 
 public:
 	// Normal constructor
-	Iterator_const(ListItem * startingItem) :
-		Iterator(startingItem) {}
+	Iterator(ListItem * startingItem) :
+		Iterator_base(startingItem) {}
 
 	// Constuctor for "past the end" iterators
-	Iterator_const(bool pastTheEnd, ListItem * lastItem) :
-		Iterator(pastTheEnd, lastItem) {}
-	
-	// Redefine dereferencing as a const operation
-	const Data operator*() const {
+	Iterator(bool pastTheEnd, ListItem * lastItem) :
+		Iterator_base(pastTheEnd, lastItem) {}
+
+	// Return the current item
+	Data operator*() {
 		if (NULL != this->_currentItem) {
+			CONSOLE_LOG_LN(F("List: Returning current object (non-const)"));
 			return this->_currentItem->getData();
 		}
 		else
@@ -392,4 +390,45 @@ public:
 		}
 	}
 
+	// Cast to const iterator
+	operator Iterator_const() const {
+		if (this->_isPastTheEnd) {
+			return Iterator_const(true, this->_prevItem);
+		}
+		else {
+			return Iterator_const(this->_currentItem);
+		}
+	}
+
+};
+	
+	
+template<typename Data>
+class List<Data>::Iterator_const : public List<Data>::Iterator_base {
+
+public:
+	// Normal constructor
+	Iterator_const(ListItem * startingItem) :
+		Iterator_base(startingItem) {}
+
+	// Constuctor for "past the end" iterators
+	Iterator_const(bool pastTheEnd, ListItem * lastItem) :
+		Iterator_base(pastTheEnd, lastItem) {}
+	
+	// Return a const reference to the current item
+	const Data& operator*() const {
+		if (NULL != this->_currentItem) {
+			CONSOLE_LOG_LN(F("List: Returning const reference to object"));
+			return this->_currentItem->getConstData();
+		}
+		else
+		{
+			// Error! This should never happen but, if it does, reset the microprocessor
+			CONSOLE_LOG_LN("Error! Dereferenced a non-existant iterator");
+			this->resetFunc();
+		}
+	}
+
+	// Explicitly disallow typecast to non-const Iterator
+	operator Iterator() = delete;
 };

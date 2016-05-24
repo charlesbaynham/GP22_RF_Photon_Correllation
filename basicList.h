@@ -4,7 +4,7 @@
 
 // Minimal class to replace std::list
 
-#define LIST_DEBUG
+// #define LIST_DEBUG
 
 #ifdef LIST_DEBUG
 #define CONSOLE_LOG(s)  Serial.print(s)

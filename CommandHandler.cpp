@@ -43,7 +43,7 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> params, bool isQuery) {
+ExecuteError CommandLookup::callStoredCommand(const char* command, const List<String>& params, bool isQuery) {
 
 	CONSOLE_LOG(F("callStoredCommand with n="));
 	CONSOLE_LOG(params.size());
@@ -60,7 +60,7 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, List<String> 
 	}
 
 	// Iterate through list searching for key
-	List<dataStruct>::Iterator it = _commandList.begin();
+	List<dataStruct>::Iterator_const it = _commandList.begin();
 	for (; it != _commandList.end(); it++) {
 		if (0 == strcmp(lower_command, (*it).key)) {
 			break;
@@ -161,8 +161,10 @@ ExecuteError CommandHandler::executeCommand() {
 	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
 
 	CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
-	// Declare a List of Strings for the params and loop through command
-	List<String> params = readParamsFromStr(nextCommand.c_str(), endOfCommand);
+
+	// Declare a List of Strings for the params and loop through command to parse it for parameters
+	List<String> params;
+	readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
 
 	CONSOLE_LOG(F("commandWord: "));
 	CONSOLE_LOG_LN(commandWord);
@@ -283,14 +285,15 @@ int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
 	return numParamsInCommand;
 }
 
-List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand) {
+
+// Parse the string to extract the parameters and store them in destList
+void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<String>& destList) {
 
 	// Loop through the string
 	bool lastWasSpace = true;
 	int startParam = 0;
 	int endParam = 0;
 	char theParam[128]; // Buffer for the string conversion
-	List<String> output;
 
 	CONSOLE_LOG(F("readParamsFromStr: Running with command str: '"));
 	CONSOLE_LOG(str);
@@ -332,11 +335,11 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 				CONSOLE_LOG_LN(strlen(theParam));
 
 				// Add to List
-				output.push_back(String(theParam));
+				destList.push_back(String(theParam));
 
 				CONSOLE_LOG(F("readParamsFromStr: output contains: "));
 #ifdef DEBUG
-				output.debug();
+				destList.debug();
 #endif
 
 				// Reset the string
@@ -346,6 +349,4 @@ List<String> CommandHandler::readParamsFromStr(const char* str, int endOfCommand
 			lastWasSpace = true;
 		}
 	}
-
-	return output;
 }

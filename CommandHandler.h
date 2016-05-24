@@ -10,7 +10,7 @@
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
 	// Template for the functions we'll be calling
-	typedef void (*commandFunction) (List<String> params, bool isQuery);
+	typedef void (*commandFunction) (const List<String>& params, bool isQuery);
 
 	// Structure of the data to be stored for each command
 	struct dataStruct {
@@ -42,7 +42,7 @@
 			int num_of_query_parameters, commandFunction pointer_to_function);
 
 		// Search the list of commands for the given command and execute it with the given parameter array
-		ExecuteError callStoredCommand(const char* command, List<String> params, bool isQuery) ;
+		ExecuteError callStoredCommand(const char* command, const List<String>& params, bool isQuery) ;
 
 	protected:
 
@@ -111,7 +111,8 @@
 		// Loop from the first space onwards, counting the params
 		int numParamsInCommandStr(const char* str, int endOfCommand) ;
 
-		List<String> readParamsFromStr(const char* str, int endOfCommand) ;
+		// Parse a string to extract the parameters and store them in destList
+		void readParamsFromStr(const char* str, int endOfCommand, List<String>& destList);
 		
 	};
 

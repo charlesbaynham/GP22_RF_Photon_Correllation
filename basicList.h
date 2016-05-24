@@ -189,11 +189,11 @@ public:
 #endif
    	}
 
-   	Data front() {
-   		return _first->getData();
+   	const Data& front() const {
+   		return _first->getConstData();
    	}
-	Data back() {
-   		return _last->getData();
+	const Data& back() const {
+   		return _last->getConstData();
    	}
 
 	Iterator begin() {
@@ -216,9 +216,9 @@ public:
 		return Iterator_const(true, _last);
 	}
 
-   	bool isEmpty() { return _list_size == 0; }
+   	bool isEmpty() const { return _list_size == 0; }
 
-   	size_t size() { return _list_size; }
+   	size_t size() const { return _list_size; }
 
    	void debug() const {
    		ListItem *p = _first;

@@ -132,19 +132,19 @@ void serialEvent() {
 	}
 }
 
-void reset(List<String> params, bool isQuery) {
+void reset(const List<String>& params, bool isQuery) {
 	Serial.println("Resetting");
 	Serial.flush();
 	resetFunc();
 }
 
-void identity(List<String> params, bool isQuery) {
+void identity(const List<String>& params, bool isQuery) {
 	Serial.print(PROG_IDN);
 	Serial.print(" - ");
 	Serial.println(PROG_VER);
 }
 
-void timedMeasure(List<String> params, bool isQuery) {
+void timedMeasure(const List<String>& params, bool isQuery) {
 
 	// Number of ms to read for
 	uint32_t timePeriod = atoi(params.front().c_str());
@@ -171,7 +171,7 @@ void timedMeasure(List<String> params, bool isQuery) {
 }
 
 // Command: "SETUp REG1 REG2 REG3 REG4 REG5 REG6 REG7" Registers as base 10 numbers
-void setupRegisters(List<String> params, bool isQuery) {
+void setupRegisters(const List<String>& params, bool isQuery) {
 
 	if (isQuery)
 	{
@@ -190,9 +190,16 @@ void setupRegisters(List<String> params, bool isQuery) {
 		SPI.transfer(TDC_RESET);
 		digitalWrite(TDC_CS, HIGH);
 
-		for (int i = 0; i < params.size(); i++) {
-			reg[i] = strtol(params.front().c_str(), NULL, 0);
-			params.pop_front();
+		int i = 0;
+
+		// Iterate over param list
+		for (List<String>::Iterator_const it = params.begin(); it != params.end(); it++) {
+			
+			// Get the next String, convert to a long and save in reg
+			reg[i] = strtol((*it).c_str(), NULL, 0);
+
+			// Increment i
+			i++;
 		}
 
 		// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
@@ -234,7 +241,7 @@ void setupRegisters(List<String> params, bool isQuery) {
 	}
 }
 
-void singleMeasure(List<String> params, bool isQuery) {
+void singleMeasure(const List<String>& params, bool isQuery) {
 
 	// Do the measurement
 	uint32_t result = measure();
@@ -245,7 +252,7 @@ void singleMeasure(List<String> params, bool isQuery) {
 }
 
 // Calibrate the TDC against the reference 32kHz clock and report the result
-void calibrateTDC(List<String> params, bool isQuery) {
+void calibrateTDC(const List<String>& params, bool isQuery) {
 
 	// Do the calibration
 	uint16_t calib = calibrate();
@@ -257,7 +264,7 @@ void calibrateTDC(List<String> params, bool isQuery) {
 
 // Calibrate the highspeed clock against the TDC and report the result
 // (i.e. number of high speed clock cycles in `ANZ_PER_CALRES` cycles of the ref clock)
-void calibrateResonator(List<String> params, bool isQuery) {
+void calibrateResonator(const List<String>& params, bool isQuery) {
 
 	// Do the calibration
 	uint32_t calib = calibrateHF();
@@ -267,7 +274,7 @@ void calibrateResonator(List<String> params, bool isQuery) {
 
 }
 
-void testConnection(List<String> params, bool isQuery) {
+void testConnection(const List<String>& params, bool isQuery) {
 	// Run the test
 	uint8_t testResult = testTDC();
 
@@ -284,7 +291,7 @@ void testConnection(List<String> params, bool isQuery) {
 	}
 }
 
-void getStatus(List<String> params, bool isQuery) { 
+void getStatus(const List<String>& params, bool isQuery) { 
 
 	Serial.println(readStatus(), HEX);
 
@@ -547,7 +554,7 @@ uint32_t read_bytes(uint8_t reg, bool read16bits) {
 // this function will return the number of bytes currently free in RAM
 // written by David A. Mellis
 // based on code by Rob Faludi http://www.faludi.com
-void availableMemory(List<String> params, bool isQuery) {
+void availableMemory(const List<String>& params, bool isQuery) {
 	//int size = 1024; // Use 2048 with ATmega328
 	int size = 2048;
 	byte *buf;

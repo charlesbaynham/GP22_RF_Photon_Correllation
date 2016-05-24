@@ -247,10 +247,10 @@ class List<Data>::ListItem {
 		ListItem(Data d, ListItem *prev, ListItem *next) :
 			_d(d), _nextItem(next), _prevItem(prev) {}
 
-		Data getData() {
+		Data& getData() {
 
 #ifdef LIST_DEBUG
-			CONSOLE_LOG(F("ListItem: returning copy of data in location: 0x"));
+			CONSOLE_LOG(F("ListItem: returning non-const reference to data in location: 0x"));
 			Serial.println((uint32_t) &_d, HEX);
 #endif
 			
@@ -260,7 +260,7 @@ class List<Data>::ListItem {
 		const Data& getConstData() const {
 
 #ifdef LIST_DEBUG
-			CONSOLE_LOG(F("ListItem: returning const reference to location: 0x"));
+			CONSOLE_LOG(F("ListItem: returning const reference to data in location: 0x"));
 			Serial.println((uint32_t) &_d, HEX);
 #endif
 
@@ -377,7 +377,7 @@ public:
 		Iterator_base(pastTheEnd, lastItem) {}
 
 	// Return the current item
-	Data operator*() {
+	Data& operator*() {
 		if (NULL != this->_currentItem) {
 			CONSOLE_LOG_LN(F("List: Returning current object (non-const)"));
 			return this->_currentItem->getData();

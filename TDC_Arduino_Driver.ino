@@ -2,31 +2,60 @@
 
 #include "CommandHandler/basicList.h"
 
-void loopFunc(const List<String>& testList);
-		
+typedef List<String> myList;
+
+void loopFuncConst(const myList& testList);
+
 void setup() {
 
 	Serial.begin(250000);
 	Serial.println("Launched");
 
-	List<String> testList;
+	myList testList;
 
 	testList.push_back("Hello");
-	testList.push_back("world");
-	testList.push_back("again!");
+	testList.push_back("again");
+	testList.push_back("world!");
 
-	loopFunc(testList);
+	loopFuncConst(testList);
+
+	Serial.println("*** Normal looping ***");
+
+	for (myList::Iterator it = testList.begin(); it != testList.end(); it++) {
+		
+		String& str = *it;
+		const char * buf = str.c_str();
+		
+		Serial.print("Normal iterator: '");
+		Serial.print(buf);
+		Serial.print("' from 0x");
+		Serial.println((uint32_t)buf, HEX);
+
+		str.remove(0,1);
+
+	}
+
+	loopFuncConst(testList);
 }
 
 void loop() {}
 
-void loopFunc(const List<String>& testList)  {
+void loopFuncConst(const myList& testList)  {
 
-	List<String>::Iterator_const it = testList.begin();
+	Serial.println("*** Const looping ***");
+
+	myList::Iterator_const it = testList.begin();
 
 	for (; it != testList.end(); it++) {
-		Serial.print("Looping: ");
-		Serial.println(*it);
+
+		const String& str = *it;
+		const char * buf = str.c_str();
+
+		Serial.print("Normal iterator: '");
+		Serial.print(buf);
+		Serial.print("' from 0x");
+		Serial.println((uint32_t)buf, HEX);
+
 	}
 
 }

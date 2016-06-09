@@ -2,68 +2,126 @@
 
 #include <Arduino.h>
 
+// #define DEBUG
+
+#ifdef DEBUG
+#define CONSOLE_LOG(s)  Serial.print(s)
+#define CONSOLE_LOG_LN(s)  Serial.println(s)
+#else
+#define CONSOLE_LOG(s) 
+#define CONSOLE_LOG_LN(s)
+#endif
+
 // Minimal class to replace std::vector
 template<typename Data>
 class Vector {
 
-    size_t d_size; // Stores no. of actually stored objects
-    size_t d_capacity; // Stores allocated capacity
-    Data *d_data; // Stores data this is this "heap" we need a function that returns a pointer to this value, to print it
+    size_t _d_size; // Stores no. of actually stored objects
+    size_t _d_capacity; // Stores allocated capacity
+    Data ** _d_data; // Array of pointers to Data
+
+	const int _id; // Unique ID for this vector	
+
 public:
-    Vector() : d_size(0), d_capacity(0), d_data(0) {}; // Default constructor
+    Vector() : _d_size(0), _d_capacity(0), _d_data(0), _id((int)&_d_size) {
+		
+		CONSOLE_LOG(F("Vector: Constructor with ID "));
+		CONSOLE_LOG_LN(_id);
 
-    Vector(Vector const &other) : d_size(other.d_size), d_capacity(other.d_capacity), d_data(0) //for when you set 1 vector = to another
+	}; // Default constructor
+
+    Vector(Vector const &other) : _d_size(other._d_size), _d_capacity(other._d_capacity), _d_data(0), _id((int)&_d_size)
+    {	
+		CONSOLE_LOG(F("Vector: Copy start with ID "));
+		CONSOLE_LOG_LN(_id);
+
+        // Assign enough space to store the pointers
+		_d_data = (Data **)malloc(_d_capacity*sizeof(Data*));
+
+		// Copy each object
+		for (int i = 0; i < _d_size; i++) {
+			Data * newObj = new Data(*other._d_data[i]);
+			_d_data[i] = newObj;
+		}
+
+		CONSOLE_LOG_LN(F("Vector: Copy done"));
+    };
+
+    ~Vector()
     {
-        d_data = (Data *)malloc(d_capacity*sizeof(Data));
-        memcpy(d_data, other.d_data, d_size*sizeof(Data));
-    }; // Copy constuctor
+		CONSOLE_LOG(F("Vector: Destructor with ID "));
+		CONSOLE_LOG_LN(_id);
 
-    ~Vector() //this gets called
+		// Clear the vector
+		Clear();
+
+		CONSOLE_LOG(F("Vector with ID "));
+		CONSOLE_LOG(_id);
+		CONSOLE_LOG_LN(F(" is destroyed"));
+    };
+
+	// I can't be bothered to code this, and it never gets used anyway
+	Vector &operator=(Vector const &other) = delete;
+
+    void push_back(const Data& x)
     {
-        free(d_data);
-    }; // Destructor
+		CONSOLE_LOG_LN(F("Vector: push_back"));
 
-    Vector &operator=(Vector const &other)
+		// Explicitly copy the object
+		Data * pointerToData = new Data(x);
+
+		// Check there's space
+        if (_d_capacity == _d_size)
+            resize();  // if full - resize
+
+		// Add object to array
+        _d_data[_d_size++] = pointerToData;
+    };
+
+    void Clear()
     {
-        free(d_data);
-        d_size = other.d_size;
-        d_capacity = other.d_capacity;
-        d_data = (Data *)malloc(d_capacity*sizeof(Data));
-        memcpy(d_data, other.d_data, d_size*sizeof(Data));
-        return *this;
-    }; // Needed for memory management
+		CONSOLE_LOG_LN(F("Vector::Clearing..."));
 
-    void push_back(Data const &x)
-    {
-        if (d_capacity == d_size) //when he pushes data onto the heap, he checks to see if the storage is full
-            resize();  //if full - resize
+		// delete each stored object
+		for (int i = 0; i < _d_size; i++) {
 
-        d_data[d_size++] = x;
-    }; // Adds new value. If needed, allocates more space
+			CONSOLE_LOG(F("Vector::Deleting Object "));
+			CONSOLE_LOG_LN(i);
 
-    void Clear() //here
-    {
-        memset(d_data, 0, d_size);
-        d_capacity = 0;
-        d_size = 0;
-        free(d_data);
+			Data * thisObj = _d_data[i];
+			delete(thisObj);
+		}
+
+		// Free the pointer array
+		free(_d_data);
+
+		// Set size and capacity to 0
+		_d_size = 0;
+		_d_capacity = 0;
     }
 
-    size_t size() const { return d_size; }; // Size getter
+    size_t size() const { return _d_size; }; // Size getter
 
-    Data const &operator[](size_t idx) const { return d_data[idx]; }; // Const getter
+    Data const &operator[](size_t idx) const { return *_d_data[idx]; }; // Const getter
 
-    Data &operator[](size_t idx) { return d_data[idx]; }; // Changeable getter
-
-    Data *pData() { return (Data*)d_data; }
+    Data &operator[](size_t idx) { return *_d_data[idx]; }; // Changeable getter
 
 private:
     void resize()
     {
-        d_capacity = d_capacity ? d_capacity * 2 : 1;
-        Data *newdata = (Data *)malloc(d_capacity*sizeof(Data)); //allocates new memory
-        memcpy(newdata, d_data, d_size * sizeof(Data));  //copies all the old memory over
-        free(d_data);                                          //free old
-        d_data = newdata;
-    };// Allocates double the old space
+        // New capacity is double old capacity
+		_d_capacity = _d_capacity ? _d_capacity * 2 : 1;
+
+		// Allocate new memory for pointers
+        Data ** newData = (Data **)malloc(_d_capacity*sizeof(Data*));
+		
+		// Copy all the old memory over
+        memcpy(newData, _d_data, _d_size * sizeof(Data));
+
+		// Free the old pointer array
+        free(_d_data);
+
+		// Use the new one
+        _d_data = newData;
+    };
 };

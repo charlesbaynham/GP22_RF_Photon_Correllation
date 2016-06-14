@@ -58,6 +58,13 @@ public:
 		_ptr = newPtr;
 
 	}
+
+	// Transfer ownership from given unique_ptr to this one
+	unique_ptr_d& operator= (unique_ptr_d<T> rhs) {
+		reset(rhs.release());
+		return *this;
+	}
+
 	// Returns a pointer to the managed object and releases the ownership 
 	T* release() {
 		T* ptr = _ptr;

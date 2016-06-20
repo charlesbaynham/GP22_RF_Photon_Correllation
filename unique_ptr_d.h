@@ -77,3 +77,12 @@ public:
 	// Don't allow copying: this pointer is unique
 	unique_ptr_d(const unique_ptr_d&) = delete;
 };
+
+// Make a new object and return a unique_ptr_d to it. This is equivalent to
+// "unique_ptr_d newPtr = unique_ptr_d(new Object(a, b, c));"
+// But it's slightly more efficient and the syntax is more compact
+template< class T, class... Args >
+unique_ptr_d<T> make_unique(Args&&... args) {
+	T* ptr = new T(args...);
+	return unique_ptr_d<T>(ptr);
+}

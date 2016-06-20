@@ -65,6 +65,11 @@ public:
 		return _ptr;
 	}
 
+	// Gets the pointer - const
+	const T* get() const {
+		return _ptr;
+	}
+
 	// Dereferences to the held object
 	T& operator * () {
 		CONSOLE_LOG_LN(F("shared_ptr_d::Deref"));

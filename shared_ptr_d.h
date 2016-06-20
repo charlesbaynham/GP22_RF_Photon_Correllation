@@ -36,7 +36,7 @@ public:
 	}
 
 	// Copy the given pointer
-	explicit shared_ptr_d(const shared_ptr_d& rhs) :
+	shared_ptr_d(const shared_ptr_d& rhs) :
 		shared_ptr_d(0)
 	{
 		CONSOLE_LOG_LN(F("shared_ptr_d::Copy constuctor."));
@@ -75,6 +75,12 @@ public:
 	const T& operator * () const {
 		CONSOLE_LOG_LN(F("shared_ptr_d::Deref const"));
 		return *_ptr;
+	}
+
+	// Dereferences to the held object
+	T* operator -> () {
+		CONSOLE_LOG_LN(F("shared_ptr_d::Pointer deref"));
+		return _ptr;
 	}
 
 	// Sets the pointer to the given, releasing the current one if non-null
@@ -142,3 +148,12 @@ private:
 		++(*_count);
 	}
 };
+
+// Make a new object and return a shared_ptr_d to it. This is equivalent to
+// "shared_ptr_d newPtr = shared_ptr_d(new Object(a, b, c));"
+// But it's slightly more efficient and the syntax is more compact
+template< class T, class... Args >
+shared_ptr_d<T> make_shared(Args&&... args) {
+	T* ptr = new T(args...);
+	return shared_ptr_d<T>(ptr);
+}

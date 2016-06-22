@@ -15,6 +15,16 @@ void debugPrint(int param) {
 		Serial.print(param);
 	}
 }
+void debugPrint(float param) {
+	if (__serial_is_ready) {
+		Serial.print(param);
+	}
+}
+void debugPrint(double param) {
+	if (__serial_is_ready) {
+		Serial.print(param);
+	}
+}
 void debugPrint(const char* param) {
 	if (__serial_is_ready) {
 		Serial.print(param);
@@ -27,6 +37,16 @@ void debugPrint(const __FlashStringHelper* param) {
 }
 
 void debugPrintLn(int param) {
+	if (__serial_is_ready) {
+		Serial.println(param);
+	}
+}
+void debugPrintLn(float param) {
+	if (__serial_is_ready) {
+		Serial.println(param);
+	}
+}
+void debugPrintLn(double param) {
 	if (__serial_is_ready) {
 		Serial.println(param);
 	}

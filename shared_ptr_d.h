@@ -1,16 +1,6 @@
 #pragma once
 
-// #define DEBUG
-
-#ifdef DEBUG
-#define CONSOLE_LOG(s)  Serial.print(s)
-#define CONSOLE_LOG_LN(s)  Serial.println(s)
-#include <Arduino.h>
-#else
-#define CONSOLE_LOG(s) 
-#define CONSOLE_LOG_LN(s)
-#endif
-
+#include "enable_debugging.h"
 
 template <typename T>
 class shared_ptr_d
@@ -22,16 +12,18 @@ class shared_ptr_d
 public:
 
 	// Make an empty smart pointer
-	shared_ptr_d() : 
+	shared_ptr_d() :
 		_ptr(0), _count(0)
 	{
-		CONSOLE_LOG_LN(F("shared_ptr_d::Null constuctor"));
+		outputDebugHeader();
+		CONSOLE_LOG_LN(F("Null constuctor"));
 	}
 
 	// Make a smart pointer and give it a pointer to look after
 	explicit shared_ptr_d(T* ptr) : shared_ptr_d()
 	{
-		CONSOLE_LOG_LN(F("shared_ptr_d::Ptr constuctor"));
+		outputDebugHeader();
+		CONSOLE_LOG_LN(F("Ptr constuctor"));
 		reset(ptr);
 	}
 
@@ -39,7 +31,8 @@ public:
 	shared_ptr_d(const shared_ptr_d& rhs) :
 		shared_ptr_d(0)
 	{
-		CONSOLE_LOG_LN(F("shared_ptr_d::Copy constuctor."));
+		outputDebugHeader();
+		CONSOLE_LOG_LN(F("Copy constuctor."));
 
 		reset(rhs);
 	}
@@ -48,7 +41,8 @@ public:
 	// Destroy the smart pointer. This will also destroy the managed object if there is one
 	// and this is the last instance of this shared_ptr_d
 	~shared_ptr_d() {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Destructor"));
+		outputDebugHeader();
+		CONSOLE_LOG_LN(F("Destructor"));
 		clear();
 	}
 
@@ -72,25 +66,37 @@ public:
 
 	// Dereferences to the held object
 	T& operator * () {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Deref"));
+		outputDebugHeader();
+		CONSOLE_LOG(F("Deref to "));
+		CONSOLE_LOG_LN((int)_ptr);
 		return *_ptr;
 	}
 
 	// Dereferences to the held object - const
 	const T& operator * () const {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Deref const"));
+		outputDebugHeader();
+		CONSOLE_LOG(F("const deref to "));
+		CONSOLE_LOG_LN((int)_ptr);
+
 		return *_ptr;
 	}
 
 	// Dereferences to the held object
 	T* operator -> () {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Pointer deref"));
+		outputDebugHeader();
+		CONSOLE_LOG(F("Pointer deref to "));
+		CONSOLE_LOG_LN((int)_ptr);
 		return _ptr;
 	}
 
 	// Sets the pointer to the given, releasing the current one if non-null
-	void reset(T* newPtr) {
-		CONSOLE_LOG_LN(F("shared_ptr_d::reset from ptr"));
+	void reset(T* newPtr = 0) {
+		outputDebugHeader();
+		CONSOLE_LOG(F("reset with ptr, from "));
+		CONSOLE_LOG((int)_ptr);
+		CONSOLE_LOG(F(" to "));
+		CONSOLE_LOG_LN((int)newPtr);
+
 		clear();
 
 		if (newPtr) {
@@ -99,18 +105,36 @@ public:
 		}
 	}
 
+	void debug() {
+		outputDebugHeader();
+		CONSOLE_LOG(F("debug from ptr "));
+		CONSOLE_LOG_LN((int)_ptr);
+
+		outputDebugHeader();
+		CONSOLE_LOG(F("count = "));
+		if (_count) {
+			CONSOLE_LOG_LN(*_count);
+		}
+		else
+		{
+			CONSOLE_LOG_LN(F("NULL"));
+		}
+	}
+
 	// Sets the pointer to a copy of the given, releasing the current one if non-null
 	void reset(const shared_ptr_d<T>& newPtr) {
-		CONSOLE_LOG_LN(F("shared_ptr_d::reset from shared_ptr_d"));
+		outputDebugHeader();
+		CONSOLE_LOG(F("reset with shared_ptr_d from "));
+		CONSOLE_LOG((int)_ptr);
+		CONSOLE_LOG(F(" to "));
+		CONSOLE_LOG_LN((int)newPtr._ptr);
+
 		clear();
 
 		_ptr = newPtr._ptr;
 		_count = newPtr._count;
 
 		increase_count();
-
-		CONSOLE_LOG(F("shared_ptr_d::Count = "));
-		CONSOLE_LOG_LN(*_count);
 	}
 
 	// Copy ownership from given unique_ptr to this one
@@ -119,38 +143,73 @@ public:
 		return *this;
 	}
 
-	
+
 private:
 
 	// Clear this pointer, deleting the managed object if needed
 	void clear() {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Clear"));
+		outputDebugHeader();
+		CONSOLE_LOG(F("Clear from "));
+		CONSOLE_LOG_LN((int)_ptr);
+
 		// Was this object managing anything?
 		if (_ptr) {
 			decrease_count();
 
-			CONSOLE_LOG(F("shared_ptr_d::Count = "));
+			outputDebugHeader();
+			CONSOLE_LOG(F("Count = "));
 			CONSOLE_LOG_LN(*_count);
 
 			// Was this the last ref?
 			if (*_count <= 0) {
-				CONSOLE_LOG_LN(F("shared_ptr_d::Deleting objects"));
+				outputDebugHeader();
+				CONSOLE_LOG_LN(F("Deleting objects"));
+				T* oldRef = _ptr;
 
 				// It was: delete the managed object and the count too
 				delete _ptr;
 				delete _count;
+
+				outputDebugHeader();
+				CONSOLE_LOG(F(""));
+				CONSOLE_LOG((int)oldRef);
+				CONSOLE_LOG_LN(F(" is destroyed"));
 			}
 		}
 	}
 
 	void decrease_count() {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Decrease_count"));
-		--(*_count);
+		outputDebugHeader();
+		CONSOLE_LOG(F("Decrease_count from "));
+		if (_count) {
+			CONSOLE_LOG_LN(*_count);
+		}
+		else {
+			CONSOLE_LOG_LN(F("NULL"));
+		}
+
+		if (_count)
+			--(*_count);
 	}
 
 	void increase_count() {
-		CONSOLE_LOG_LN(F("shared_ptr_d::Increase_count"));
-		++(*_count);
+		outputDebugHeader();
+		CONSOLE_LOG(F("Increase_count from "));
+		if (_count) {
+			CONSOLE_LOG_LN(*_count);
+		}
+		else {
+			CONSOLE_LOG_LN(F("NULL"));
+		}
+
+		if (_count)
+			++(*_count);
+	}
+
+	void outputDebugHeader() {
+		CONSOLE_LOG(F("shared_ptr_d("));
+		CONSOLE_LOG((int)_ptr);
+		CONSOLE_LOG(F(")::"));
 	}
 };
 
@@ -162,3 +221,5 @@ shared_ptr_d<T> make_shared(Args&&... args) {
 	T* ptr = new T(args...);
 	return shared_ptr_d<T>(ptr);
 }
+
+#include "disable_debugging.h"

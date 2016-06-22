@@ -10,14 +10,13 @@
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
 	// Template for the functions we'll be calling
-	typedef void (*commandFunction) (const List<String>& params, bool isQuery);
+	typedef void commandFunction (const List<String>& params);
 
 	// Structure of the data to be stored for each command
 	struct dataStruct {
 		char * key; // Keyword for this command
 		int n; // Number of params this function takes
-		int nq; // Number of params when called as a query
-		commandFunction f; // Pointer to this function
+		commandFunction* f; // Pointer to this function
 	};
 
 	// Error messages for executing a command
@@ -39,10 +38,10 @@
 
 		// Add a new command to the list
 		void registerCommand(const char* command, int num_of_parameters,
-			int num_of_query_parameters, commandFunction pointer_to_function);
+			commandFunction* pointer_to_function);
 
 		// Search the list of commands for the given command and execute it with the given parameter array
-		ExecuteError callStoredCommand(const char* command, const List<String>& params, bool isQuery) ;
+		ExecuteError callStoredCommand(const char* command, const List<String>& params) ;
 
 	protected:
 
@@ -84,9 +83,9 @@
 
 		// Register a command
 		void registerCommand(const char* command, int num_of_parameters,
-				int num_of_query_parameters, commandFunction pointer_to_function) {
+				commandFunction* pointer_to_function) {
 			_lookupList.registerCommand(command, num_of_parameters,
-					num_of_query_parameters, pointer_to_function);
+					pointer_to_function);
 		}
 
 		// Add a char from the serial connection to be processed and added to the queue

@@ -12,9 +12,9 @@
 
 // Add a new command to the list
 void CommandLookup::registerCommand(const char* command, int num_of_parameters,
-	int num_of_query_parameters, commandFunction pointer_to_function)
+	commandFunction pointer_to_function)
 {
-	
+
 	// Set up a struct containing the number of params and a pointer to the function
 	dataStruct d;
 
@@ -34,27 +34,24 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 
 	// Save other params
 	d.n = num_of_parameters;
-	d.nq = num_of_query_parameters;
 	d.f = pointer_to_function;
 
 	// Store it in the List
 	_commandList.push_back(d);
-	
+
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const char* command, const List<String>& params, bool isQuery) {
+ExecuteError CommandLookup::callStoredCommand(const char* command, const List<String>& params) {
 
 	CONSOLE_LOG(F("callStoredCommand with n="));
-	CONSOLE_LOG(params.size());
-	CONSOLE_LOG(F(", isquery = "));
-	CONSOLE_LOG_LN(isQuery ? "TRUE" : "FALSE");
-	
+	CONSOLE_LOG_LN(params.size());
+
 	// Make lower case copy of command requested
 	char *lower_command;
 	lower_command = (char*)calloc(strlen(command) + 1, sizeof(char));
 	strcpy(lower_command, command);
-	
+
 	for (int i = 0; lower_command[i]; i++) {
 		lower_command[i] = tolower(lower_command[i]);
 	}
@@ -73,43 +70,29 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<St
 	if (it == _commandList.end()) { return COMMAND_NOT_FOUND; }
 
 	dataStruct d = *it;
-	commandFunction f = d.f;
+	commandFunction* f = d.f;
 
 	CONSOLE_LOG(F("Recalled data: d.n = "));
-	CONSOLE_LOG(d.n);
-	CONSOLE_LOG(F(", d.nq = "));
-	CONSOLE_LOG_LN(d.nq);
+	CONSOLE_LOG_LN(d.n);
 
 	// Return error if too few parameters
-	if (isQuery) {
-		if (d.nq != params.size() && d.nq != -1) {
-			CONSOLE_LOG(F("ERROR: Expecting "));
-			CONSOLE_LOG(d.nq);
-			CONSOLE_LOG(F(" parameters but got "));
-			CONSOLE_LOG_LN(params.size()); 
-			
-			return WRONG_NUM_OF_PARAMS;
-		}
-	}
-	else {
-		if (d.n != params.size() && d.n != -1) {
-			CONSOLE_LOG(F("ERROR: Expecting "));
-			CONSOLE_LOG(d.n);
-			CONSOLE_LOG(F(" parameters but got "));
-			CONSOLE_LOG_LN(params.size());
+	if (d.n != params.size() && d.n != -1) {
+		CONSOLE_LOG(F("ERROR: Expecting "));
+		CONSOLE_LOG(d.n);
+		CONSOLE_LOG(F(" parameters but got "));
+		CONSOLE_LOG_LN(params.size());
 
-			return WRONG_NUM_OF_PARAMS;
-		}
+		return WRONG_NUM_OF_PARAMS;
 	}
 
-	f(params, isQuery);
+	f(params);
 
 	return NO_ERROR;
 }
 
 // Execute the next command in the queue
 ExecuteError CommandHandler::executeCommand() {
-	
+
 	CONSOLE_LOG_LN(F("Execute command"));
 
 	// Return error code -3 if no command waiting
@@ -143,20 +126,20 @@ ExecuteError CommandHandler::executeCommand() {
 	// If this failed, quit with an error
 	if (endOfCommand < 0) {
 
-		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));	
+		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
 		return ERROR_PARSING_COMMAND;
 	}
 
 	// Copy the command word from the previously found command
-	String commandWord = nextCommand.substring(0, endOfCommand+1);
+	String commandWord = nextCommand.substring(0, endOfCommand + 1);
 
-	// Check if this is a query SCPI command (command word ends in a '?')
-	bool isQuery = (commandWord[endOfCommand] == '?');
+	//// Check if this is a query SCPI command (command word ends in a '?')
+	//bool isQuery = (commandWord[endOfCommand] == '?');
 
-	// If so, remove the '?' from the end
-	if (isQuery)
-		commandWord.remove(endOfCommand);
-
+	//// If so, remove the '?' from the end
+	//if (isQuery)
+	//	commandWord.remove(endOfCommand);
+	//
 	// Count the number of parameters in the string
 	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
 
@@ -173,7 +156,7 @@ ExecuteError CommandHandler::executeCommand() {
 
 	CONSOLE_LOG_LN(F("Running callStoredCommand..."));
 
-	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params, isQuery);
+	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params);
 
 	return found;
 }

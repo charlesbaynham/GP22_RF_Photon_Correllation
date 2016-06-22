@@ -175,6 +175,10 @@ private:
 				CONSOLE_LOG((int)oldRef);
 				CONSOLE_LOG_LN(F(" is destroyed"));
 			}
+
+			// Set refs to null
+			_ptr = 0;
+			_count = 0;
 		}
 	}
 

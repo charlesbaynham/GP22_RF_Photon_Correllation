@@ -4,7 +4,7 @@
 
 // Minimal class to replace std::list
 
-#define LIST_DEBUG
+// #define LIST_DEBUG
 
 #ifdef LIST_DEBUG
 #define CONSOLE_LOG(s)  Serial.print(s)
@@ -64,19 +64,11 @@ public:
 
 	// Destructor: iterate through list and delete each ListItem
 	~List() {
-		
-		if (Serial) {
-			CONSOLE_LOG(F("*** ~List called on list with ID: "));
-			CONSOLE_LOG_LN(_ID);
-		}
 
-		ListItem * currentItem = _first;
+		CONSOLE_LOG(F("*** ~List called on list with ID: "));
+		CONSOLE_LOG_LN(_ID);
 
-		while (currentItem != NULL) {
-			ListItem * nextItem = currentItem->next();
-			delete currentItem;
-			currentItem = nextItem;
-		}
+		clear();
 	}
 
 
@@ -188,6 +180,19 @@ public:
 		debug_front_back("pop_back");
 #endif
    	}
+
+	void clear() {
+		CONSOLE_LOG(F("List::clear on list ID "));
+		CONSOLE_LOG_LN(_ID);
+
+		ListItem * currentItem = _first;
+
+		while (currentItem != NULL) {
+			ListItem * nextItem = currentItem->next();
+			delete currentItem;
+			currentItem = nextItem;
+		}
+	}
 
    	const Data& front() const {
    		return _first->getConstData();
@@ -327,6 +332,13 @@ public:
 	// Postfix increment
 	Iterator_base operator++(int) {
 		
+		Iterator_base retVal = *this;
+
+		// Quit if the user is incrementing a past-the-end iterator
+		// (this behaviour is undefined)
+		if (_isPastTheEnd)
+			return retVal;
+
 		// If there's a next element, iterate to it
 		if (NULL != _nextItem) {
 
@@ -336,20 +348,27 @@ public:
 
 		}
 		else {
-			// If not, we've reached the end, so become a past the end iterator
-			_prevItem = _prevItem->next();
+			// If not, we've reached the end, so become a past the end iterator if we aren't already
+			_prevItem = _currentItem;
 			_currentItem = NULL;
 			_nextItem = NULL;
 
 			_isPastTheEnd = true;
 		}
 
-		return *this;
+		return retVal;
 	}
 
 	// Postfix decrement
 	Iterator_base operator--(int) {
 		
+		Iterator_base retVal = *this;
+
+		// Quit if the user is incrementing a past-the-end iterator
+		// (this behaviour is undefined)
+		if (_isPastTheEnd)
+			return retVal;
+
 		// If there's a previous element, iterate to it
 		if (NULL != _prevItem) {
 			
@@ -365,6 +384,22 @@ public:
 			_currentItem = NULL;
 			_nextItem = _currentItem;
 		}
+
+		return retVal;
+	}
+
+	// Prefix increment
+	Iterator_base operator++() {
+
+		(*this)++;
+
+		return *this;
+	}
+
+	// Prefix decrement
+	Iterator_base operator--() {
+
+		(*this)--;
 
 		return *this;
 	}
@@ -456,6 +491,8 @@ public:
 	operator Iterator() = delete;
 };
 
+#ifdef LIST_DEBUG
 // Start the List ID off at 0
 template<typename Data>
 int List<Data>::_nextID = 0;
+#endif

@@ -163,7 +163,7 @@ ExecuteError CommandHandler::executeCommand() {
 
 // Add a char from the serial connection to be processed and added to the queue
 void CommandHandler::addCommandChar(const char c) {
-	
+
 	// If c is a newline, store the buffer in the queue and start a new buffer
 	if (c == '\n') {
 
@@ -210,7 +210,7 @@ void CommandHandler::addCommandChar(const char c) {
 		else
 		{
 			_inputBuffer[_bufferLength] = c;
-			
+
 			_bufferLength++;
 
 			_inputBuffer[_bufferLength] = '\0';
@@ -219,7 +219,7 @@ void CommandHandler::addCommandChar(const char c) {
 			CONSOLE_LOG(c);
 			CONSOLE_LOG(F("', Buffer length: "));
 			CONSOLE_LOG_LN(_bufferLength);
-			
+
 		}
 	}
 }
@@ -234,7 +234,7 @@ int CommandHandler::findEndOfCommand(const char* str) {
 	for (int i = 0; i <= strlen(str); i++) {
 		// Is this char a space or a NULL?
 		if (str[i] == ' ' || str[i] == '\0') {
-			endOfCommand = i-1;
+			endOfCommand = i - 1;
 			break;
 		}
 	}
@@ -244,10 +244,10 @@ int CommandHandler::findEndOfCommand(const char* str) {
 
 // Loop from the first space onwards, counting the params
 int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
-	
-	int numParamsInCommand = 0; 
+
+	int numParamsInCommand = 0;
 	bool lastWasSpace = true;
-	
+
 	for (int i = endOfCommand + 1; i < strlen(str); i++) {
 
 		if (str[i] != ' ') {
@@ -297,7 +297,7 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 		}
 		else // if this char is a space or NULL char
 		{
-			if (! lastWasSpace) {
+			if (!lastWasSpace) {
 				// We found the end of a param
 				endParam = i;
 

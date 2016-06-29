@@ -69,6 +69,14 @@ public:
 		outputDebugHeader();
 		CONSOLE_LOG(F("Deref to "));
 		CONSOLE_LOG_LN((int)_ptr);
+
+#ifdef DEBUGGING_ENABLED
+		if (!_ptr) {
+			outputDebugHeader();
+			CONSOLE_LOG_LN(F("WARNING! Dereference with a null pointer"));
+		}
+#endif
+
 		return *_ptr;
 	}
 
@@ -78,6 +86,13 @@ public:
 		CONSOLE_LOG(F("const deref to "));
 		CONSOLE_LOG_LN((int)_ptr);
 
+#ifdef DEBUGGING_ENABLED
+		if (!_ptr) {
+			outputDebugHeader();
+			CONSOLE_LOG_LN(F("WARNING! Dereference with a null pointer"));
+		}
+#endif
+
 		return *_ptr;
 	}
 
@@ -86,6 +101,13 @@ public:
 		outputDebugHeader();
 		CONSOLE_LOG(F("Pointer deref to "));
 		CONSOLE_LOG_LN((int)_ptr);
+
+#ifdef DEBUGGING_ENABLED
+		if (!_ptr) {
+			outputDebugHeader();
+			CONSOLE_LOG_LN(F("WARNING! Dereference with a null pointer"));
+		}
+#endif
 		return _ptr;
 	}
 

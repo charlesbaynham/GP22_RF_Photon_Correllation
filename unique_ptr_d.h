@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Microprocessor_Debugging\debugging_disable.h"
+
 template <typename T>
 class unique_ptr_d
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "disable_debugging.h"
+#include "Microprocessor_Debugging\debugging_disable.h"
 
 template <typename T>
 class shared_ptr_d
@@ -226,4 +226,4 @@ shared_ptr_d<T> make_shared(Args&&... args) {
 	return shared_ptr_d<T>(ptr);
 }
 
-#include "disable_debugging.h"
+#include "Microprocessor_debugging\debugging_disable.h"

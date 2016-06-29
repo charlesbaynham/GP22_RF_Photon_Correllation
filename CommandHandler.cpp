@@ -2,13 +2,7 @@
 
 #include "CommandHandler.h"
 
-#ifdef DEBUG
-#define CONSOLE_LOG(s)  Serial.print(s)
-#define CONSOLE_LOG_LN(s)  Serial.println(s)
-#else
-#define CONSOLE_LOG(s) 
-#define CONSOLE_LOG_LN(s)
-#endif
+#include "Microprocessor_Debugging\debugging_disable.h"
 
 // Add a new command to the list
 void CommandLookup::registerCommand(const char* command, int num_of_parameters,

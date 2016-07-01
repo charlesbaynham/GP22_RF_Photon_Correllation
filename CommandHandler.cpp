@@ -243,10 +243,10 @@ void CommandHandler::addCommandChar(const char c) {
 // Find the location in a command string where the command ends and the params start
 int CommandHandler::findEndOfCommand(const char* str) {
 
-	int i;
+	int i = 0;
 
 	// Loop until the first non-space to find the start of the command
-	for ( ; i <= strlen(str); i++) {
+	while (i <= strlen(str)) {
 
 		CONSOLE_LOG(F("CommandHandler::findEndOfCommand: first loop, char "));
 		CONSOLE_LOG(i);
@@ -258,10 +258,12 @@ int CommandHandler::findEndOfCommand(const char* str) {
 			CONSOLE_LOG_LN(F("Breaking"));
 			break;
 		}
+
+		i++;
 	}
 
 	// Loop until the first (post-command) space to find the break between command and params
-	for ( ; i <= strlen(str); i++) {
+	while (i <= strlen(str)) {
 
 		CONSOLE_LOG(F("CommandHandler::findEndOfCommand: second loop, char "));
 		CONSOLE_LOG(i);
@@ -275,11 +277,13 @@ int CommandHandler::findEndOfCommand(const char* str) {
 			
 			int out = i - 1;
 
-			CONSOLE_LOG(F("CommandHandler::endOfCommand is "));
+			CONSOLE_LOG(F("CommandHandler::returning "));
 			CONSOLE_LOG_LN(out);
 
 			return out;
 		}
+
+		i++;
 	}
 
 	CONSOLE_LOG_LN(F("CommandHandler::endOfCommand not found"));

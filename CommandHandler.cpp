@@ -395,7 +395,7 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 bool CommandHandler::storeStartupCommand(const String& command) {
 
 	// Check that the string is small enough to fit into the buffer, including null char
-	if (command.length() + 1 > COMMAND_SIZE_MAX) {
+	if (command.length() > COMMAND_SIZE_MAX - 2) {
 		CONSOLE_LOG_LN(F("CommandHandler::Command too long for EEPROM"));
 		return false;
 	}
@@ -419,7 +419,7 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 	int commandIdx = 0;
 	int eeprom_ptr = 0;
 
-	while (*(command + commandIdx) != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 1) {
+	while (*(command + commandIdx) != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 2) {
 
 		// Store this char in EEPROM
 		CONSOLE_LOG(F("CommandHandler::Update EEPROM ("));
@@ -436,7 +436,9 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 
 	}
 
-	// Null terminate
+	// Terminate with a newline and a null
+	EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, '\n');
+	eeprom_ptr++;
 	EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, '\0');
 
 	return true;

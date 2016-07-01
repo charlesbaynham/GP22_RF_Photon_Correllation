@@ -81,16 +81,18 @@
 		}
 
 		// Store a command to be executed on startup in the EEPROM
-		// This command can (and should) include newlines: it will be copied verbatim into the
+		// This command should not include newlines: it will be copied verbatim into the
 		// buffer and then executed as a normal command would be
-		// Max length is COMMAND_LENGTH_MAX
+		// Multiple commands can be seperated by ';' chars
+		// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 		// Returns false on fail
 		bool storeStartupCommand(const String& command);
 
 		// Store a command to be executed on startup in the EEPROM
-		// This command can (and should) include newlines: it will be copied verbatim into the
+		// This command should not include newlines: it will be copied verbatim into the
 		// buffer and then executed as a normal command would be
-		// Max length is COMMAND_LENGTH_MAX
+		// Multiple commands can be seperated by ';' chars
+		// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 		// Returns false on fail
 		bool storeStartupCommand(const char* command);
 		

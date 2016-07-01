@@ -56,10 +56,9 @@
 	class CommandHandler
 	{
 	public:
-		CommandHandler() :
-			_lookupList(),
-			_command_too_long(false),
-			_bufferLength(0) { _inputBuffer[0] = '\0'; }
+		// Constuctor
+		// Initialise private members and queue any stored command in the EEPROM
+		CommandHandler();
 
 		// Wipe any char*s left in the queue or buffer
 		~CommandHandler() {

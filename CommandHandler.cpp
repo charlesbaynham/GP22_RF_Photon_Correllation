@@ -84,6 +84,21 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<St
 	return NO_ERROR;
 }
 
+// CommandHandler constuctor
+CommandHandler::CommandHandler() :
+	_lookupList(), // Not needed, but just to be explicit
+	_command_too_long(false),
+	_bufferLength(0)
+{
+	CONSOLE_LOG_LN(F("CommandHandler::CommandHandler()"));
+
+	// Start the input buffer empty
+	_inputBuffer[0] = '\0';
+
+	// Queue any command that may be stored in the EEPROM
+	queueStartupCommand();
+}
+
 // Execute the next command in the queue
 ExecuteError CommandHandler::executeCommand() {
 
@@ -399,6 +414,8 @@ bool CommandHandler::wipeStartupCommand() {
 // Return any stored startup command. Returns "" if no command stored
 String CommandHandler::getStartupCommand() {
 
+	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(String)"))
+
 	// Buffer for retreived command
 	char buffer[COMMAND_SIZE_MAX];
 
@@ -408,13 +425,14 @@ String CommandHandler::getStartupCommand() {
 	return String(buffer);
 }
 
-
 // Return any stored startup command by copying into buf.
 // This has the same functionality as the other form and 
 // avoids memory allocations on the heap, but places responsibility
 // for memory management on the user
 // buf must point to a buffer of at least COMMAND_SIZE_MAX chars
 void CommandHandler::getStartupCommand(char * buf) {
+
+	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(char*)"))
 
 	// Index of location in buffer
 	int bufIdx = 0; // Start at start of buffer

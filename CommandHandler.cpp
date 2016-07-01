@@ -336,26 +336,43 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 bool CommandHandler::storeStartupCommand(const String& command) {
 
 	// Check that the string is small enough to fit into the buffer, including null char
-	if (command.length() + 1 > COMMAND_SIZE_MAX){
+	if (command.length() + 1 > COMMAND_SIZE_MAX) {
 		CONSOLE_LOG_LN(F("CommandHandler::Command too long for EEPROM"));
 		return false;
 	}
 
-	// If so, store a flag indicating that a command exists
+	// Store it
+	return storeStartupCommand(command.c_str());
+}
+
+// Store a command to be executed on startup in the EEPROM
+// This command can include newlines: it will be copied verbatim into the
+// buffer and then executed as a normal command would be
+// It should include a terminating newline if you expect it to be run!
+// Returns false on fail
+bool CommandHandler::storeStartupCommand(const char * command) {
+
+	// Store a flag indicating that a command exists
 	const bool trueFlag = true;
 	EEPROM.update(EEPROM_STORED_COMMAND_FLAG_LOCATION, trueFlag);
-	
+
 	// Loop through the command and store it
-	char * commandPtr = (char*)command.c_str();
+	int commandIdx = 0;
 	int eeprom_ptr = 0;
 
-	while (*commandPtr != '\0' && eeprom_ptr >= COMMAND_SIZE_MAX - 1) {
+	while (*(command + commandIdx) != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 1) {
 
 		// Store this char in EEPROM
-		EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, *commandPtr);
+		CONSOLE_LOG(F("CommandHandler::Update EEPROM ("));
+		CONSOLE_LOG(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr);
+		CONSOLE_LOG(F("): [0x"));
+		CONSOLE_LOG(*(command + commandIdx), HEX);
+		CONSOLE_LOG_LN(']');
+
+		EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, *(command + commandIdx));
 
 		// Increment string pointer and eeprom pointer
-		commandPtr += sizeof(char);
+		commandIdx += sizeof(char);
 		eeprom_ptr += sizeof(char);
 
 	}
@@ -370,7 +387,7 @@ bool CommandHandler::storeStartupCommand(const String& command) {
 // Remove any startup commands from the EEPROM
 bool CommandHandler::wipeStartupCommand() {
 	// There is no need to wipe the command from the EEPROM: we simply set the flag to false
-	
+
 	// Store a flag indicating that no command exists
 	const bool falseFlag = false;
 
@@ -398,56 +415,61 @@ String CommandHandler::getStartupCommand() {
 // for memory management on the user
 // buf must point to a buffer of at least COMMAND_SIZE_MAX chars
 void CommandHandler::getStartupCommand(char * buf) {
-	
+
 	// Index of location in buffer
 	int bufIdx = 0; // Start at start of buffer
-						  
+
 	// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
 	// It will tell us if there's a command to be read or not
-	// Read it as a char though, since the memory location will be 0xFF if it has never been written to
-	char fromEEPROM = EEPROM.read(EEPROM_STORED_COMMAND_FLAG_LOCATION);
-	
-	if (fromEEPROM == 0xFF) {
-		CONSOLE_LOG_LN(F("CommandHandler::EEPROM flag empty"));
+	// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
+	// We only want to use it if it's exactly a bool
+	char fromEEPROM;
+	EEPROM.get(EEPROM_STORED_COMMAND_FLAG_LOCATION, fromEEPROM);
+
+	CONSOLE_LOG(F("CommandHandler::EEPROM flag contains : [0x"));
+	CONSOLE_LOG(fromEEPROM, HEX);
+	CONSOLE_LOG_LN(']');
+
+	if (fromEEPROM == (char)true) {
+
+		CONSOLE_LOG_LN(F("CommandHandler::EEPROM flag true"));
+
+		// Index of location in EEPROM
+		int EEPROM_idx = EEPROM_STORED_COMMAND_LOCATION;
+
+		// At most, go to the end of the buffer - 1, to leave space for a null terminator
+		while (bufIdx < COMMAND_SIZE_MAX - 1)
+		{
+			char c;
+			EEPROM.get(EEPROM_idx, c);
+
+			CONSOLE_LOG(F("CommandHandler::Read from EEPROM ("));
+			CONSOLE_LOG(EEPROM_idx);
+			CONSOLE_LOG(F("): [0x"));
+			CONSOLE_LOG(c, HEX);
+			CONSOLE_LOG_LN(']');
+
+			if (c == '\0') {
+				// Found the end
+
+				CONSOLE_LOG(F("CommandHandler::Stored command ends at "));
+				CONSOLE_LOG_LN(EEPROM_idx);
+
+				break;
+			}
+
+			// Store the char
+			buf[bufIdx] = c;
+
+			EEPROM_idx++;
+			bufIdx++;
+		}
+	}
+	else if (fromEEPROM == (char)false) {
+		CONSOLE_LOG_LN(F("CommandHandler::EEPROM flag false"));
 	}
 	else {
-
-		bool getFlag;
-		EEPROM.get(EEPROM_STORED_COMMAND_FLAG_LOCATION, getFlag);
-
-		if (!getFlag) {
-			CONSOLE_LOG_LN(F("CommandHandler::EEPROM flag false"));
-		} else {
-
-			CONSOLE_LOG_LN(F("CommandHandler::EEPROM flag true"));
-
-			// Index of location in EEPROM
-			int EEPROM_idx = EEPROM_STORED_COMMAND_LOCATION;
-
-			// At most, go to the end of the buffer - 1, to leave space for a null terminator
-			while (bufIdx < COMMAND_SIZE_MAX - 1)
-			{
-				char c;
-				EEPROM.get(EEPROM_idx, c);
-
-				if (c == '\0') {
-					// Found the end
-
-					CONSOLE_LOG(F("CommandHandler::Stored command ends at "));
-					CONSOLE_LOG_LN(EEPROM_idx);
-
-					break;
-				}
-
-				// Store the char
-				CONSOLE_LOG(F("CommandHandler::Storing : "));
-				CONSOLE_LOG_LN(c);
-				buf[bufIdx] = c;
-
-				EEPROM_idx++;
-				bufIdx++;
-			}
-		}
+		CONSOLE_LOG_LN(F("CommandHandler::EEPROM flag undefined"));
 	}
 
 	// Null terminate
@@ -467,7 +489,7 @@ bool CommandHandler::queueStartupCommand() {
 	getStartupCommand(storedCmd);
 
 	// Is the string empty?
-	if (storedCmd[0] = '\0') {
+	if (storedCmd[0] == '\0') {
 		// Fail. No command stored
 		CONSOLE_LOG_LN(F("CommandHandler::queueStartupCommand: No command stored"));
 		return false;

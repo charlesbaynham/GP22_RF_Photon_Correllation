@@ -95,8 +95,10 @@ CommandHandler::CommandHandler() :
 	// Start the input buffer empty
 	_inputBuffer[0] = '\0';
 
+#ifndef EEPROM_DISABLED
 	// Queue any command that may be stored in the EEPROM
 	queueStartupCommand();
+#endif
 }
 
 // Execute the next command in the queue
@@ -387,6 +389,7 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 	}
 }
 
+#ifndef EEPROM_DISABLED
 // Store a command to be executed on startup in the EEPROM
 // This command can include newlines: it will be copied verbatim into the
 // buffer and then executed as a normal command would be
@@ -593,3 +596,4 @@ bool CommandHandler::queueStartupCommand() {
 	return true;
 
 }
+#endif

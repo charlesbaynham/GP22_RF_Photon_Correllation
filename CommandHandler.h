@@ -8,6 +8,9 @@
 #define EEPROM_STORED_COMMAND_FLAG_LOCATION 0
 #define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
 
+// To disable EEPROM features, set this flag:
+// #define EEPROM_DISABLED
+
 #include "basicList.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
@@ -80,6 +83,7 @@
 			_commandQueue.debug();
 		}
 
+#ifndef EEPROM_DISABLED
 		// Store a command to be executed on startup in the EEPROM
 		// This command should not include newlines: it will be copied verbatim into the
 		// buffer and then executed as a normal command would be
@@ -112,6 +116,7 @@
 		// Queue the startup command stored in the EEPROM
 		// Returns true on success, false on failure or if no command is stored
 		bool queueStartupCommand();
+#endif
 
 		// Execute the next command in the queue
 		ExecuteError executeCommand();

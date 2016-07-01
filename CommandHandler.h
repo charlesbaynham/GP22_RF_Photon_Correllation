@@ -1,9 +1,12 @@
 #pragma once
 
-// #define DEBUG
-
 #define COMMAND_SIZE_MAX 128 // num chars
 #define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored
+
+// Storage locations in EEPROM for commands
+#include <EEPROM.h>
+#define EEPROM_STORED_COMMAND_FLAG_LOCATION 0
+#define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
 
 #include "basicList.h"
 
@@ -78,8 +81,31 @@
 			_commandQueue.debug();
 		}
 
+		// Store a command to be executed on startup in the EEPROM
+		// This command can include newlines: it will be copied verbatim into the
+		// buffer and then executed as a normal command would be
+		// Returns false on fail
+		bool storeStartupCommand(const String& command);
+		
+		// Remove any startup commands from the EEPROM
+		bool wipeStartupCommand();
+
+		// Return any stored startup command. Returns "" if no command stored
+		String getStartupCommand();
+
+		// Return any stored startup command by copying into buf.
+		// This has the same functionality as the other form and 
+		// avoids memory allocations on the heap, but places responsibility
+		// for memory management on the user
+		// buf must point to a buffer of at least COMMAND_SIZE_MAX chars
+		void getStartupCommand(char * buf);
+
+		// Queue the startup command stored in the EEPROM
+		// Returns true on success, false on failure or if no command is stored
+		bool queueStartupCommand();
+
 		// Execute the next command in the queue
-		ExecuteError executeCommand() ;
+		ExecuteError executeCommand();
 
 		// Register a command
 		void registerCommand(const char* command, int num_of_parameters,

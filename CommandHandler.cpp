@@ -104,7 +104,7 @@ ExecuteError CommandHandler::executeCommand() {
 
 	CONSOLE_LOG_LN(F("Execute command"));
 
-	// Return error code -3 if no command waiting
+	// Return error code if no command waiting
 	if (_commandQueue.isEmpty())
 		return NO_COMMAND_WAITING;
 
@@ -128,9 +128,13 @@ ExecuteError CommandHandler::executeCommand() {
 		return EMPTY_COMMAND_STRING;
 	}
 
+#include "Microprocessor_Debugging\debugging_enable.h"
 	CONSOLE_LOG_LN(F("Running findEndOfCommand..."));
 	// The location in the string where the command ends and the params start
 	int endOfCommand = findEndOfCommand(nextCommand.c_str());
+
+	CONSOLE_LOG(F("CommandHandler::executeCommmand: endOfCommand is "));
+	CONSOLE_LOG_LN(endOfCommand);
 
 	// If this failed, quit with an error
 	if (endOfCommand < 0) {
@@ -138,6 +142,8 @@ ExecuteError CommandHandler::executeCommand() {
 		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
 		return ERROR_PARSING_COMMAND;
 	}
+
+#include "Microprocessor_Debugging\debugging_disable.h"
 
 	// Copy the command word from the previously found command
 	String commandWord = nextCommand.substring(0, endOfCommand + 1);
@@ -173,8 +179,8 @@ ExecuteError CommandHandler::executeCommand() {
 // Add a char from the serial connection to be processed and added to the queue
 void CommandHandler::addCommandChar(const char c) {
 
-	// If c is a newline, store the buffer in the queue and start a new buffer
-	if (c == '\n') {
+	// If c is a newline or a semicolon, store the buffer in the queue and start a new buffer
+	if (c == '\n' || c == ';') {
 
 		CONSOLE_LOG(F("Newline received: storing in _commandQueue: "));
 		CONSOLE_LOG_LN(String(_inputBuffer));
@@ -233,23 +239,54 @@ void CommandHandler::addCommandChar(const char c) {
 	}
 }
 
-
+#include "Microprocessor_Debugging\debugging_enable.h"
 // Find the location in a command string where the command ends and the params start
 int CommandHandler::findEndOfCommand(const char* str) {
 
-	int endOfCommand = -1;
+	int i;
 
-	// Loop until the first space to find the break between command and params
-	for (int i = 0; i <= strlen(str); i++) {
-		// Is this char a space or a NULL?
-		if (str[i] == ' ' || str[i] == '\0') {
-			endOfCommand = i - 1;
+	// Loop until the first non-space to find the start of the command
+	for ( ; i <= strlen(str); i++) {
+
+		CONSOLE_LOG(F("CommandHandler::findEndOfCommand: first loop, char "));
+		CONSOLE_LOG(i);
+		CONSOLE_LOG(F(" is "));
+		CONSOLE_LOG_LN(str[i]);
+
+		// Is this anything other than a space or a tab?
+		if (str[i] != ' ' && str[i] != '\t') {
+			CONSOLE_LOG_LN(F("Breaking"));
 			break;
 		}
 	}
 
-	return endOfCommand;
+	// Loop until the first (post-command) space to find the break between command and params
+	for ( ; i <= strlen(str); i++) {
+
+		CONSOLE_LOG(F("CommandHandler::findEndOfCommand: second loop, char "));
+		CONSOLE_LOG(i);
+		CONSOLE_LOG(F(" is "));
+		CONSOLE_LOG_LN(str[i]);
+
+		// Is this char a space or a NULL?
+		if (str[i] == ' ' || str[i] == '\0') {
+			CONSOLE_LOG(F("Second find at i = "));
+			CONSOLE_LOG_LN(i);
+			
+			int out = i - 1;
+
+			CONSOLE_LOG(F("CommandHandler::endOfCommand is "));
+			CONSOLE_LOG_LN(out);
+
+			return out;
+		}
+	}
+
+	CONSOLE_LOG_LN(F("CommandHandler::endOfCommand not found"));
+
+	return -1;
 }
+#include "Microprocessor_Debugging\debugging_disable.h"
 
 // Loop from the first space onwards, counting the params
 int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {

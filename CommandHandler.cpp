@@ -323,7 +323,7 @@ int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
 	return numParamsInCommand;
 }
 
-
+#include "Microprocessor_Debugging\debugging_enable.h"
 // Parse the string to extract the parameters and store them in destList
 void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<String>& destList) {
 
@@ -375,10 +375,8 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 				// Add to List
 				destList.push_back(String(theParam));
 
-				CONSOLE_LOG(F("readParamsFromStr: output contains: "));
-#ifdef DEBUG
-				destList.debug();
-#endif
+				CONSOLE_LOG(F("String creation "));
+				CONSOLE_LOG_LN(destList.back() ? F("succeeded") : F("failed"));
 
 				// Reset the string
 				theParam[0] = '\0';
@@ -388,6 +386,7 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 		}
 	}
 }
+#include "Microprocessor_Debugging\debugging_disable.h"
 
 #ifndef EEPROM_DISABLED
 // Store a command to be executed on startup in the EEPROM

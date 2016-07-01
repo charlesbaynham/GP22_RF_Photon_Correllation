@@ -137,8 +137,11 @@
 		// A flag to report that the command currently being received has overrun
 		bool _command_too_long;
 
+		// Find the location in a command string where the command starts
+		int findStartOfCommand(const char* str);
+
 		// Find the location in a command string where the command ends and the params start
-		int findEndOfCommand(const char* str) ;
+		int findEndOfCommand(const char* str, int startPoint = 0);
 
 		// Loop from the first space onwards, counting the params
 		int numParamsInCommandStr(const char* str, int endOfCommand) ;

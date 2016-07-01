@@ -128,25 +128,20 @@ ExecuteError CommandHandler::executeCommand() {
 		return EMPTY_COMMAND_STRING;
 	}
 
-#include "Microprocessor_Debugging\debugging_enable.h"
-	CONSOLE_LOG_LN(F("Running findEndOfCommand..."));
 	// The location in the string where the command ends and the params start
-	int endOfCommand = findEndOfCommand(nextCommand.c_str());
+	int startOfCommand = findStartOfCommand(nextCommand.c_str());
 
-	CONSOLE_LOG(F("CommandHandler::executeCommmand: endOfCommand is "));
-	CONSOLE_LOG_LN(endOfCommand);
+	// The location in the string where the command ends and the params start
+	int endOfCommand = findEndOfCommand(nextCommand.c_str(), startOfCommand);
 
 	// If this failed, quit with an error
-	if (endOfCommand < 0) {
-
+	if (startOfCommand < 0 || endOfCommand < 0) {
 		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
 		return ERROR_PARSING_COMMAND;
 	}
 
-#include "Microprocessor_Debugging\debugging_disable.h"
-
 	// Copy the command word from the previously found command
-	String commandWord = nextCommand.substring(0, endOfCommand + 1);
+	String commandWord = nextCommand.substring(startOfCommand, endOfCommand + 1);
 
 	//// Check if this is a query SCPI command (command word ends in a '?')
 	//bool isQuery = (commandWord[endOfCommand] == '?');
@@ -239,16 +234,16 @@ void CommandHandler::addCommandChar(const char c) {
 	}
 }
 
-#include "Microprocessor_Debugging\debugging_enable.h"
-// Find the location in a command string where the command ends and the params start
-int CommandHandler::findEndOfCommand(const char* str) {
+// Find the location in a command string where the command starts
+// i.e. the first char that isn't a space or a tab
+int CommandHandler::findStartOfCommand(const char* str) {
 
 	int i = 0;
 
 	// Loop until the first non-space to find the start of the command
 	while (i <= strlen(str)) {
 
-		CONSOLE_LOG(F("CommandHandler::findEndOfCommand: first loop, char "));
+		CONSOLE_LOG(F("CommandHandler::findStartOfCommand: first loop, char "));
 		CONSOLE_LOG(i);
 		CONSOLE_LOG(F(" is "));
 		CONSOLE_LOG_LN(str[i]);
@@ -256,11 +251,20 @@ int CommandHandler::findEndOfCommand(const char* str) {
 		// Is this anything other than a space or a tab?
 		if (str[i] != ' ' && str[i] != '\t') {
 			CONSOLE_LOG_LN(F("Breaking"));
-			break;
+			
+			return i;
 		}
 
 		i++;
 	}
+
+	return -1;
+}
+
+// Find the location in a command string where the command ends and the params start
+int CommandHandler::findEndOfCommand(const char* str, int startPoint) {
+
+	int i = startPoint;
 
 	// Loop until the first (post-command) space to find the break between command and params
 	while (i <= strlen(str)) {
@@ -274,7 +278,7 @@ int CommandHandler::findEndOfCommand(const char* str) {
 		if (str[i] == ' ' || str[i] == '\0') {
 			CONSOLE_LOG(F("Second find at i = "));
 			CONSOLE_LOG_LN(i);
-			
+
 			int out = i - 1;
 
 			CONSOLE_LOG(F("CommandHandler::returning "));
@@ -290,7 +294,6 @@ int CommandHandler::findEndOfCommand(const char* str) {
 
 	return -1;
 }
-#include "Microprocessor_Debugging\debugging_disable.h"
 
 // Loop from the first space onwards, counting the params
 int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {

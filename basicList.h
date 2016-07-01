@@ -431,6 +431,10 @@ public:
 	Iterator(bool pastTheEnd, ListItem * lastItem) :
 		Iterator_base(pastTheEnd, lastItem) {}
 
+	// Default constuctor
+	Iterator() :
+		Iterator(true, NULL) {}
+
 	// Return the current item
 	Data& operator*() {
 		if (NULL != this->_currentItem) {
@@ -472,6 +476,10 @@ public:
 	// Constuctor for "past the end" iterators
 	Iterator_const(bool pastTheEnd, ListItem * lastItem) :
 		Iterator_base(pastTheEnd, lastItem) {}
+
+	// Default constuctor
+	Iterator_const() :
+		Iterator_const(true, NULL) {}
 	
 	// Return a const reference to the current item
 	const Data& operator*() const {

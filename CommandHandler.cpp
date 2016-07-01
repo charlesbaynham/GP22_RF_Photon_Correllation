@@ -437,6 +437,12 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 	}
 
 	// Terminate with a newline and a null
+	CONSOLE_LOG(F("CommandHandler::Terminate EEPROM ("));
+	CONSOLE_LOG(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr);
+	CONSOLE_LOG('&');
+	CONSOLE_LOG(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr + 1);
+	CONSOLE_LOG_LN(')');
+
 	EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, '\n');
 	eeprom_ptr++;
 	EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, '\0');

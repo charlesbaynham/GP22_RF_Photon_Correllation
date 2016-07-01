@@ -99,7 +99,7 @@ void echoMe(const List<String> &params) {
 void adder(const List<String> &params) {
 
 	// Get an iterator to iterate over the list of parameters
-	List<String>::Iterator_const it = params.begin();
+	List<String>::const_iterator it = params.begin();
 
 	// Convert the first parameter to a number
 	String thisParam = *it;
@@ -124,7 +124,7 @@ void adder(const List<String> &params) {
 void echoMany(const List<String> &params) {
 
 	// Get an iterator to iterate over the list of parameters
-	List<String>::Iterator_const it;
+	List<String>::const_iterator it;
 
 	Serial.print(F("Number of params to echo is: "));
 	Serial.println(params.size());

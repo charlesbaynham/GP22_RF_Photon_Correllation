@@ -19,13 +19,13 @@ class List {
 
 protected:
 	// Base class for iterators to iterate over this list
-	class Iterator_base;
+	class iterator_base;
 
 public:
 	// Class for a non-constant iterator
-	class Iterator;
+	class iterator;
 	// Class for a constant iterator, guaranteeing no changes to the list
-	class Iterator_const;
+	class const_iterator;
 
 protected:
 	// Class for items in this list
@@ -201,24 +201,24 @@ public:
    		return _last->getConstData();
    	}
 
-	Iterator begin() {
+	iterator begin() {
 		// Return the first iterator
-		return Iterator(_first);
+		return iterator(_first);
 	}
 
-	Iterator_const begin() const {
+	const_iterator begin() const {
 		// Return the first iterator
-		return Iterator_const(_first);
+		return const_iterator(_first);
 	}
 
-	Iterator end() {
+	iterator end() {
 		// Return a "past the end" iterator
-		return Iterator(true, _last);
+		return iterator(true, _last);
 	}
 
-	Iterator_const end() const{
+	const_iterator end() const{
 		// Return a "past the end" iterator
-		return Iterator_const(true, _last);
+		return const_iterator(true, _last);
 	}
 
    	bool isEmpty() const { return _list_size == 0; }
@@ -301,7 +301,7 @@ class List<Data>::ListItem {
 };
 
 template<typename Data>
-class List<Data>::Iterator_base {
+class List<Data>::iterator_base {
 
 protected:
 
@@ -314,7 +314,7 @@ protected:
 public:
 
 	// Normal constructor
-	Iterator_base(ListItem * startingItem) :
+	iterator_base(ListItem * startingItem) :
 		_currentItem(startingItem),
 		_prevItem(startingItem->prev()),
 		_nextItem(startingItem->next()), 
@@ -322,7 +322,7 @@ public:
 	{}
 
 	// Constuctor for "past the end" iterators
-	Iterator_base(bool pastTheEnd, ListItem * lastItem) :
+	iterator_base(bool pastTheEnd, ListItem * lastItem) :
 		_currentItem(NULL),
 		_prevItem(lastItem),
 		_nextItem(NULL),
@@ -330,9 +330,9 @@ public:
 	{}
 	
 	// Postfix increment
-	Iterator_base operator++(int) {
+	iterator_base operator++(int) {
 		
-		Iterator_base retVal = *this;
+		iterator_base retVal = *this;
 
 		// Quit if the user is incrementing a past-the-end iterator
 		// (this behaviour is undefined)
@@ -360,9 +360,9 @@ public:
 	}
 
 	// Postfix decrement
-	Iterator_base operator--(int) {
+	iterator_base operator--(int) {
 		
-		Iterator_base retVal = *this;
+		iterator_base retVal = *this;
 
 		// Quit if the user is incrementing a past-the-end iterator
 		// (this behaviour is undefined)
@@ -389,7 +389,7 @@ public:
 	}
 
 	// Prefix increment
-	Iterator_base operator++() {
+	iterator_base operator++() {
 
 		(*this)++;
 
@@ -397,7 +397,7 @@ public:
 	}
 
 	// Prefix decrement
-	Iterator_base operator--() {
+	iterator_base operator--() {
 
 		(*this)--;
 
@@ -405,7 +405,7 @@ public:
 	}
 
 	// Check equality
-	bool operator==(const Iterator_base a) const {
+	bool operator==(const iterator_base a) const {
 		
 		if (_isPastTheEnd && a._isPastTheEnd) {
 			return _prevItem == a._prevItem;
@@ -415,25 +415,25 @@ public:
 	}
 
 	// Check inequality
-	bool operator!=(const Iterator_base a) const { return !(a == *this); }
+	bool operator!=(const iterator_base a) const { return !(a == *this); }
 
 };
 
 template<typename Data>
-class List<Data>::Iterator : public List<Data>::Iterator_base {
+class List<Data>::iterator : public List<Data>::iterator_base {
 
 public:
 	// Normal constructor
-	Iterator(ListItem * startingItem) :
-		Iterator_base(startingItem) {}
+	iterator(ListItem * startingItem) :
+		iterator_base(startingItem) {}
 
 	// Constuctor for "past the end" iterators
-	Iterator(bool pastTheEnd, ListItem * lastItem) :
-		Iterator_base(pastTheEnd, lastItem) {}
+	iterator(bool pastTheEnd, ListItem * lastItem) :
+		iterator_base(pastTheEnd, lastItem) {}
 
 	// Default constuctor
-	Iterator() :
-		Iterator(true, NULL) {}
+	iterator() :
+		iterator(true, NULL) {}
 
 	// Return the current item
 	Data& operator*() {
@@ -450,15 +450,15 @@ public:
 	}
 
 	// Cast to const iterator
-	operator Iterator_const() const {
+	operator const_iterator() const {
 		
-		CONSOLE_LOG_LN(F("Iterator: casting Iterator to Iterator_Const..."));
+		CONSOLE_LOG_LN(F("iterator: casting iterator to const_iterator..."));
 
 		if (this->_isPastTheEnd) {
-			return Iterator_const(true, this->_prevItem);
+			return const_iterator(true, this->_prevItem);
 		}
 		else {
-			return Iterator_const(this->_currentItem);
+			return const_iterator(this->_currentItem);
 		}
 	}
 
@@ -466,20 +466,20 @@ public:
 	
 	
 template<typename Data>
-class List<Data>::Iterator_const : public List<Data>::Iterator_base {
+class List<Data>::const_iterator : public List<Data>::iterator_base {
 
 public:
 	// Normal constructor
-	Iterator_const(ListItem * startingItem) :
-		Iterator_base(startingItem) {}
+	const_iterator(ListItem * startingItem) :
+		iterator_base(startingItem) {}
 
 	// Constuctor for "past the end" iterators
-	Iterator_const(bool pastTheEnd, ListItem * lastItem) :
-		Iterator_base(pastTheEnd, lastItem) {}
+	const_iterator(bool pastTheEnd, ListItem * lastItem) :
+		iterator_base(pastTheEnd, lastItem) {}
 
 	// Default constuctor
-	Iterator_const() :
-		Iterator_const(true, NULL) {}
+	const_iterator() :
+		const_iterator(true, NULL) {}
 	
 	// Return a const reference to the current item
 	const Data& operator*() const {
@@ -495,8 +495,8 @@ public:
 		}
 	}
 
-	// Explicitly disallow typecast to non-const Iterator
-	operator Iterator() = delete;
+	// Explicitly disallow typecast to non-const iterator
+	operator iterator() = delete;
 };
 
 #ifdef LIST_DEBUG

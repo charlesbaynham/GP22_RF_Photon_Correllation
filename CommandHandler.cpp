@@ -51,7 +51,7 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<St
 	}
 
 	// Iterate through list searching for key
-	List<dataStruct>::Iterator_const it = _commandList.begin();
+	List<dataStruct>::const_iterator it = _commandList.begin();
 	for (; it != _commandList.end(); it++) {
 		if (0 == strcmp(lower_command, (*it).key)) {
 			break;

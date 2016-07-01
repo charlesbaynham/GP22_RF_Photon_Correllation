@@ -174,8 +174,8 @@ ExecuteError CommandHandler::executeCommand() {
 // Add a char from the serial connection to be processed and added to the queue
 void CommandHandler::addCommandChar(const char c) {
 
-	// If c is a newline or a semicolon, store the buffer in the queue and start a new buffer
-	if (c == '\n' || c == ';') {
+	// If c is a newline, store the buffer in the queue and start a new buffer
+	if (c == '\n') {
 
 		CONSOLE_LOG(F("Newline received: storing in _commandQueue: "));
 		CONSOLE_LOG_LN(String(_inputBuffer));
@@ -419,21 +419,32 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 	int commandIdx = 0;
 	int eeprom_ptr = 0;
 
-	while (*(command + commandIdx) != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 2) {
+	while (command[commandIdx] != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 2) {
 
-		// Store this char in EEPROM
+		char toBeStored;
+		
+		// Check if it's a semicolon delimiter
+		if (command[commandIdx] != ';') {
+			// Nope. Just copy it
+			toBeStored = command[commandIdx];
+		}
+		else {
+			// It was a semicolon, so store a newline
+			toBeStored = '\n';
+		}
+
+		// Store the char in EEPROM
 		CONSOLE_LOG(F("CommandHandler::Update EEPROM ("));
 		CONSOLE_LOG(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr);
 		CONSOLE_LOG(F("): [0x"));
-		CONSOLE_LOG(*(command + commandIdx), HEX);
+		CONSOLE_LOG(toBeStored, HEX);
 		CONSOLE_LOG_LN(']');
 
-		EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, *(command + commandIdx));
+		EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, toBeStored);
 
 		// Increment string pointer and eeprom pointer
-		commandIdx += sizeof(char);
+		commandIdx++;
 		eeprom_ptr += sizeof(char);
-
 	}
 
 	// Terminate with a newline and a null

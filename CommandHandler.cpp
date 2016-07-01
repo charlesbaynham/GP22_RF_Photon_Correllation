@@ -331,7 +331,7 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 	bool lastWasSpace = true;
 	int startParam = 0;
 	int endParam = 0;
-	char theParam[128]; // Buffer for the string conversion
+	char theParam[COMMAND_SIZE_MAX]; // Buffer for the string conversion
 
 	CONSOLE_LOG(F("readParamsFromStr: Running with command str: '"));
 	CONSOLE_LOG(str);

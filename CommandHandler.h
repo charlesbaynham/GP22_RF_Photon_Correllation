@@ -34,7 +34,8 @@
 		ERROR_PARSING_COMMAND,
 		EMPTY_COMMAND_STRING,
 		NO_COMMAND_WAITING,
-		MALLOC_ERROR
+		MALLOC_ERROR, 
+		OUT_OF_MEM
 	};
 
 	class CommandLookup
@@ -155,7 +156,7 @@
 		int numParamsInCommandStr(const char* str, int endOfCommand) ;
 
 		// Parse a string to extract the parameters and store them in destList
-		void readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList);
+		int readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList);
 
 		
 	};

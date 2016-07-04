@@ -160,7 +160,13 @@ ExecuteError CommandHandler::executeCommand() {
 
 	// Declare a List of shared pointers to Strings for the params and loop through command to parse it for parameters
 	List<shared_ptr_d<String>> params;
-	readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
+	int result = readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
+
+	if (result != 0) {
+		CONSOLE_LOG_LN(F("readParamsFromStr failed"));
+		return OUT_OF_MEM;
+	}
+
 
 	CONSOLE_LOG(F("commandWord: "));
 	CONSOLE_LOG_LN(commandWord);
@@ -326,7 +332,7 @@ int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
 
 #include "Microprocessor_Debugging\debugging_enable.h"
 // Parse the string to extract the parameters and store them in destList
-void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList) {
+int CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList) {
 
 	// Loop through the string
 	bool lastWasSpace = true;
@@ -379,7 +385,14 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<s
 				destList.push_back(make_shared<String>(theParam));
 
 				CONSOLE_LOG(F("String creation "));
-				CONSOLE_LOG_LN(destList.back() ? F("succeeded") : F("failed"));
+				CONSOLE_LOG_LN(*(destList.back()) ? F("succeeded") : F("failed"));
+				CONSOLE_LOG_LN(*(destList.back()));
+
+				if (!*(destList.back())) {
+					// String creation failed
+					return -1;
+				}
+
 
 				// Reset the string
 				theParam[0] = '\0';
@@ -388,6 +401,8 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<s
 			lastWasSpace = true;
 		}
 	}
+
+	return 0;
 }
 #include "Microprocessor_Debugging\debugging_disable.h"
 

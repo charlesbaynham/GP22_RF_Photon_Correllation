@@ -12,11 +12,12 @@
 // #define EEPROM_DISABLED
 
 #include "basicList.h"
+#include "shared_ptr_d.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
 	// Template for the functions we'll be calling
-	typedef void commandFunction (const List<String>& params);
+	typedef void commandFunction (const List<shared_ptr_d<String>>& params);
 
 	// Structure of the data to be stored for each command
 	struct dataStruct {
@@ -47,7 +48,7 @@
 			commandFunction* pointer_to_function);
 
 		// Search the list of commands for the given command and execute it with the given parameter array
-		ExecuteError callStoredCommand(const char* command, const List<String>& params) ;
+		ExecuteError callStoredCommand(const char* command, const List<shared_ptr_d<String>>& params);
 
 	protected:
 
@@ -134,7 +135,7 @@
 	private:
 		CommandLookup _lookupList;
 
-		// A queue of commands (char* pointers to char arrays of COMMAND_SIZE_MAX size)
+		// A queue of commands (Strings)
 		List <String> _commandQueue;
 
 		// A buffer for receiving new commands
@@ -154,7 +155,8 @@
 		int numParamsInCommandStr(const char* str, int endOfCommand) ;
 
 		// Parse a string to extract the parameters and store them in destList
-		void readParamsFromStr(const char* str, int endOfCommand, List<String>& destList);
+		void readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList);
+
 		
 	};
 

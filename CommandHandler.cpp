@@ -3,6 +3,7 @@
 #include "CommandHandler.h"
 
 #include "Microprocessor_Debugging\debugging_disable.h"
+#include "../MemoryFree.h"
 
 // Add a new command to the list
 void CommandLookup::registerCommand(const char* command, int num_of_parameters,
@@ -36,7 +37,7 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const char* command, const List<String>& params) {
+ExecuteError CommandLookup::callStoredCommand(const char* command, const List<shared_ptr_d<String>>& params) {
 
 	CONSOLE_LOG(F("callStoredCommand with n="));
 	CONSOLE_LOG_LN(params.size());
@@ -157,8 +158,8 @@ ExecuteError CommandHandler::executeCommand() {
 
 	CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
 
-	// Declare a List of Strings for the params and loop through command to parse it for parameters
-	List<String> params;
+	// Declare a List of shared pointers to Strings for the params and loop through command to parse it for parameters
+	List<shared_ptr_d<String>> params;
 	readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
 
 	CONSOLE_LOG(F("commandWord: "));
@@ -325,7 +326,7 @@ int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
 
 #include "Microprocessor_Debugging\debugging_enable.h"
 // Parse the string to extract the parameters and store them in destList
-void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<String>& destList) {
+void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList) {
 
 	// Loop through the string
 	bool lastWasSpace = true;
@@ -335,8 +336,10 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 
 	CONSOLE_LOG(F("readParamsFromStr: Running with command str: '"));
 	CONSOLE_LOG(str);
-	CONSOLE_LOG("', strlen = ");
-	CONSOLE_LOG_LN(strlen(str));
+	CONSOLE_LOG(F("', strlen = "));
+	CONSOLE_LOG(strlen(str));
+	CONSOLE_LOG(F(", freemem = "));
+	CONSOLE_LOG_LN(freeMemory());
 
 	for (int i = endOfCommand + 1; i <= strlen(str); i++) {
 		if (str[i] != ' ' && str[i] != '\0') { // if this char is NOT a space or NULL char
@@ -373,7 +376,7 @@ void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<S
 				CONSOLE_LOG_LN(strlen(theParam));
 
 				// Add to List
-				destList.push_back(String(theParam));
+				destList.push_back(make_shared<String>(theParam));
 
 				CONSOLE_LOG(F("String creation "));
 				CONSOLE_LOG_LN(destList.back() ? F("succeeded") : F("failed"));

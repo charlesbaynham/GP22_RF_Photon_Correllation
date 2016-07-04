@@ -21,7 +21,7 @@
 
 	// Structure of the data to be stored for each command
 	struct dataStruct {
-		char * key; // Keyword for this command
+		unsigned long hash; // Hash of the keyword (case insensitive)
 		int n; // Number of params this function takes
 		commandFunction* f; // Pointer to this function
 	};
@@ -54,6 +54,11 @@
 	protected:
 
 		List<dataStruct> _commandList;
+
+		// Hash string (case insensitive)
+		// Uses	the djb2 algorithm by Dan Bernstein
+		// See http://www.cse.yorku.ca/~oz/hash.html
+		unsigned long djbHash(const char *str);
 	};
 
 //////////////////////  COMMAND HANDLER  //////////////////////
@@ -157,7 +162,6 @@
 
 		// Parse a string to extract the parameters and store them in destList
 		int readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList);
-
 		
 	};
 

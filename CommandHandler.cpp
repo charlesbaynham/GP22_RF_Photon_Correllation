@@ -13,21 +13,11 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 	// Set up a struct containing the number of params and a pointer to the function
 	dataStruct d;
 
-	// Get length of command
-	int keyLen = strlen(command);
+	// Get hash of command
+	long keyHash = djbHash(command);
 
-	// Allocate enough space for string
-	d.key = (char*)calloc(keyLen + 1, sizeof(char));
-
-	// Copy string into data struct
-	strcpy(d.key, command);
-
-	// Make lower case
-	for (int i = 0; d.key[i]; i++) {
-		d.key[i] = tolower(d.key[i]);
-	}
-
-	// Save other params
+	// Save params
+	d.hash = keyHash;
 	d.n = num_of_parameters;
 	d.f = pointer_to_function;
 
@@ -42,25 +32,16 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<sh
 	CONSOLE_LOG(F("callStoredCommand with n="));
 	CONSOLE_LOG_LN(params.size());
 
-	// Make lower case copy of command requested
-	char *lower_command;
-	lower_command = (char*)calloc(strlen(command) + 1, sizeof(char));
-	strcpy(lower_command, command);
+	// Get hash of command requested
+	const unsigned long reqHash = djbHash(command);
 
-	for (int i = 0; lower_command[i]; i++) {
-		lower_command[i] = tolower(lower_command[i]);
-	}
-
-	// Iterate through list searching for key
+	// Iterate through list searching for hash
 	List<dataStruct>::const_iterator it = _commandList.begin();
 	for (; it != _commandList.end(); it++) {
-		if (0 == strcmp(lower_command, (*it).key)) {
+		if (reqHash == (*it).hash) {
 			break;
 		}
 	}
-
-	// Discard the lower case copy string
-	free(lower_command);
 
 	if (it == _commandList.end()) { return COMMAND_NOT_FOUND; }
 
@@ -260,7 +241,7 @@ int CommandHandler::findStartOfCommand(const char* str) {
 		// Is this anything other than a space or a tab?
 		if (str[i] != ' ' && str[i] != '\t') {
 			CONSOLE_LOG_LN(F("Breaking"));
-			
+
 			return i;
 		}
 
@@ -442,7 +423,7 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 	while (command[commandIdx] != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 2) {
 
 		char toBeStored;
-		
+
 		// Check if it's a semicolon delimiter
 		if (command[commandIdx] != ';') {
 			// Nope. Just copy it
@@ -499,8 +480,8 @@ String CommandHandler::getStartupCommand() {
 
 	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(String)"))
 
-	// Buffer for retreived command
-	char buffer[COMMAND_SIZE_MAX];
+		// Buffer for retreived command
+		char buffer[COMMAND_SIZE_MAX];
 
 	// Read into buffer
 	getStartupCommand(buffer);
@@ -517,13 +498,13 @@ void CommandHandler::getStartupCommand(char * buf) {
 
 	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(char*)"))
 
-	// Index of location in buffer
-	int bufIdx = 0; // Start at start of buffer
+		// Index of location in buffer
+		int bufIdx = 0; // Start at start of buffer
 
-	// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
-	// It will tell us if there's a command to be read or not
-	// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
-	// We only want to use it if it's exactly a bool
+		// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
+		// It will tell us if there's a command to be read or not
+		// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
+		// We only want to use it if it's exactly a bool
 	char fromEEPROM;
 	EEPROM.get(EEPROM_STORED_COMMAND_FLAG_LOCATION, fromEEPROM);
 
@@ -614,3 +595,15 @@ bool CommandHandler::queueStartupCommand() {
 
 }
 #endif
+
+unsigned long CommandLookup::djbHash(const char *str)
+{
+	unsigned long hash = 5381;
+	int c;
+
+	while (c = tolower(*str++)) {
+		hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	}
+
+	return hash;
+}

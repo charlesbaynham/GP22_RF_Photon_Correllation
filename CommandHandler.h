@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 #define COMMAND_SIZE_MAX 128 // num chars
 
 // To disable EEPROM features, set this flag:
@@ -11,8 +13,6 @@
 #define EEPROM_STORED_COMMAND_FLAG_LOCATION 0
 #define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
 #endif
-
-#include "basicList.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
@@ -48,14 +48,17 @@ enum ExecuteError {
 	UNKNOWN_ERROR
 };
 
+template <size_t size>
 class CommandLookup
 {
 public:
 
-	CommandLookup() {}
+	CommandLookup() :
+		_commandsIdx(0)
+	{}
 
 	// Add a new command to the list
-	void registerCommand(const char* command, int num_of_parameters,
+	ExecuteError registerCommand(const char* command, int num_of_parameters,
 		commandFunction* pointer_to_function);
 
 	// Search the list of commands for the given command and execute it with the given parameter array
@@ -63,7 +66,8 @@ public:
 
 protected:
 
-	List<dataStruct> _commandList;
+	dataStruct _commands[size];
+	unsigned int _commandsIdx;
 
 	// Hash string (case insensitive)
 	// Uses	the djb2 algorithm by Dan Bernstein
@@ -80,6 +84,10 @@ protected:
 // invoke the nested CommandLookup object in order to get the right command
 // and execute it
 //
+// This object can hold <size> commands where <size> is defined at compile time, e.g.
+// 
+// "CommandHandler<10> handler;
+//
 // This class also contains methods for storing commands in the EEPROM in 
 // order to queue a command on device startup
 // These can be disabled by adding the line:
@@ -87,6 +95,7 @@ protected:
 // The user must call `executeStartupCommands()` in their code once they are ready 
 // for EEPROM commands to be executed
 
+template <size_t size>
 class CommandHandler
 {
 public:
@@ -121,7 +130,7 @@ public:
 	// Multiple commands can be seperated by ';' chars
 	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 	// Returns false on fail
-	bool storeStartupCommand(const String& command);
+	ExecuteError storeStartupCommand(const String& command);
 
 	// Store a command to be executed on startup in the EEPROM
 	// This command should not include newlines: it will be copied verbatim into the
@@ -129,7 +138,7 @@ public:
 	// Multiple commands can be seperated by ';' chars
 	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 	// Returns false on fail
-	bool storeStartupCommand(const char* command);
+	ExecuteError storeStartupCommand(const char* command);
 
 	// Remove any startup commands from the EEPROM
 	bool wipeStartupCommand();
@@ -151,7 +160,7 @@ public:
 
 private:
 	// An object for handling the matching of commands -> functions
-	CommandLookup _lookupList;
+	CommandLookup<size> _lookupList;
 
 	// Flag to warn that the command handler cannot handle more incoming chars
 	// until the current command is processed

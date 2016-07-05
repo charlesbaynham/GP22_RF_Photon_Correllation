@@ -5,9 +5,14 @@
 #include "Microprocessor_Debugging\debugging_disable.h"
 
 // Add a new command to the list
-void CommandLookup::registerCommand(const char* command, int num_of_parameters,
+template <size_t size>
+ExecuteError CommandLookup<size>::registerCommand(const char* command, int num_of_parameters,
 	commandFunction pointer_to_function)
 {
+	if (_commandsIdx >= size) {
+		CONSOLE_LOG_LN(F("CommandLookup::Out of pre-allocated space"));
+		return OUT_OF_MEM;
+	}
 
 	// Set up a struct containing the number of params and a pointer to the function
 	dataStruct d;
@@ -20,13 +25,15 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 	d.n = num_of_parameters;
 	d.f = pointer_to_function;
 
-	// Store it in the List
-	_commandList.push_back(d);
+	// Store it in the vector
+	_commands[_commandsIdx++] = d;
 
+	return NO_ERROR;
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const ParameterLookup& params) {
+template <size_t size>
+ExecuteError CommandLookup<size>::callStoredCommand(const ParameterLookup& params) {
 
 	CONSOLE_LOG(F("callStoredCommand with n="));
 	CONSOLE_LOG_LN(params.size());
@@ -34,18 +41,23 @@ ExecuteError CommandLookup::callStoredCommand(const ParameterLookup& params) {
 	// Get hash of command requested
 	const unsigned long reqHash = djbHash(params[0]);
 
-	// Iterate through list searching for hash
-	List<dataStruct>::const_iterator it = _commandList.begin();
-	for (; it != _commandList.end(); it++) {
-		if (reqHash == (*it).hash) {
+	int foundIdx = -1;
+
+	// Search through vector for this hash
+	for (int i = 0; i < _commandsIdx; i++) {
+		if (reqHash == _commands[i].hash) {
+			foundIdx = i;
 			break;
 		}
 	}
 
-	if (it == _commandList.end()) { return COMMAND_NOT_FOUND; }
+	if (foundIdx == -1) {
+		CONSOLE_LOG_LN(F("Command not found"));
+		return COMMAND_NOT_FOUND;
+	}
 
-	dataStruct d = *it;
-	commandFunction* f = d.f;
+	const dataStruct& d = _commands[foundIdx];
+	const commandFunction* f = d.f;
 
 	CONSOLE_LOG(F("Recalled data: d.n = "));
 	CONSOLE_LOG_LN(d.n);
@@ -67,7 +79,8 @@ ExecuteError CommandLookup::callStoredCommand(const ParameterLookup& params) {
 }
 
 // CommandHandler constuctor
-CommandHandler::CommandHandler() :
+template <size_t size>
+CommandHandler<size>::CommandHandler() :
 	_lookupList(), // Not needed, but just to be explicit
 	_command_too_long(false),
 	_bufferFull(false),
@@ -80,7 +93,8 @@ CommandHandler::CommandHandler() :
 }
 
 // Execute the next command in the queue
-ExecuteError CommandHandler::executeCommand() {
+template <size_t size>
+ExecuteError CommandHandler<size>::executeCommand() {
 
 	ExecuteError error = NO_ERROR;
 
@@ -106,7 +120,7 @@ ExecuteError CommandHandler::executeCommand() {
 	// This invalidates the string for future use
 	CONSOLE_LOG_LN(F("Creating ParameterLookup object..."));
 	ParameterLookup lookupObj = ParameterLookup(_inputBuffer);
-	
+
 	CONSOLE_LOG_LN(F("Running callStoredCommand..."));
 	ExecuteError found = _lookupList.callStoredCommand(lookupObj);
 
@@ -119,7 +133,8 @@ ExecuteError CommandHandler::executeCommand() {
 }
 
 // Add a char from the serial connection to be processed and added to the queue
-ExecuteError CommandHandler::addCommandChar(const char c) {
+template <size_t size>
+ExecuteError CommandHandler<size>::addCommandChar(const char c) {
 
 	// Check if the buffer is already full
 	if (_bufferFull) {
@@ -185,16 +200,17 @@ ExecuteError CommandHandler::addCommandChar(const char c) {
 
 #ifndef EEPROM_DISABLED
 // Store a command to be executed on startup in the EEPROM
-// This command can include newlines: it will be copied verbatim into the
+// This command should not include newlines: it will be copied verbatim into the
 // buffer and then executed as a normal command would be
-// It should include a terminating newline if you expect it to be run!
-// Returns false on fail
-bool CommandHandler::storeStartupCommand(const String& command) {
+// Multiple commands can be seperated by ';' chars
+// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
+template <size_t size>
+ExecuteError CommandHandler<size>::storeStartupCommand(const String& command) {
 
 	// Check that the string is small enough to fit into the buffer, including null char
 	if (command.length() > COMMAND_SIZE_MAX - 2) {
 		CONSOLE_LOG_LN(F("CommandHandler::Command too long for EEPROM"));
-		return false;
+		return COMMAND_TOO_LONG;
 	}
 
 	// Store it
@@ -202,11 +218,13 @@ bool CommandHandler::storeStartupCommand(const String& command) {
 }
 
 // Store a command to be executed on startup in the EEPROM
-// This command can include newlines: it will be copied verbatim into the
+// This command should not include newlines: it will be copied verbatim into the
 // buffer and then executed as a normal command would be
-// It should include a terminating newline if you expect it to be run!
+// Multiple commands can be seperated by ';' chars
+// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 // Returns false on fail
-bool CommandHandler::storeStartupCommand(const char * command) {
+template <size_t size>
+ExecuteError CommandHandler<size>::storeStartupCommand(const char * command) {
 
 	// Store a flag indicating that a command exists
 	const bool trueFlag = true;
@@ -255,12 +273,13 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 	eeprom_ptr++;
 	EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, '\0');
 
-	return true;
+	return NO_ERROR;
 }
 
 
 // Remove any startup commands from the EEPROM
-bool CommandHandler::wipeStartupCommand() {
+template <size_t size>
+bool CommandHandler<size>::wipeStartupCommand() {
 	// There is no need to wipe the command from the EEPROM: we simply set the flag to false
 
 	// Store a flag indicating that no command exists
@@ -272,12 +291,13 @@ bool CommandHandler::wipeStartupCommand() {
 }
 
 // Return any stored startup command. Returns "" if no command stored
-String CommandHandler::getStartupCommand() {
+template <size_t size>
+String CommandHandler<size>::getStartupCommand() {
 
-	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(String)"))
+	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(String)"));
 
-		// Buffer for retreived command
-		char buffer[COMMAND_SIZE_MAX];
+	// Buffer for retreived command
+	char buffer[COMMAND_SIZE_MAX];
 
 	// Read into buffer
 	getStartupCommand(buffer);
@@ -290,7 +310,8 @@ String CommandHandler::getStartupCommand() {
 // avoids memory allocations on the heap, but places responsibility
 // for memory management on the user
 // buf must point to a buffer of at least COMMAND_SIZE_MAX chars
-void CommandHandler::getStartupCommand(char * buf) {
+template <size_t size>
+void CommandHandler<size>::getStartupCommand(char * buf) {
 
 	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(char*)"))
 
@@ -356,7 +377,8 @@ void CommandHandler::getStartupCommand(char * buf) {
 
 // Queue the startup command stored in the EEPROM
 // Returns true on success, false on failure or if no command is stored
-bool CommandHandler::executeStartupCommands() {
+template <size_t size>
+bool CommandHandler<size>::executeStartupCommands() {
 
 	CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands"));
 
@@ -394,7 +416,8 @@ bool CommandHandler::executeStartupCommands() {
 }
 #endif
 
-unsigned long CommandLookup::djbHash(const char *str)
+template <size_t size>
+unsigned long CommandLookup<size>::djbHash(const char *str)
 {
 	unsigned long hash = 5381;
 	int c;
@@ -465,7 +488,7 @@ const char * ParameterLookup::operator [] (int idx) const {
 
 	CONSOLE_LOG(F("ParameterLookup::Looking for param "));
 	CONSOLE_LOG_LN(idx);
-	
+
 	char * paramPtr = _theCommand;
 	int count = idx;
 

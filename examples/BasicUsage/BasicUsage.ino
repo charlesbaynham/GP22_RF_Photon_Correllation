@@ -1,7 +1,7 @@
 #include <CommandHandler.h>
 
 // Create a CommandHandler object
-CommandHandler h;
+CommandHandler<5> h;
 
 ///////////////////////////////////////////////////////
 // Declare functions to be called by serial commands //

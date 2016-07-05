@@ -232,7 +232,7 @@ private:
 			++(*_count);
 	}
 
-	void outputDebugHeader() {
+	void outputDebugHeader() const {
 		CONSOLE_LOG(F("shared_ptr_d("));
 		CONSOLE_LOG((int)_ptr);
 		CONSOLE_LOG(F(")::"));

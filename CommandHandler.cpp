@@ -2,7 +2,7 @@
 
 #include "CommandHandler.h"
 
-#include "Microprocessor_Debugging\debugging_disable.h"
+#include "Microprocessor_Debugging\debugging_enable.h"
 #include "../MemoryFree.h"
 
 // Add a new command to the list
@@ -70,6 +70,7 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<sh
 CommandHandler::CommandHandler() :
 	_lookupList(), // Not needed, but just to be explicit
 	_command_too_long(false),
+	_bufferFull(false),
 	_bufferLength(0)
 {
 	CONSOLE_LOG_LN(F("CommandHandler::CommandHandler()"));
@@ -86,46 +87,39 @@ CommandHandler::CommandHandler() :
 // Execute the next command in the queue
 ExecuteError CommandHandler::executeCommand() {
 
+	ExecuteError error = NO_ERROR;
+
 	CONSOLE_LOG_LN(F("Execute command"));
 
 	// Return error code if no command waiting
-	if (_commandQueue.isEmpty())
-		return NO_COMMAND_WAITING;
-
-	CONSOLE_LOG_LN(F("executeCommand: Popping from _commandQueue"));
-
-	// Load and remove the next command from the queue
-	String nextCommand = _commandQueue.front();
-	_commandQueue.pop_front();
+	if (!_bufferFull) {
+		error = NO_COMMAND_WAITING;
+	}
 
 	CONSOLE_LOG(F("Command is: "));
-	CONSOLE_LOG_LN(nextCommand);
-
-	CONSOLE_LOG_LN(F("_commandQueue now contains:"));
-#ifdef DEBUG
-	_commandQueue.debug();
-#endif
+	CONSOLE_LOG_LN(_inputBuffer);
 
 	// Return error code if string is empty
-	if (nextCommand.length() == 0)
+	if (_bufferLength == 0 && !error)
 	{
-		return EMPTY_COMMAND_STRING;
+		error = EMPTY_COMMAND_STRING;
 	}
 
-	// The location in the string where the command ends and the params start
-	int startOfCommand = findStartOfCommand(nextCommand.c_str());
+	//// The location in the string where the command ends and the params start
+	//int startOfCommand = findStartOfCommand(_inputBuffer);
 
-	// The location in the string where the command ends and the params start
-	int endOfCommand = findEndOfCommand(nextCommand.c_str(), startOfCommand);
+	//// The location in the string where the command ends and the params start
+	//int endOfCommand = findEndOfCommand(_inputBuffer, startOfCommand);
 
-	// If this failed, quit with an error
-	if (startOfCommand < 0 || endOfCommand < 0) {
-		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
-		return ERROR_PARSING_COMMAND;
-	}
+	//// If this failed, quit with an error
+	//if (!error && (startOfCommand < 0 || endOfCommand < 0)) {
+	//	CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
 
-	// Copy the command word from the previously found command
-	String commandWord = nextCommand.substring(startOfCommand, endOfCommand + 1);
+	//	error = ERROR_PARSING_COMMAND;
+	//}
+
+	//// Copy the command word from the previously found command
+	//String commandWord = nextCommand.substring(startOfCommand, endOfCommand + 1);
 
 	//// Check if this is a query SCPI command (command word ends in a '?')
 	//bool isQuery = (commandWord[endOfCommand] == '?');
@@ -137,38 +131,45 @@ ExecuteError CommandHandler::executeCommand() {
 	// Count the number of parameters in the string
 	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
 
-	CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
+	// CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
 
-	// Declare a List of shared pointers to Strings for the params and loop through command to parse it for parameters
-	List<shared_ptr_d<String>> params;
-	int result = readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
+	//// Declare a List of shared pointers to Strings for the params and loop through command to parse it for parameters
+	//List<shared_ptr_d<String>> params;
+	//int result = readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
 
-	if (result != 0) {
-		CONSOLE_LOG_LN(F("readParamsFromStr failed"));
-		return OUT_OF_MEM;
-	}
+	//if (result != 0) {
+	//	CONSOLE_LOG_LN(F("readParamsFromStr failed"));
+	//	return OUT_OF_MEM;
+	//}
 
 
 	CONSOLE_LOG(F("commandWord: "));
-	CONSOLE_LOG_LN(commandWord);
-	CONSOLE_LOG(F("paramArray size: "));
-	CONSOLE_LOG_LN(params.size());
+	CONSOLE_LOG_LN(this->operator[](0)); // equivalent to calling handler[0] externally
 
 	CONSOLE_LOG_LN(F("Running callStoredCommand..."));
 
 	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params);
 
+	// Mark buffer as ready again
+	_bufferFull = false;
+	_inputBuffer[0] = '\0';
+
 	return found;
 }
 
 // Add a char from the serial connection to be processed and added to the queue
-void CommandHandler::addCommandChar(const char c) {
+ExecuteError CommandHandler::addCommandChar(const char c) {
 
-	// If c is a newline, store the buffer in the queue and start a new buffer
+	// Check if the buffer is already full
+	if (_bufferFull) {
+		return BUFFER_FULL;
+	}
+
+	// If c is a newline, mark the buffer as full
 	if (c == '\n') {
 
-		CONSOLE_LOG(F("Newline received: storing in _commandQueue: "));
-		CONSOLE_LOG_LN(String(_inputBuffer));
+		CONSOLE_LOG(F("Newline received. Command: "));
+		CONSOLE_LOG_LN(_inputBuffer);
 
 		// Should we ignore this command?
 		if (_command_too_long) {
@@ -176,25 +177,17 @@ void CommandHandler::addCommandChar(const char c) {
 			_command_too_long = false;
 
 			CONSOLE_LOG_LN(F("Ignoring command since too long"));
-		}
-		else {
-			CONSOLE_LOG_LN(F("Adding command to queue"));
-			// Add the new command to the queue
-			_commandQueue.push_back(String(_inputBuffer));
+
+			return COMMAND_TOO_LONG;
 		}
 
-#ifdef DEBUG
-		CONSOLE_LOG_LN(F("_commandQueue contains:"));
-		_commandQueue.debug();
-#endif
-
-		// Clear the input buffer
-		_inputBuffer[0] = '\0';
-		_bufferLength = 0;
+		// If not, we are already null terminated so mark the string as ready
+		_bufferFull = true;
 	}
 	// if c is a carridge return, ignore it
 	else if (c == '\r') {
 		CONSOLE_LOG_LN(F("Ignoring a \r"));
+		return NO_ERROR;
 	}
 	// else c is a normal char, so add it to the buffer
 	else {
@@ -205,10 +198,12 @@ void CommandHandler::addCommandChar(const char c) {
 
 			_command_too_long = true;
 
-			return;
+			return COMMAND_TOO_LONG;
 		}
 		else
 		{
+			// The normal case. Add the new char to the buffer
+
 			_inputBuffer[_bufferLength] = c;
 
 			_bufferLength++;
@@ -219,9 +214,12 @@ void CommandHandler::addCommandChar(const char c) {
 			CONSOLE_LOG(c);
 			CONSOLE_LOG(F("', Buffer length: "));
 			CONSOLE_LOG_LN(_bufferLength);
-
+			
+			return NO_ERROR;
 		}
 	}
+
+	return UNKNOWN_ERROR; // We should never get here
 }
 
 // Find the location in a command string where the command starts
@@ -606,4 +604,11 @@ unsigned long CommandLookup::djbHash(const char *str)
 	}
 
 	return hash;
+}
+
+// Get parameter indexed. Parameter 0 is the command itself
+// Requesting a non-existent parameter will return an empty string
+// Calling this function outside of a commandFunction will return an empty string
+const char * CommandHandler::operator [] (int idx) {
+
 }

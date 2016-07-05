@@ -16,6 +16,12 @@
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
+// This class is responsible for matching strings -> commands
+// It maintains a List of hashes, associated commands and number of
+// parameters required for those commands
+// `callStoredCommand` performs the lookup and calls the appropriate
+// command, passing through a parameter lookup object
+
 	// Template for the functions we'll be calling
 	typedef void commandFunction (const List<shared_ptr_d<String>>& params);
 
@@ -35,7 +41,10 @@
 		EMPTY_COMMAND_STRING,
 		NO_COMMAND_WAITING,
 		MALLOC_ERROR, 
-		OUT_OF_MEM
+		OUT_OF_MEM,
+		BUFFER_FULL,
+		COMMAND_TOO_LONG,
+		UNKNOWN_ERROR
 	};
 
 	class CommandLookup
@@ -63,6 +72,18 @@
 
 //////////////////////  COMMAND HANDLER  //////////////////////
 
+// This class handle the receiving and executing of commands. It should be
+// fed chars from the serial input by `addCommandChar()`
+// When a command is ready it will flag `commandWaiting()`
+// When convenient, `executeCommand()` should then be called. This will
+// invoke the nested CommandLookup object in order to get the right command
+// and execute it
+//
+// This class also contains methods for storing commands in the EEPROM in 
+// order to queue a command on device startup
+// These can be disabled by adding the line:
+// #define EEPROM_DISABLED
+
 	class CommandHandler
 	{
 	public:
@@ -70,25 +91,25 @@
 		// Initialise private members and queue any stored command in the EEPROM
 		CommandHandler();
 
-		// Wipe any char*s left in the queue or buffer
-		~CommandHandler() {
-			free(_inputBuffer);
+		// Execute the waiting command
+		ExecuteError executeCommand();
+
+		// Register a command
+		void registerCommand(const char* command, int num_of_parameters,
+				commandFunction* pointer_to_function) {
+			_lookupList.registerCommand(command, num_of_parameters,
+					pointer_to_function);
 		}
 
-		// Is a command waiting in the queue?
-		bool commandWaiting() {
-			return !_commandQueue.isEmpty();
-		}
+		// Add a char from the serial connection to be processed and added to the queue
+		// Returns BUFFER_FULL if buffer is full and char wasn't added
+		ExecuteError addCommandChar(const char c) ;
 
-		// How long is the queue?
-		int queueLength() {
-			return _commandQueue.size();
-		}
+		// Check to see if the handler is ready for more incoming chars
+		inline bool bufferFull() { return _bufferFull; }
 
-		// Dump the whole command queue for debugging
-		void debug() {
-			_commandQueue.debug();
-		}
+		// Is a command waiting?
+		inline bool commandWaiting() { return bufferFull(); }
 
 #ifndef EEPROM_DISABLED
 		// Store a command to be executed on startup in the EEPROM
@@ -106,7 +127,7 @@
 		// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 		// Returns false on fail
 		bool storeStartupCommand(const char* command);
-		
+
 		// Remove any startup commands from the EEPROM
 		bool wipeStartupCommand();
 
@@ -125,28 +146,17 @@
 		bool queueStartupCommand();
 #endif
 
-		// Execute the next command in the queue
-		ExecuteError executeCommand();
-
-		// Register a command
-		void registerCommand(const char* command, int num_of_parameters,
-				commandFunction* pointer_to_function) {
-			_lookupList.registerCommand(command, num_of_parameters,
-					pointer_to_function);
-		}
-
-		// Add a char from the serial connection to be processed and added to the queue
-		void addCommandChar(const char c) ;
-
 	private:
+		// An object for handling the matching of commands -> functions
 		CommandLookup _lookupList;
 
-		// A queue of commands (Strings)
-		List <String> _commandQueue;
+		// Flag to warn that the command handler cannot handle more incoming chars
+		// until the current command is processed
+		bool _bufferFull;
 
 		// A buffer for receiving new commands
 		char _inputBuffer[COMMAND_SIZE_MAX + 1];
-		int _bufferLength;
+		unsigned int _bufferLength;
 
 		// A flag to report that the command currently being received has overrun
 		bool _command_too_long;
@@ -165,3 +175,15 @@
 		
 	};
 
+	class ParameterLookup {
+
+	public:
+
+		// Get parameter indexed. Parameter 0 is the command itself
+		// Requesting a non-existent parameter will return an empty string
+		const char * operator [] (int idx);
+
+		// Number of stored params, including the command itself
+		unsigned int size();
+
+	};

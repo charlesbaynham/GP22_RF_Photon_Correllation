@@ -1,6 +1,4 @@
-#include "CommandHandler/CommandHandler.h"
-#include "Microprocessor_Debugging\debugging_init.h"
-#include <SPI.h>
+#include <CommandHandler.h>
 
 // Create a CommandHandler object
 CommandHandler h;
@@ -22,7 +20,6 @@ commandFunction echoMany; // "echoMany"
 void setup() {
 
 	Serial.begin(250000);
-	__serial_is_ready = true;
 
 	// Register serial commands for triggering the previously
 	// declared functions

@@ -78,11 +78,6 @@ CommandHandler::CommandHandler() :
 
 	// Start the input buffer empty
 	_inputBuffer[0] = '\0';
-
-#ifndef EEPROM_DISABLED
-	// Queue any command that may be stored in the EEPROM
-	queueStartupCommand();
-#endif
 }
 
 // Execute the next command in the queue
@@ -523,11 +518,11 @@ void CommandHandler::getStartupCommand(char * buf) {
 
 // Queue the startup command stored in the EEPROM
 // Returns true on success, false on failure or if no command is stored
-bool CommandHandler::queueStartupCommand() {
+bool CommandHandler::executeStartupCommands() {
 
-	CONSOLE_LOG_LN(F("CommandHandler::queueStartupCommand"));
+	CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands"));
 
-	// Buffer for command in EEPROM
+	// Buffer for command from EEPROM
 	char storedCmd[COMMAND_SIZE_MAX];
 
 	// Read into buffer
@@ -536,22 +531,24 @@ bool CommandHandler::queueStartupCommand() {
 	// Is the string empty?
 	if (storedCmd[0] == '\0') {
 		// Fail. No command stored
-		CONSOLE_LOG_LN(F("CommandHandler::queueStartupCommand: No command stored"));
+		CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands: No command stored"));
 		return false;
 	}
 
-	// If not, queue each char into the command queue. 
+	// If not, queue each char into the command buffer
+	// If we reach a newline, execute the command
+	// If we reach a NULL, end
 	int i = 0;
-	while (true) {
+	while (storedCmd[i]) {
 
-		CONSOLE_LOG(F("CommandHandler::queueStartupCommand: Queueing "));
+		CONSOLE_LOG(F("CommandHandler::executeStartupCommands: Queueing "));
 		CONSOLE_LOG_LN(storedCmd[i]);
 
-		addCommandChar(storedCmd[i]);
+		addCommandChar(storedCmd[i++]);
 
-		i++;
-
-		if (storedCmd[i] == '\0') break;
+		if (commandWaiting()) {
+			executeCommand();
+		}
 	}
 
 	return true;

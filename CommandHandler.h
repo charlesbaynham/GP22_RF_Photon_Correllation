@@ -84,6 +84,8 @@ protected:
 // order to queue a command on device startup
 // These can be disabled by adding the line:
 // #define EEPROM_DISABLED
+// The user must call `executeStartupCommands()` in their code once they are ready 
+// for EEPROM commands to be executed
 
 class CommandHandler
 {
@@ -142,9 +144,9 @@ public:
 	// buf must point to a buffer of at least COMMAND_SIZE_MAX chars
 	void getStartupCommand(char * buf);
 
-	// Queue the startup command stored in the EEPROM
+	// Execute any startup commands stored in the EEPROM
 	// Returns true on success, false on failure or if no command is stored
-	bool queueStartupCommand();
+	bool executeStartupCommands();
 #endif
 
 private:

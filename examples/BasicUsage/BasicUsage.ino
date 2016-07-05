@@ -1,4 +1,6 @@
-#include <CommandHandler.h>
+#include "CommandHandler/CommandHandler.h"
+#include "Microprocessor_Debugging\debugging_init.h"
+#include <SPI.h>
 
 // Create a CommandHandler object
 CommandHandler h;
@@ -20,6 +22,7 @@ commandFunction echoMany; // "echoMany"
 void setup() {
 
 	Serial.begin(250000);
+	__serial_is_ready = true;
 
 	// Register serial commands for triggering the previously
 	// declared functions
@@ -70,14 +73,14 @@ void loop() {
 ///////////////////////////////////////////////////////
 
 // Takes no params
-void helloWorld(const List<String>& params) {
+void helloWorld(const ParameterLookup& params) {
 
 	Serial.println(F("Hello world!"));
 
 }
 
 // Takes no params
-void helloWorldQ(const List<String>& params) {
+void helloWorldQ(const ParameterLookup& params) {
 
 	Serial.println(F("You sent a SCPI query"));
 
@@ -85,30 +88,25 @@ void helloWorldQ(const List<String>& params) {
 
 // Echo a string
 // 1 param
-void echoMe(const List<String> &params) {
+void echoMe(const ParameterLookup& params) {
 
-	String str = params.front();
+	String str = params[1];
 
 	Serial.print(F("Passed string was: \""));
 	Serial.print(str);
-	Serial.println('"');
+	Serial.print(F("\", command was: "));
+	Serial.println(params[0]);
 }
 
 // Add two numbers
 // 2 params
-void adder(const List<String> &params) {
-
-	// Get an iterator to iterate over the list of parameters
-	List<String>::const_iterator it = params.begin();
+void adder(const ParameterLookup& params) {
 
 	// Convert the first parameter to a number
-	String thisParam = *it;
-	double first = atof(thisParam.c_str());
+	double first = atof(params[1]);
 
 	// And the second
-	it++;
-	thisParam = *it;
-	double second = atof(thisParam.c_str());
+	double second = atof(params[2]);
 
 	// Add and output
 	Serial.print(F("Sum of "));
@@ -121,18 +119,15 @@ void adder(const List<String> &params) {
 
 // Echo unlimited number of parameters
 // unlimited paramas
-void echoMany(const List<String> &params) {
-
-	// Get an iterator to iterate over the list of parameters
-	List<String>::const_iterator it;
+void echoMany(const ParameterLookup& params) {
 
 	Serial.print(F("Number of params to echo is: "));
 	Serial.println(params.size());
 
 	// Loop until list is done
-	for (it = params.begin(); it != params.end(); it++) {
+	for (int i = 0; i < params.size(); i++) {
 		Serial.print('"');
-		Serial.print(*it);
+		Serial.print(params[i]);
 		Serial.println('"');
 	}
 }

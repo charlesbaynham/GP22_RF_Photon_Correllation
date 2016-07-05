@@ -22,8 +22,9 @@
 // `callStoredCommand` performs the lookup and calls the appropriate
 // command, passing through a parameter lookup object
 
-	// Template for the functions we'll be calling
-typedef void commandFunction(const List<shared_ptr_d<String>>& params);
+// Template for the functions we'll be calling
+class ParameterLookup;
+typedef void commandFunction(const ParameterLookup& params);
 
 // Structure of the data to be stored for each command
 struct dataStruct {
@@ -58,7 +59,7 @@ public:
 		commandFunction* pointer_to_function);
 
 	// Search the list of commands for the given command and execute it with the given parameter array
-	ExecuteError callStoredCommand(const char* command, const List<shared_ptr_d<String>>& params);
+	ExecuteError callStoredCommand(const ParameterLookup& params);
 
 protected:
 
@@ -175,15 +176,49 @@ private:
 
 };
 
+//////////////////////  PARAMETER LOOKUP  //////////////////////
+
+// This class handles the lookup of parameters from an internal string
+// It stores an internal pointer to a string which will be invalidated
+// and should not be used by other code after passing to this object.
+// 
+// Index it (e.g. "lookup[0]") to get a parameter out, starting with 0
+// being the command itself. 
+//
+// This object is implemented entirely on the stack. Because of this, it must 
+// use some odd internal conventions. Namely, it terminates `_theCommand` 
+// with ETX (0x03) chars instead of NULL chars. This is because `_theCommand` 
+// contains several NULL chars delimiting each parameter.
+//
+// After the Constuctor is called, `_theCommand` would be as shown
+// for the command "HELO 1 2 3.3" :
+//
+// "HELO[0x00]1[0x00]2[0x00]3.3[0x00][0x03]"
+//
+// Thus pointers can be passed to the beginning of each required parameter
+// and they form valid c strings for other functions to use.
+//
+// The flip-side is that _theCommand should not be handled using normal c string
+// manipulation commands unless you're being very careful
+
 class ParameterLookup {
 
 public:
 
+	// Constuctor, points to the command we're referencing
+	ParameterLookup(char * commandStr);
+	
 	// Get parameter indexed. Parameter 0 is the command itself
-	// Requesting a non-existent parameter will return an empty string
-	const char * operator [] (int idx);
+	// Requesting a non-existent parameter will return a NULL ptr
+	const char * operator [] (int idx) const;
 
 	// Number of stored params, including the command itself
-	unsigned int size();
+	unsigned int size() const { return _size; }
+
+private: 
+
+	// Pointer to the whole command
+	char * _theCommand;
+	unsigned int _size;
 
 };

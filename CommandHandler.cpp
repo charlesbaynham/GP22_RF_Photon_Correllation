@@ -2,7 +2,7 @@
 
 #include "CommandHandler.h"
 
-#include "Microprocessor_Debugging\debugging_enable.h"
+#include "Microprocessor_Debugging\debugging_disable.h"
 #include "../MemoryFree.h"
 
 // Add a new command to the list
@@ -27,13 +27,13 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const char* command, const List<shared_ptr_d<String>>& params) {
+ExecuteError CommandLookup::callStoredCommand(const ParameterLookup& params) {
 
 	CONSOLE_LOG(F("callStoredCommand with n="));
 	CONSOLE_LOG_LN(params.size());
 
 	// Get hash of command requested
-	const unsigned long reqHash = djbHash(command);
+	const unsigned long reqHash = djbHash(params[0]);
 
 	// Iterate through list searching for hash
 	List<dataStruct>::const_iterator it = _commandList.begin();
@@ -51,16 +51,17 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<sh
 	CONSOLE_LOG(F("Recalled data: d.n = "));
 	CONSOLE_LOG_LN(d.n);
 
-	// Return error if too few parameters
-	if (d.n != params.size() && d.n != -1) {
+	// Return error if wrong number of parameters
+	if (d.n != params.size() - 1 && d.n != -1) {
 		CONSOLE_LOG(F("ERROR: Expecting "));
 		CONSOLE_LOG(d.n);
 		CONSOLE_LOG(F(" parameters but got "));
-		CONSOLE_LOG_LN(params.size());
+		CONSOLE_LOG_LN(params.size() - 1);
 
 		return WRONG_NUM_OF_PARAMS;
 	}
 
+	CONSOLE_LOG_LN(F("Calling function..."));
 	f(params);
 
 	return NO_ERROR;
@@ -93,6 +94,7 @@ ExecuteError CommandHandler::executeCommand() {
 
 	// Return error code if no command waiting
 	if (!_bufferFull) {
+		CONSOLE_LOG_LN(F("No command error"));
 		error = NO_COMMAND_WAITING;
 	}
 
@@ -102,57 +104,22 @@ ExecuteError CommandHandler::executeCommand() {
 	// Return error code if string is empty
 	if (_bufferLength == 0 && !error)
 	{
+		CONSOLE_LOG_LN(F("Empty command error"));
 		error = EMPTY_COMMAND_STRING;
 	}
 
-	//// The location in the string where the command ends and the params start
-	//int startOfCommand = findStartOfCommand(_inputBuffer);
-
-	//// The location in the string where the command ends and the params start
-	//int endOfCommand = findEndOfCommand(_inputBuffer, startOfCommand);
-
-	//// If this failed, quit with an error
-	//if (!error && (startOfCommand < 0 || endOfCommand < 0)) {
-	//	CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
-
-	//	error = ERROR_PARSING_COMMAND;
-	//}
-
-	//// Copy the command word from the previously found command
-	//String commandWord = nextCommand.substring(startOfCommand, endOfCommand + 1);
-
-	//// Check if this is a query SCPI command (command word ends in a '?')
-	//bool isQuery = (commandWord[endOfCommand] == '?');
-
-	//// If so, remove the '?' from the end
-	//if (isQuery)
-	//	commandWord.remove(endOfCommand);
-	//
-	// Count the number of parameters in the string
-	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
-
-	// CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
-
-	//// Declare a List of shared pointers to Strings for the params and loop through command to parse it for parameters
-	//List<shared_ptr_d<String>> params;
-	//int result = readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
-
-	//if (result != 0) {
-	//	CONSOLE_LOG_LN(F("readParamsFromStr failed"));
-	//	return OUT_OF_MEM;
-	//}
-
-
-	CONSOLE_LOG(F("commandWord: "));
-	CONSOLE_LOG_LN(this->operator[](0)); // equivalent to calling handler[0] externally
-
+	// Constuct a parameter lookup object from the command string
+	// This invalidates the string for future use
+	CONSOLE_LOG_LN(F("Creating ParameterLookup object..."));
+	ParameterLookup lookupObj = ParameterLookup(_inputBuffer);
+	
 	CONSOLE_LOG_LN(F("Running callStoredCommand..."));
-
-	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params);
+	ExecuteError found = _lookupList.callStoredCommand(lookupObj);
 
 	// Mark buffer as ready again
 	_bufferFull = false;
 	_inputBuffer[0] = '\0';
+	_bufferLength = 0;
 
 	return found;
 }
@@ -309,7 +276,6 @@ int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
 	return numParamsInCommand;
 }
 
-#include "Microprocessor_Debugging\debugging_enable.h"
 // Parse the string to extract the parameters and store them in destList
 int CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList) {
 
@@ -383,7 +349,6 @@ int CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<sh
 
 	return 0;
 }
-#include "Microprocessor_Debugging\debugging_disable.h"
 
 #ifndef EEPROM_DISABLED
 // Store a command to be executed on startup in the EEPROM
@@ -606,9 +571,94 @@ unsigned long CommandLookup::djbHash(const char *str)
 	return hash;
 }
 
-// Get parameter indexed. Parameter 0 is the command itself
-// Requesting a non-existent parameter will return an empty string
-// Calling this function outside of a commandFunction will return an empty string
-const char * CommandHandler::operator [] (int idx) {
+// Constuctor.
+// Replace spaces in commandStr with NULL and terminate the whole lot with
+// a [0x03] char.
+// The buffer pointed to by commandStr must be at least COMMAND_SIZE_MAX+1 in length
+ParameterLookup::ParameterLookup(char * commandStr) :
+	_theCommand(commandStr)
+{
+	CONSOLE_LOG(F("ParameterLookup::Constuctor with command: "));
+	CONSOLE_LOG_LN(commandStr);
 
+	// Loop through _theCommand counting params and subbing out
+	// spaces or tabs for NULLs
+	char * loop = _theCommand;
+	_size = 1;
+
+	while (*loop) {
+
+		if (' ' == *loop || '\t' == *loop) {
+
+			CONSOLE_LOG(F("ParameterLookup::Replacing char '"));
+			CONSOLE_LOG(*loop);
+			CONSOLE_LOG(F("' at pos "));
+			CONSOLE_LOG(loop - _theCommand);
+			CONSOLE_LOG_LN(F(" with \\0"));
+
+			// Replace spaces with NULL chars
+			*loop = '\0';
+
+			// If the preceeding char wasn't also a space,
+			// increment the param count
+			if (loop > _theCommand && // Don't look too far back!
+				'\0' != *(loop - sizeof(char))) {
+				_size++;
+			}
+		}
+
+		loop++;
+	}
+
+	// We looped to the last char which is a NULL.
+	// Leave it as a NULL and make the next char a [0x03] too
+	loop++;
+	*loop = 0x03;
+}
+
+// Get parameter indexed. Parameter 0 is the command itself
+// Requesting a non-existent parameter will return a NULL ptr
+const char * ParameterLookup::operator [] (int idx) const {
+
+	// The string is setup as described in "CommandHandler.h", so now all we need
+	// to do is get and return a pointer to the start of the requested param
+	// `_theCommand` is terminated by a [0x03] char, so don't go past this
+
+	CONSOLE_LOG(F("ParameterLookup::Looking for param "));
+	CONSOLE_LOG_LN(idx);
+	
+	char * paramPtr = _theCommand;
+	int count = idx;
+
+	while (0x03 != *paramPtr) {
+
+		if (count == 0 && *paramPtr) {
+			// We found a non null char after passing the required 
+			// number of nulls, so return a pointer to it
+
+			CONSOLE_LOG(F("ParameterLookup::Returning ptr to pos "));
+			CONSOLE_LOG_LN(paramPtr - _theCommand);
+
+			return paramPtr;
+		}
+
+		if ('\0' == *paramPtr && // We found a null...
+								 // ... and the previous char wasn't a null
+			paramPtr > _theCommand && '\0' != *(paramPtr - 1)) {
+			// Decrement the count, as we've passed a delimiter
+			count--;
+
+			CONSOLE_LOG(F("ParameterLookup::Break found at pos "));
+			CONSOLE_LOG_LN(paramPtr - _theCommand);
+		}
+
+		// Next char
+		paramPtr++;
+	}
+
+	CONSOLE_LOG_LN(F("ParameterLookup::Not found"));
+
+	// We got to the end without finding the requested param number
+	// return a Null ptr
+	return 0;
 }

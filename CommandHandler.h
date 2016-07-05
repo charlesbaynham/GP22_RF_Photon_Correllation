@@ -1,18 +1,18 @@
 #pragma once
 
 #define COMMAND_SIZE_MAX 128 // num chars
-#define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored
-
-// Storage locations in EEPROM for commands
-#include <EEPROM.h>
-#define EEPROM_STORED_COMMAND_FLAG_LOCATION 0
-#define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
 
 // To disable EEPROM features, set this flag:
 // #define EEPROM_DISABLED
 
+#ifndef EEPROM_DISABLED
+// Storage locations in EEPROM for commands
+#include <EEPROM.h>
+#define EEPROM_STORED_COMMAND_FLAG_LOCATION 0
+#define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
+#endif
+
 #include "basicList.h"
-#include "shared_ptr_d.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
@@ -163,18 +163,6 @@ private:
 
 	// A flag to report that the command currently being received has overrun
 	bool _command_too_long;
-
-	// Find the location in a command string where the command starts
-	int findStartOfCommand(const char* str);
-
-	// Find the location in a command string where the command ends and the params start
-	int findEndOfCommand(const char* str, int startPoint = 0);
-
-	// Loop from the first space onwards, counting the params
-	int numParamsInCommandStr(const char* str, int endOfCommand);
-
-	// Parse a string to extract the parameters and store them in destList
-	int readParamsFromStr(const char* str, int endOfCommand, List<shared_ptr_d<String>>& destList);
 
 };
 

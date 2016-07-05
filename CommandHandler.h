@@ -1,160 +1,214 @@
 #pragma once
 
 #define COMMAND_SIZE_MAX 128 // num chars
-#define DEFAULT_NUM_COMMANDS_MAX 10 // Number of commands that need to be stored
 
+// To disable EEPROM features, set this flag:
+// #define EEPROM_DISABLED
+
+#ifndef EEPROM_DISABLED
 // Storage locations in EEPROM for commands
 #include <EEPROM.h>
 #define EEPROM_STORED_COMMAND_FLAG_LOCATION 0
 #define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
-
-// To disable EEPROM features, set this flag:
-// #define EEPROM_DISABLED
+#endif
 
 #include "basicList.h"
 
 //////////////////////  COMMAND LOOKUP  //////////////////////
 
-	// Template for the functions we'll be calling
-	typedef void commandFunction (const List<String>& params);
+// This class is responsible for matching strings -> commands
+// It maintains a List of hashes, associated commands and number of
+// parameters required for those commands
+// `callStoredCommand` performs the lookup and calls the appropriate
+// command, passing through a parameter lookup object
 
-	// Structure of the data to be stored for each command
-	struct dataStruct {
-		char * key; // Keyword for this command
-		int n; // Number of params this function takes
-		commandFunction* f; // Pointer to this function
-	};
+// Template for the functions we'll be calling
+class ParameterLookup;
+typedef void commandFunction(const ParameterLookup& params);
 
-	// Error messages for executing a command
-	enum ExecuteError {
-		NO_ERROR = 0,
-		COMMAND_NOT_FOUND,
-		WRONG_NUM_OF_PARAMS,
-		ERROR_PARSING_COMMAND,
-		EMPTY_COMMAND_STRING,
-		NO_COMMAND_WAITING,
-		MALLOC_ERROR
-	};
+// Structure of the data to be stored for each command
+struct dataStruct {
+	unsigned long hash; // Hash of the keyword (case insensitive)
+	int n; // Number of params this function takes
+	commandFunction* f; // Pointer to this function
+};
 
-	class CommandLookup
-	{
-	public:
+// Error messages for executing a command
+enum ExecuteError {
+	NO_ERROR = 0,
+	COMMAND_NOT_FOUND,
+	WRONG_NUM_OF_PARAMS,
+	ERROR_PARSING_COMMAND,
+	EMPTY_COMMAND_STRING,
+	NO_COMMAND_WAITING,
+	MALLOC_ERROR,
+	OUT_OF_MEM,
+	BUFFER_FULL,
+	COMMAND_TOO_LONG,
+	UNKNOWN_ERROR
+};
 
-		CommandLookup() {}
+class CommandLookup
+{
+public:
 
-		// Add a new command to the list
-		void registerCommand(const char* command, int num_of_parameters,
-			commandFunction* pointer_to_function);
+	CommandLookup() {}
 
-		// Search the list of commands for the given command and execute it with the given parameter array
-		ExecuteError callStoredCommand(const char* command, const List<String>& params) ;
+	// Add a new command to the list
+	void registerCommand(const char* command, int num_of_parameters,
+		commandFunction* pointer_to_function);
 
-	protected:
+	// Search the list of commands for the given command and execute it with the given parameter array
+	ExecuteError callStoredCommand(const ParameterLookup& params);
 
-		List<dataStruct> _commandList;
-	};
+protected:
+
+	List<dataStruct> _commandList;
+
+	// Hash string (case insensitive)
+	// Uses	the djb2 algorithm by Dan Bernstein
+	// See http://www.cse.yorku.ca/~oz/hash.html
+	unsigned long djbHash(const char *str);
+};
 
 //////////////////////  COMMAND HANDLER  //////////////////////
 
-	class CommandHandler
-	{
-	public:
-		// Constuctor
-		// Initialise private members and queue any stored command in the EEPROM
-		CommandHandler();
+// This class handle the receiving and executing of commands. It should be
+// fed chars from the serial input by `addCommandChar()`
+// When a command is ready it will flag `commandWaiting()`
+// When convenient, `executeCommand()` should then be called. This will
+// invoke the nested CommandLookup object in order to get the right command
+// and execute it
+//
+// This class also contains methods for storing commands in the EEPROM in 
+// order to queue a command on device startup
+// These can be disabled by adding the line:
+// #define EEPROM_DISABLED
+// The user must call `executeStartupCommands()` in their code once they are ready 
+// for EEPROM commands to be executed
 
-		// Wipe any char*s left in the queue or buffer
-		~CommandHandler() {
-			free(_inputBuffer);
-		}
+class CommandHandler
+{
+public:
+	// Constuctor
+	// Initialise private members and queue any stored command in the EEPROM
+	CommandHandler();
 
-		// Is a command waiting in the queue?
-		bool commandWaiting() {
-			return !_commandQueue.isEmpty();
-		}
+	// Execute the waiting command
+	ExecuteError executeCommand();
 
-		// How long is the queue?
-		int queueLength() {
-			return _commandQueue.size();
-		}
+	// Register a command
+	void registerCommand(const char* command, int num_of_parameters,
+		commandFunction* pointer_to_function) {
+		_lookupList.registerCommand(command, num_of_parameters,
+			pointer_to_function);
+	}
 
-		// Dump the whole command queue for debugging
-		void debug() {
-			_commandQueue.debug();
-		}
+	// Add a char from the serial connection to be processed and added to the queue
+	// Returns BUFFER_FULL if buffer is full and char wasn't added
+	ExecuteError addCommandChar(const char c);
+
+	// Check to see if the handler is ready for more incoming chars
+	inline bool bufferFull() { return _bufferFull; }
+
+	// Is a command waiting?
+	inline bool commandWaiting() { return bufferFull(); }
 
 #ifndef EEPROM_DISABLED
-		// Store a command to be executed on startup in the EEPROM
-		// This command should not include newlines: it will be copied verbatim into the
-		// buffer and then executed as a normal command would be
-		// Multiple commands can be seperated by ';' chars
-		// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
-		// Returns false on fail
-		bool storeStartupCommand(const String& command);
+	// Store a command to be executed on startup in the EEPROM
+	// This command should not include newlines: it will be copied verbatim into the
+	// buffer and then executed as a normal command would be
+	// Multiple commands can be seperated by ';' chars
+	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
+	// Returns false on fail
+	bool storeStartupCommand(const String& command);
 
-		// Store a command to be executed on startup in the EEPROM
-		// This command should not include newlines: it will be copied verbatim into the
-		// buffer and then executed as a normal command would be
-		// Multiple commands can be seperated by ';' chars
-		// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
-		// Returns false on fail
-		bool storeStartupCommand(const char* command);
-		
-		// Remove any startup commands from the EEPROM
-		bool wipeStartupCommand();
+	// Store a command to be executed on startup in the EEPROM
+	// This command should not include newlines: it will be copied verbatim into the
+	// buffer and then executed as a normal command would be
+	// Multiple commands can be seperated by ';' chars
+	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
+	// Returns false on fail
+	bool storeStartupCommand(const char* command);
 
-		// Return any stored startup command. Returns "" if no command stored
-		String getStartupCommand();
+	// Remove any startup commands from the EEPROM
+	bool wipeStartupCommand();
 
-		// Return any stored startup command by copying into buf.
-		// This has the same functionality as the other form and 
-		// avoids memory allocations on the heap, but places responsibility
-		// for memory management on the user
-		// buf must point to a buffer of at least COMMAND_SIZE_MAX chars
-		void getStartupCommand(char * buf);
+	// Return any stored startup command. Returns "" if no command stored
+	String getStartupCommand();
 
-		// Queue the startup command stored in the EEPROM
-		// Returns true on success, false on failure or if no command is stored
-		bool queueStartupCommand();
+	// Return any stored startup command by copying into buf.
+	// This has the same functionality as the other form and 
+	// avoids memory allocations on the heap, but places responsibility
+	// for memory management on the user
+	// buf must point to a buffer of at least COMMAND_SIZE_MAX chars
+	void getStartupCommand(char * buf);
+
+	// Execute any startup commands stored in the EEPROM
+	// Returns true on success, false on failure or if no command is stored
+	bool executeStartupCommands();
 #endif
 
-		// Execute the next command in the queue
-		ExecuteError executeCommand();
+private:
+	// An object for handling the matching of commands -> functions
+	CommandLookup _lookupList;
 
-		// Register a command
-		void registerCommand(const char* command, int num_of_parameters,
-				commandFunction* pointer_to_function) {
-			_lookupList.registerCommand(command, num_of_parameters,
-					pointer_to_function);
-		}
+	// Flag to warn that the command handler cannot handle more incoming chars
+	// until the current command is processed
+	bool _bufferFull;
 
-		// Add a char from the serial connection to be processed and added to the queue
-		void addCommandChar(const char c) ;
+	// A buffer for receiving new commands
+	char _inputBuffer[COMMAND_SIZE_MAX + 1];
+	unsigned int _bufferLength;
 
-	private:
-		CommandLookup _lookupList;
+	// A flag to report that the command currently being received has overrun
+	bool _command_too_long;
 
-		// A queue of commands (char* pointers to char arrays of COMMAND_SIZE_MAX size)
-		List <String> _commandQueue;
+};
 
-		// A buffer for receiving new commands
-		char _inputBuffer[COMMAND_SIZE_MAX + 1];
-		int _bufferLength;
+//////////////////////  PARAMETER LOOKUP  //////////////////////
 
-		// A flag to report that the command currently being received has overrun
-		bool _command_too_long;
+// This class handles the lookup of parameters from an internal string
+// It stores an internal pointer to a string which will be invalidated
+// and should not be used by other code after passing to this object.
+// 
+// Index it (e.g. "lookup[0]") to get a parameter out, starting with 0
+// being the command itself. 
+//
+// This object is implemented entirely on the stack. Because of this, it must 
+// use some odd internal conventions. Namely, it terminates `_theCommand` 
+// with ETX (0x03) chars instead of NULL chars. This is because `_theCommand` 
+// contains several NULL chars delimiting each parameter.
+//
+// After the Constuctor is called, `_theCommand` would be as shown
+// for the command "HELO 1 2 3.3" :
+//
+// "HELO[0x00]1[0x00]2[0x00]3.3[0x00][0x03]"
+//
+// Thus pointers can be passed to the beginning of each required parameter
+// and they form valid c strings for other functions to use.
+//
+// The flip-side is that _theCommand should not be handled using normal c string
+// manipulation commands unless you're being very careful
 
-		// Find the location in a command string where the command starts
-		int findStartOfCommand(const char* str);
+class ParameterLookup {
 
-		// Find the location in a command string where the command ends and the params start
-		int findEndOfCommand(const char* str, int startPoint = 0);
+public:
 
-		// Loop from the first space onwards, counting the params
-		int numParamsInCommandStr(const char* str, int endOfCommand) ;
+	// Constuctor, points to the command we're referencing
+	ParameterLookup(char * commandStr);
+	
+	// Get parameter indexed. Parameter 0 is the command itself
+	// Requesting a non-existent parameter will return a NULL ptr
+	const char * operator [] (int idx) const;
 
-		// Parse a string to extract the parameters and store them in destList
-		void readParamsFromStr(const char* str, int endOfCommand, List<String>& destList);
-		
-	};
+	// Number of stored params, including the command itself
+	unsigned int size() const { return _size; }
 
+private: 
+
+	// Pointer to the whole command
+	char * _theCommand;
+	unsigned int _size;
+
+};

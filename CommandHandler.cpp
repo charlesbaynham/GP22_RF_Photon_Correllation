@@ -12,21 +12,11 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 	// Set up a struct containing the number of params and a pointer to the function
 	dataStruct d;
 
-	// Get length of command
-	int keyLen = strlen(command);
+	// Get hash of command
+	long keyHash = djbHash(command);
 
-	// Allocate enough space for string
-	d.key = (char*)calloc(keyLen + 1, sizeof(char));
-
-	// Copy string into data struct
-	strcpy(d.key, command);
-
-	// Make lower case
-	for (int i = 0; d.key[i]; i++) {
-		d.key[i] = tolower(d.key[i]);
-	}
-
-	// Save other params
+	// Save params
+	d.hash = keyHash;
 	d.n = num_of_parameters;
 	d.f = pointer_to_function;
 
@@ -36,30 +26,21 @@ void CommandLookup::registerCommand(const char* command, int num_of_parameters,
 }
 
 // Search the list of commands for the given command and execute it with the given parameter array
-ExecuteError CommandLookup::callStoredCommand(const char* command, const List<String>& params) {
+ExecuteError CommandLookup::callStoredCommand(const ParameterLookup& params) {
 
 	CONSOLE_LOG(F("callStoredCommand with n="));
 	CONSOLE_LOG_LN(params.size());
 
-	// Make lower case copy of command requested
-	char *lower_command;
-	lower_command = (char*)calloc(strlen(command) + 1, sizeof(char));
-	strcpy(lower_command, command);
+	// Get hash of command requested
+	const unsigned long reqHash = djbHash(params[0]);
 
-	for (int i = 0; lower_command[i]; i++) {
-		lower_command[i] = tolower(lower_command[i]);
-	}
-
-	// Iterate through list searching for key
+	// Iterate through list searching for hash
 	List<dataStruct>::const_iterator it = _commandList.begin();
 	for (; it != _commandList.end(); it++) {
-		if (0 == strcmp(lower_command, (*it).key)) {
+		if (reqHash == (*it).hash) {
 			break;
 		}
 	}
-
-	// Discard the lower case copy string
-	free(lower_command);
 
 	if (it == _commandList.end()) { return COMMAND_NOT_FOUND; }
 
@@ -69,16 +50,17 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<St
 	CONSOLE_LOG(F("Recalled data: d.n = "));
 	CONSOLE_LOG_LN(d.n);
 
-	// Return error if too few parameters
-	if (d.n != params.size() && d.n != -1) {
+	// Return error if wrong number of parameters
+	if (d.n != params.size() - 1 && d.n != -1) {
 		CONSOLE_LOG(F("ERROR: Expecting "));
 		CONSOLE_LOG(d.n);
 		CONSOLE_LOG(F(" parameters but got "));
-		CONSOLE_LOG_LN(params.size());
+		CONSOLE_LOG_LN(params.size() - 1);
 
 		return WRONG_NUM_OF_PARAMS;
 	}
 
+	CONSOLE_LOG_LN(F("Calling function..."));
 	f(params);
 
 	return NO_ERROR;
@@ -88,99 +70,67 @@ ExecuteError CommandLookup::callStoredCommand(const char* command, const List<St
 CommandHandler::CommandHandler() :
 	_lookupList(), // Not needed, but just to be explicit
 	_command_too_long(false),
+	_bufferFull(false),
 	_bufferLength(0)
 {
 	CONSOLE_LOG_LN(F("CommandHandler::CommandHandler()"));
 
 	// Start the input buffer empty
 	_inputBuffer[0] = '\0';
-
-#ifndef EEPROM_DISABLED
-	// Queue any command that may be stored in the EEPROM
-	queueStartupCommand();
-#endif
 }
 
 // Execute the next command in the queue
 ExecuteError CommandHandler::executeCommand() {
 
+	ExecuteError error = NO_ERROR;
+
 	CONSOLE_LOG_LN(F("Execute command"));
 
 	// Return error code if no command waiting
-	if (_commandQueue.isEmpty())
-		return NO_COMMAND_WAITING;
-
-	CONSOLE_LOG_LN(F("executeCommand: Popping from _commandQueue"));
-
-	// Load and remove the next command from the queue
-	String nextCommand = _commandQueue.front();
-	_commandQueue.pop_front();
+	if (!_bufferFull) {
+		CONSOLE_LOG_LN(F("No command error"));
+		error = NO_COMMAND_WAITING;
+	}
 
 	CONSOLE_LOG(F("Command is: "));
-	CONSOLE_LOG_LN(nextCommand);
-
-	CONSOLE_LOG_LN(F("_commandQueue now contains:"));
-#ifdef DEBUG
-	_commandQueue.debug();
-#endif
+	CONSOLE_LOG_LN(_inputBuffer);
 
 	// Return error code if string is empty
-	if (nextCommand.length() == 0)
+	if (_bufferLength == 0 && !error)
 	{
-		return EMPTY_COMMAND_STRING;
+		CONSOLE_LOG_LN(F("Empty command error"));
+		error = EMPTY_COMMAND_STRING;
 	}
 
-	// The location in the string where the command ends and the params start
-	int startOfCommand = findStartOfCommand(nextCommand.c_str());
-
-	// The location in the string where the command ends and the params start
-	int endOfCommand = findEndOfCommand(nextCommand.c_str(), startOfCommand);
-
-	// If this failed, quit with an error
-	if (startOfCommand < 0 || endOfCommand < 0) {
-		CONSOLE_LOG_LN(F("findEndOfCommand failed. Quitting with error"));
-		return ERROR_PARSING_COMMAND;
-	}
-
-	// Copy the command word from the previously found command
-	String commandWord = nextCommand.substring(startOfCommand, endOfCommand + 1);
-
-	//// Check if this is a query SCPI command (command word ends in a '?')
-	//bool isQuery = (commandWord[endOfCommand] == '?');
-
-	//// If so, remove the '?' from the end
-	//if (isQuery)
-	//	commandWord.remove(endOfCommand);
-	//
-	// Count the number of parameters in the string
-	// int numParamsInCommand = numParamsInCommandStr(nextCommand, endOfCommand);
-
-	CONSOLE_LOG_LN(F("Running readParamsFromStr..."));
-
-	// Declare a List of Strings for the params and loop through command to parse it for parameters
-	List<String> params;
-	readParamsFromStr(nextCommand.c_str(), endOfCommand, params);
-
-	CONSOLE_LOG(F("commandWord: "));
-	CONSOLE_LOG_LN(commandWord);
-	CONSOLE_LOG(F("paramArray size: "));
-	CONSOLE_LOG_LN(params.size());
-
+	// Constuct a parameter lookup object from the command string
+	// This invalidates the string for future use
+	CONSOLE_LOG_LN(F("Creating ParameterLookup object..."));
+	ParameterLookup lookupObj = ParameterLookup(_inputBuffer);
+	
 	CONSOLE_LOG_LN(F("Running callStoredCommand..."));
+	ExecuteError found = _lookupList.callStoredCommand(lookupObj);
 
-	ExecuteError found = _lookupList.callStoredCommand(commandWord.c_str(), params);
+	// Mark buffer as ready again
+	_bufferFull = false;
+	_inputBuffer[0] = '\0';
+	_bufferLength = 0;
 
 	return found;
 }
 
 // Add a char from the serial connection to be processed and added to the queue
-void CommandHandler::addCommandChar(const char c) {
+ExecuteError CommandHandler::addCommandChar(const char c) {
 
-	// If c is a newline, store the buffer in the queue and start a new buffer
+	// Check if the buffer is already full
+	if (_bufferFull) {
+		return BUFFER_FULL;
+	}
+
+	// If c is a newline, mark the buffer as full
 	if (c == '\n') {
 
-		CONSOLE_LOG(F("Newline received: storing in _commandQueue: "));
-		CONSOLE_LOG_LN(String(_inputBuffer));
+		CONSOLE_LOG(F("Newline received. Command: "));
+		CONSOLE_LOG_LN(_inputBuffer);
 
 		// Should we ignore this command?
 		if (_command_too_long) {
@@ -188,25 +138,17 @@ void CommandHandler::addCommandChar(const char c) {
 			_command_too_long = false;
 
 			CONSOLE_LOG_LN(F("Ignoring command since too long"));
-		}
-		else {
-			CONSOLE_LOG_LN(F("Adding command to queue"));
-			// Add the new command to the queue
-			_commandQueue.push_back(String(_inputBuffer));
+
+			return COMMAND_TOO_LONG;
 		}
 
-#ifdef DEBUG
-		CONSOLE_LOG_LN(F("_commandQueue contains:"));
-		_commandQueue.debug();
-#endif
-
-		// Clear the input buffer
-		_inputBuffer[0] = '\0';
-		_bufferLength = 0;
+		// If not, we are already null terminated so mark the string as ready
+		_bufferFull = true;
 	}
 	// if c is a carridge return, ignore it
 	else if (c == '\r') {
 		CONSOLE_LOG_LN(F("Ignoring a \r"));
+		return NO_ERROR;
 	}
 	// else c is a normal char, so add it to the buffer
 	else {
@@ -217,10 +159,12 @@ void CommandHandler::addCommandChar(const char c) {
 
 			_command_too_long = true;
 
-			return;
+			return COMMAND_TOO_LONG;
 		}
 		else
 		{
+			// The normal case. Add the new char to the buffer
+
 			_inputBuffer[_bufferLength] = c;
 
 			_bufferLength++;
@@ -232,161 +176,12 @@ void CommandHandler::addCommandChar(const char c) {
 			CONSOLE_LOG(F("', Buffer length: "));
 			CONSOLE_LOG_LN(_bufferLength);
 
-		}
-	}
-}
-
-// Find the location in a command string where the command starts
-// i.e. the first char that isn't a space or a tab
-int CommandHandler::findStartOfCommand(const char* str) {
-
-	int i = 0;
-
-	// Loop until the first non-space to find the start of the command
-	while (i <= strlen(str)) {
-
-		CONSOLE_LOG(F("CommandHandler::findStartOfCommand: first loop, char "));
-		CONSOLE_LOG(i);
-		CONSOLE_LOG(F(" is "));
-		CONSOLE_LOG_LN(str[i]);
-
-		// Is this anything other than a space or a tab?
-		if (str[i] != ' ' && str[i] != '\t') {
-			CONSOLE_LOG_LN(F("Breaking"));
-			
-			return i;
-		}
-
-		i++;
-	}
-
-	return -1;
-}
-
-// Find the location in a command string where the command ends and the params start
-int CommandHandler::findEndOfCommand(const char* str, int startPoint) {
-
-	int i = startPoint;
-
-	// Loop until the first (post-command) space to find the break between command and params
-	while (i <= strlen(str)) {
-
-		CONSOLE_LOG(F("CommandHandler::findEndOfCommand: second loop, char "));
-		CONSOLE_LOG(i);
-		CONSOLE_LOG(F(" is "));
-		CONSOLE_LOG_LN(str[i]);
-
-		// Is this char a space or a NULL?
-		if (str[i] == ' ' || str[i] == '\0') {
-			CONSOLE_LOG(F("Second find at i = "));
-			CONSOLE_LOG_LN(i);
-
-			int out = i - 1;
-
-			CONSOLE_LOG(F("CommandHandler::returning "));
-			CONSOLE_LOG_LN(out);
-
-			return out;
-		}
-
-		i++;
-	}
-
-	CONSOLE_LOG_LN(F("CommandHandler::endOfCommand not found"));
-
-	return -1;
-}
-
-// Loop from the first space onwards, counting the params
-int CommandHandler::numParamsInCommandStr(const char* str, int endOfCommand) {
-
-	int numParamsInCommand = 0;
-	bool lastWasSpace = true;
-
-	for (int i = endOfCommand + 1; i < strlen(str); i++) {
-
-		if (str[i] != ' ') {
-			if (lastWasSpace) {
-				// We found the start of a param
-				// so add 1 to the count
-				numParamsInCommand++;
-			}
-
-			lastWasSpace = false;
-		}
-		else
-		{
-			lastWasSpace = true;
+			return NO_ERROR;
 		}
 	}
 
-	return numParamsInCommand;
+	return UNKNOWN_ERROR; // We should never get here
 }
-
-#include "Microprocessor_Debugging\debugging_enable.h"
-// Parse the string to extract the parameters and store them in destList
-void CommandHandler::readParamsFromStr(const char* str, int endOfCommand, List<String>& destList) {
-
-	// Loop through the string
-	bool lastWasSpace = true;
-	int startParam = 0;
-	int endParam = 0;
-	char theParam[COMMAND_SIZE_MAX]; // Buffer for the string conversion
-
-	CONSOLE_LOG(F("readParamsFromStr: Running with command str: '"));
-	CONSOLE_LOG(str);
-	CONSOLE_LOG("', strlen = ");
-	CONSOLE_LOG_LN(strlen(str));
-
-	for (int i = endOfCommand + 1; i <= strlen(str); i++) {
-		if (str[i] != ' ' && str[i] != '\0') { // if this char is NOT a space or NULL char
-
-			if (lastWasSpace) {
-				// We found the start of a param
-				startParam = i;
-				CONSOLE_LOG(F("readParamsFromStr: Start of param found at "));
-				CONSOLE_LOG_LN(startParam);
-
-				lastWasSpace = false;
-			}
-		}
-		else // if this char is a space or NULL char
-		{
-			if (!lastWasSpace) {
-				// We found the end of a param
-				endParam = i;
-
-				CONSOLE_LOG(F("readParamsFromStr: End of param found at "));
-				CONSOLE_LOG_LN(endParam);
-
-				// ...so process it
-
-				// Copy the param into a new string, `theParam`
-				strncpy(theParam, str + startParam*sizeof(char), endParam - startParam);
-
-				// Null terminate
-				theParam[endParam - startParam] = '\0';
-
-				CONSOLE_LOG(F("readParamsFromStr: theParam contains: "));
-				CONSOLE_LOG(theParam);
-				CONSOLE_LOG(F(" with strlen: "));
-				CONSOLE_LOG_LN(strlen(theParam));
-
-				// Add to List
-				destList.push_back(String(theParam));
-
-				CONSOLE_LOG(F("String creation "));
-				CONSOLE_LOG_LN(destList.back() ? F("succeeded") : F("failed"));
-
-				// Reset the string
-				theParam[0] = '\0';
-			}
-
-			lastWasSpace = true;
-		}
-	}
-}
-#include "Microprocessor_Debugging\debugging_disable.h"
 
 #ifndef EEPROM_DISABLED
 // Store a command to be executed on startup in the EEPROM
@@ -424,7 +219,7 @@ bool CommandHandler::storeStartupCommand(const char * command) {
 	while (command[commandIdx] != '\0' && eeprom_ptr < COMMAND_SIZE_MAX - 2) {
 
 		char toBeStored;
-		
+
 		// Check if it's a semicolon delimiter
 		if (command[commandIdx] != ';') {
 			// Nope. Just copy it
@@ -481,8 +276,8 @@ String CommandHandler::getStartupCommand() {
 
 	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(String)"))
 
-	// Buffer for retreived command
-	char buffer[COMMAND_SIZE_MAX];
+		// Buffer for retreived command
+		char buffer[COMMAND_SIZE_MAX];
 
 	// Read into buffer
 	getStartupCommand(buffer);
@@ -499,13 +294,13 @@ void CommandHandler::getStartupCommand(char * buf) {
 
 	CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(char*)"))
 
-	// Index of location in buffer
-	int bufIdx = 0; // Start at start of buffer
+		// Index of location in buffer
+		int bufIdx = 0; // Start at start of buffer
 
-	// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
-	// It will tell us if there's a command to be read or not
-	// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
-	// We only want to use it if it's exactly a bool
+		// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
+		// It will tell us if there's a command to be read or not
+		// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
+		// We only want to use it if it's exactly a bool
 	char fromEEPROM;
 	EEPROM.get(EEPROM_STORED_COMMAND_FLAG_LOCATION, fromEEPROM);
 
@@ -561,11 +356,11 @@ void CommandHandler::getStartupCommand(char * buf) {
 
 // Queue the startup command stored in the EEPROM
 // Returns true on success, false on failure or if no command is stored
-bool CommandHandler::queueStartupCommand() {
+bool CommandHandler::executeStartupCommands() {
 
-	CONSOLE_LOG_LN(F("CommandHandler::queueStartupCommand"));
+	CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands"));
 
-	// Buffer for command in EEPROM
+	// Buffer for command from EEPROM
 	char storedCmd[COMMAND_SIZE_MAX];
 
 	// Read into buffer
@@ -574,25 +369,135 @@ bool CommandHandler::queueStartupCommand() {
 	// Is the string empty?
 	if (storedCmd[0] == '\0') {
 		// Fail. No command stored
-		CONSOLE_LOG_LN(F("CommandHandler::queueStartupCommand: No command stored"));
+		CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands: No command stored"));
 		return false;
 	}
 
-	// If not, queue each char into the command queue. 
+	// If not, queue each char into the command buffer
+	// If we reach a newline, execute the command
+	// If we reach a NULL, end
 	int i = 0;
-	while (true) {
+	while (storedCmd[i]) {
 
-		CONSOLE_LOG(F("CommandHandler::queueStartupCommand: Queueing "));
+		CONSOLE_LOG(F("CommandHandler::executeStartupCommands: Queueing "));
 		CONSOLE_LOG_LN(storedCmd[i]);
 
-		addCommandChar(storedCmd[i]);
+		addCommandChar(storedCmd[i++]);
 
-		i++;
-
-		if (storedCmd[i] == '\0') break;
+		if (commandWaiting()) {
+			executeCommand();
+		}
 	}
 
 	return true;
 
 }
 #endif
+
+unsigned long CommandLookup::djbHash(const char *str)
+{
+	unsigned long hash = 5381;
+	int c;
+
+	while (c = tolower(*str++)) {
+		hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	}
+
+	return hash;
+}
+
+// Constuctor.
+// Replace spaces in commandStr with NULL and terminate the whole lot with
+// a [0x03] char.
+// The buffer pointed to by commandStr must be at least COMMAND_SIZE_MAX+1 in length
+ParameterLookup::ParameterLookup(char * commandStr) :
+	_theCommand(commandStr)
+{
+	CONSOLE_LOG(F("ParameterLookup::Constuctor with command: "));
+	CONSOLE_LOG_LN(commandStr);
+
+	// Loop through _theCommand counting params and subbing out
+	// spaces or tabs for NULLs
+	char * loop = _theCommand;
+	_size = 1;
+
+	while (*loop) {
+
+		if (' ' == *loop || '\t' == *loop) {
+
+			CONSOLE_LOG(F("ParameterLookup::Replacing char '"));
+			CONSOLE_LOG(*loop);
+			CONSOLE_LOG(F("' at pos "));
+			CONSOLE_LOG(loop - _theCommand);
+			CONSOLE_LOG_LN(F(" with \\0"));
+
+			// Replace spaces with NULL chars
+			*loop = '\0';
+
+			// If the preceeding char wasn't also a space,
+			// increment the param count
+			if (loop > _theCommand && // Don't look too far back!
+				'\0' != *(loop - sizeof(char))) {
+				_size++;
+			}
+		}
+
+		loop++;
+	}
+
+	// We looped to the last char which is a NULL.
+	// Leave it as a NULL and make the next char a [0x03] too
+	loop++;
+	*loop = 0x03;
+
+	CONSOLE_LOG(F("ParameterLookup::[0x03] stored at pos "));
+	CONSOLE_LOG_LN(loop - _theCommand);
+
+}
+
+// Get parameter indexed. Parameter 0 is the command itself
+// Requesting a non-existent parameter will return a NULL ptr
+const char * ParameterLookup::operator [] (int idx) const {
+
+	// The string is setup as described in "CommandHandler.h", so now all we need
+	// to do is get and return a pointer to the start of the requested param
+	// `_theCommand` is terminated by a [0x03] char, so don't go past this
+
+	CONSOLE_LOG(F("ParameterLookup::Looking for param "));
+	CONSOLE_LOG_LN(idx);
+	
+	char * paramPtr = _theCommand;
+	int count = idx;
+
+	while (0x03 != *paramPtr) {
+
+		if (count == 0 && *paramPtr) {
+			// We found a non null char after passing the required 
+			// number of nulls, so return a pointer to it
+
+			CONSOLE_LOG(F("ParameterLookup::Returning ptr to pos "));
+			CONSOLE_LOG_LN(paramPtr - _theCommand);
+
+			return paramPtr;
+		}
+
+		if ('\0' == *paramPtr && // We found a null...
+								 // ... and the previous char wasn't a null
+			paramPtr > _theCommand && '\0' != *(paramPtr - 1)) {
+			// Decrement the count, as we've passed a delimiter
+			count--;
+
+			CONSOLE_LOG(F("ParameterLookup::Break found at pos "));
+			CONSOLE_LOG_LN(paramPtr - _theCommand);
+		}
+
+		// Next char
+		paramPtr++;
+	}
+
+	CONSOLE_LOG_LN(F("ParameterLookup::Not found"));
+
+	// We got to the end without finding the requested param number
+	// return a Null ptr
+	return 0;
+}

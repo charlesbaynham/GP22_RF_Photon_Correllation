@@ -611,6 +611,10 @@ ParameterLookup::ParameterLookup(char * commandStr) :
 	// Leave it as a NULL and make the next char a [0x03] too
 	loop++;
 	*loop = 0x03;
+
+	CONSOLE_LOG(F("ParameterLookup::[0x03] stored at pos "));
+	CONSOLE_LOG_LN(loop - _theCommand);
+
 }
 
 // Get parameter indexed. Parameter 0 is the command itself

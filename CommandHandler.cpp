@@ -214,7 +214,7 @@ ExecuteError CommandHandler::addCommandChar(const char c) {
 			CONSOLE_LOG(c);
 			CONSOLE_LOG(F("', Buffer length: "));
 			CONSOLE_LOG_LN(_bufferLength);
-			
+
 			return NO_ERROR;
 		}
 	}

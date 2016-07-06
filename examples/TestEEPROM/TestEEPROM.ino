@@ -1,7 +1,7 @@
 #include <CommandHandler.h>
 
 // Create a CommandHandler object
-CommandHandler h;
+CommandHandler<4> h;
 
 ///////////////////////////////////////////////////////
 // Declare functions to be called by serial commands //
@@ -35,7 +35,11 @@ void setup() {
 	h.registerCommand("put", -1, &storeCommand);
 	h.registerCommand("get", 0, &readCommand);
 	h.registerCommand("clear", 0, &clearCommand);
-	h.registerCommand("echo", -1, &echoMany);
+	ExecuteError r = h.registerCommand("echo", -1, &echoMany);
+
+	if (r) {
+		Serial.println(F("Error in command registration"));
+	}
 
 	// Execute any stored commands
 	h.executeStartupCommands();
@@ -72,7 +76,7 @@ void storeCommand(const ParameterLookup& params) {
 
 	char command[COMMAND_SIZE_MAX + 1];
 	command[0] = '\0';
-
+	
 	// Copy first part of command
 	if (params.size() > 0) {
 		strncat(command, params[1], COMMAND_SIZE_MAX);

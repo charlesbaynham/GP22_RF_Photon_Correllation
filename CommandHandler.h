@@ -278,7 +278,7 @@ protected:
 	// Hash string (case insensitive)
 	// Uses	the djb2 algorithm by Dan Bernstein
 	// See http://www.cse.yorku.ca/~oz/hash.html
-	unsigned long djbHash(const char *str)
+	static unsigned long djbHash(const char *str)
 	{
 		unsigned long hash = 5381;
 		int c;

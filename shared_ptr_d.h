@@ -47,7 +47,7 @@ public:
 	}
 
 	// Checks if a pointer is assigned
-	operator bool() const {
+	explicit operator bool() const {
 		if (_ptr)
 			return true;
 

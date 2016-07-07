@@ -152,6 +152,8 @@ public:
 
 #ifdef DEBUGGING_ENABLED
 
+		if (!__serial_is_ready) return;
+
 		Serial.print(F("*** loc ("));
 		Serial.print((int)_theCommand, DEC);
 		Serial.println(F(") ***"));

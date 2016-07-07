@@ -145,6 +145,40 @@ public:
 	// Number of stored params, including the command itself
 	unsigned int size() const { return _size; }
 
+	// Dump the contents of _theCommand if in debug mode
+	void dump() const {
+
+		CONSOLE_LOG_LN(F("ParameterLookup::dump"));
+
+#ifdef DEBUGGING_ENABLED
+
+		Serial.print(F("*** loc ("));
+		Serial.print((int)_theCommand, DEC);
+		Serial.println(F(") ***"));
+
+		for (int i = 0; i < COMMAND_SIZE_MAX; i++) {
+			Serial.print(i);
+			Serial.print('\t');
+		}
+
+		Serial.println("");
+
+		for (int i = 0; i < COMMAND_SIZE_MAX; i++) {
+			if (isprint(_theCommand[i])) 
+				{Serial.print(_theCommand[i]);}
+			else {
+				Serial.print('[');
+				Serial.print((int)_theCommand[i]);
+				Serial.print(']');
+			}
+			Serial.print('\t');
+		}
+
+		Serial.println(F("***"));
+
+#endif
+	}
+
 private:
 
 	// Pointer to the whole command

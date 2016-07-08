@@ -18,17 +18,17 @@
 
 // Error messages
 enum CommandHandlerReturn {
-	NO_ERROR = 0,
-	COMMAND_NOT_FOUND,
-	WRONG_NUM_OF_PARAMS,
-	ERROR_PARSING_COMMAND,
-	EMPTY_COMMAND_STRING,
-	NO_COMMAND_WAITING,
-	MALLOC_ERROR,
-	OUT_OF_MEM,
-	BUFFER_FULL,
-	COMMAND_TOO_LONG,
-	UNKNOWN_ERROR
+	CH_NO_ERROR = 0,
+	CH_COMMAND_NOT_FOUND,
+	CH_WRONG_NUM_OF_PARAMS,
+	CH_ERROR_PARSING_COMMAND,
+	CH_EMPTY_COMMAND_STRING,
+	CH_NO_COMMAND_WAITING,
+	CH_MALLOC_ERROR,
+	CH_OUT_OF_MEM,
+	CH_BUFFER_FULL,
+	CH_COMMAND_TOO_LONG,
+	CH_UNKNOWN_ERROR
 };
 
 //////////////////////  PARAMETER LOOKUP  //////////////////////
@@ -257,14 +257,14 @@ public:
 	CommandHandlerReturn executeCommand()
 	{
 
-		CommandHandlerReturn error = NO_ERROR;
+		CommandHandlerReturn error = CH_NO_ERROR;
 
 		CONSOLE_LOG_LN(F("Execute command"));
 
 		// Return error code if no command waiting
 		if (!_bufferFull) {
 			CONSOLE_LOG_LN(F("No command error"));
-			error = NO_COMMAND_WAITING;
+			error = CH_NO_COMMAND_WAITING;
 		}
 
 		CONSOLE_LOG(F("Command is: "));
@@ -274,7 +274,7 @@ public:
 		if (_bufferLength == 0 && !error)
 		{
 			CONSOLE_LOG_LN(F("Empty command error"));
-			error = EMPTY_COMMAND_STRING;
+			error = CH_EMPTY_COMMAND_STRING;
 		}
 
 		// Constuct a parameter lookup object from the command string
@@ -307,7 +307,7 @@ public:
 
 		// Check if the buffer is already full
 		if (_bufferFull) {
-			return BUFFER_FULL;
+			return CH_BUFFER_FULL;
 		}
 
 		// If c is a newline, mark the buffer as full
@@ -323,7 +323,7 @@ public:
 
 				CONSOLE_LOG_LN(F("Ignoring command since too long"));
 
-				return COMMAND_TOO_LONG;
+				return CH_COMMAND_TOO_LONG;
 			}
 
 			// If not, we are already null terminated so mark the string as ready
@@ -332,7 +332,7 @@ public:
 		// if c is a carridge return, ignore it
 		else if (c == '\r') {
 			CONSOLE_LOG_LN(F("Ignoring a \r"));
-			return NO_ERROR;
+			return CH_NO_ERROR;
 		}
 		// else c is a normal char, so add it to the buffer
 		else {
@@ -343,7 +343,7 @@ public:
 
 				_command_too_long = true;
 
-				return COMMAND_TOO_LONG;
+				return CH_COMMAND_TOO_LONG;
 			}
 			else
 			{
@@ -360,11 +360,11 @@ public:
 				CONSOLE_LOG(F("', Buffer length: "));
 				CONSOLE_LOG_LN(_bufferLength);
 
-				return NO_ERROR;
+				return CH_NO_ERROR;
 			}
 		}
 
-		return UNKNOWN_ERROR; // We should never get here
+		return CH_UNKNOWN_ERROR; // We should never get here
 	}
 
 	// Check to see if the handler is ready for more incoming chars
@@ -386,7 +386,7 @@ public:
 		// Check that the string is small enough to fit into the buffer, including null char
 		if (command.length() > COMMAND_SIZE_MAX - 2) {
 			CONSOLE_LOG_LN(F("CommandHandler::Command too long for EEPROM"));
-			return COMMAND_TOO_LONG;
+			return CH_COMMAND_TOO_LONG;
 		}
 
 		// Store it
@@ -449,7 +449,7 @@ public:
 		eeprom_ptr++;
 		EEPROM.update(EEPROM_STORED_COMMAND_LOCATION + eeprom_ptr, '\0');
 
-		return NO_ERROR;
+		return CH_NO_ERROR;
 	}
 
 	// Remove any startup commands from the EEPROM
@@ -564,18 +564,18 @@ public:
 		if (storedCmd[0] == '\0') {
 			// Fail. No command stored
 			CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands: No command stored"));
-			return NO_COMMAND_WAITING;
+			return CH_NO_COMMAND_WAITING;
 		}
 
 		// If not, queue each char into the command buffer
 		// If we reach a newline, execute the command
 		// If we reach a NULL, end
 		int i = 0;
-		CommandHandlerReturn result = NO_ERROR;
+		CommandHandlerReturn result = CH_NO_ERROR;
 		while (storedCmd[i]) {
 
 			// If any preceding commands have failed, stop executing here
-			if (NO_ERROR == result) {
+			if (CH_NO_ERROR == result) {
 
 				CONSOLE_LOG(F("CommandHandler::executeStartupCommands: Queueing "));
 				CONSOLE_LOG_LN(storedCmd[i]);
@@ -644,7 +644,7 @@ private:
 		{
 			if (_commandsIdx >= array_size) {
 				CONSOLE_LOG_LN(F("CommandLookup::Out of pre-allocated space"));
-				return OUT_OF_MEM;
+				return CH_OUT_OF_MEM;
 			}
 
 			// Set up a struct containing the number of params and a pointer to the function
@@ -661,7 +661,7 @@ private:
 			// Store it in the vector
 			_commands[_commandsIdx++] = d;
 
-			return NO_ERROR;
+			return CH_NO_ERROR;
 		}
 
 		// Search the list of commands for the given command and execute it with the given parameter array
@@ -686,7 +686,7 @@ private:
 
 			if (foundIdx == -1) {
 				CONSOLE_LOG_LN(F("Command not found"));
-				return COMMAND_NOT_FOUND;
+				return CH_COMMAND_NOT_FOUND;
 			}
 
 			const dataStruct& d = _commands[foundIdx];
@@ -702,13 +702,13 @@ private:
 				CONSOLE_LOG(F(" parameters but got "));
 				CONSOLE_LOG_LN(params.size() - 1);
 
-				return WRONG_NUM_OF_PARAMS;
+				return CH_WRONG_NUM_OF_PARAMS;
 			}
 
 			CONSOLE_LOG_LN(F("Calling function..."));
 			f(params);
 
-			return NO_ERROR;
+			return CH_NO_ERROR;
 		}
 
 	protected:

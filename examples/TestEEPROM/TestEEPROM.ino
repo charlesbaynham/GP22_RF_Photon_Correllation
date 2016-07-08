@@ -35,7 +35,7 @@ void setup() {
 	h.registerCommand("put", -1, &storeCommand);
 	h.registerCommand("get", 0, &readCommand);
 	h.registerCommand("clear", 0, &clearCommand);
-	ExecuteError r = h.registerCommand("echo", -1, &echoMany);
+	CommandHandlerReturn r = h.registerCommand("echo", -1, &echoMany);
 
 	if (r) {
 		Serial.println(F("Error in command registration"));
@@ -51,7 +51,7 @@ void loop() {
 	if (h.commandWaiting()) {
 
 		// Execute first waiting command
-		ExecuteError result = h.executeCommand();
+		CommandHandlerReturn result = h.executeCommand();
 
 		if (result) {
 			Serial.print("Error code ");

@@ -42,7 +42,7 @@ void loop() {
 	if (h.commandWaiting()) {
 
 		// Execute first waiting command
-		ExecuteError result = h.executeCommand();
+		CommandHandlerReturn result = h.executeCommand();
 
 		// Report any errors
 		switch (result) {

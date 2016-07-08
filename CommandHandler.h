@@ -16,6 +16,21 @@
 #define EEPROM_STORED_COMMAND_LOCATION EEPROM_STORED_COMMAND_FLAG_LOCATION + sizeof(bool)
 #endif
 
+// Error messages
+enum CommandHandlerReturn {
+	NO_ERROR = 0,
+	COMMAND_NOT_FOUND,
+	WRONG_NUM_OF_PARAMS,
+	ERROR_PARSING_COMMAND,
+	EMPTY_COMMAND_STRING,
+	NO_COMMAND_WAITING,
+	MALLOC_ERROR,
+	OUT_OF_MEM,
+	BUFFER_FULL,
+	COMMAND_TOO_LONG,
+	UNKNOWN_ERROR
+};
+
 //////////////////////  PARAMETER LOOKUP  //////////////////////
 
 // This class handles the lookup of parameters from an internal string
@@ -166,8 +181,10 @@ public:
 		Serial.println("");
 
 		for (int i = 0; i < COMMAND_SIZE_MAX; i++) {
-			if (isprint(_theCommand[i])) 
-				{Serial.print(_theCommand[i]);}
+			if (isprint(_theCommand[i]))
+			{
+				Serial.print(_theCommand[i]);
+			}
 			else {
 				Serial.print('[');
 				Serial.print((int)_theCommand[i]);
@@ -189,143 +206,8 @@ private:
 
 };
 
-//////////////////////  COMMAND LOOKUP  //////////////////////
-
-// This class is responsible for matching strings -> commands
-// It maintains a vector of hashes, associated commands and number of
-// parameters required for those commands
-// `callStoredCommand` performs the lookup and calls the appropriate
-// command, passing through a parameter lookup object
-//
-// Its maximum size is determined at compile time by the `size` template argument
-
-// Template for the functions we'll be calling
+// Template for the functions to be called in response to a command
 typedef void commandFunction(const ParameterLookup& params);
-
-// Structure of the data to be stored for each command
-struct dataStruct {
-	unsigned long hash; // Hash of the keyword (case insensitive)
-	int n; // Number of params this function takes
-	commandFunction* f; // Pointer to this function
-};
-
-// Error messages for executing a command
-enum ExecuteError {
-	NO_ERROR = 0,
-	COMMAND_NOT_FOUND,
-	WRONG_NUM_OF_PARAMS,
-	ERROR_PARSING_COMMAND,
-	EMPTY_COMMAND_STRING,
-	NO_COMMAND_WAITING,
-	MALLOC_ERROR,
-	OUT_OF_MEM,
-	BUFFER_FULL,
-	COMMAND_TOO_LONG,
-	UNKNOWN_ERROR
-};
-
-template <size_t size>
-class CommandLookup
-{
-public:
-
-	CommandLookup() :
-		_commandsIdx(0)
-	{}
-
-	// Add a new command to the list
-	ExecuteError registerCommand(const char* command, int num_of_parameters,
-		commandFunction* pointer_to_function) 
-	{
-		if (_commandsIdx >= size) {
-			CONSOLE_LOG_LN(F("CommandLookup::Out of pre-allocated space"));
-			return OUT_OF_MEM;
-		}
-
-		// Set up a struct containing the number of params and a pointer to the function
-		dataStruct d;
-
-		// Get hash of command
-		long keyHash = djbHash(command);
-
-		// Save params
-		d.hash = keyHash;
-		d.n = num_of_parameters;
-		d.f = pointer_to_function;
-
-		// Store it in the vector
-		_commands[_commandsIdx++] = d;
-
-		return NO_ERROR;
-	}
-
-	// Search the list of commands for the given command and execute it with the given parameter array
-	ExecuteError callStoredCommand(const ParameterLookup& params)
-	{
-
-		CONSOLE_LOG(F("callStoredCommand with n="));
-		CONSOLE_LOG_LN(params.size());
-
-		// Get hash of command requested
-		const unsigned long reqHash = djbHash(params[0]);
-
-		int foundIdx = -1;
-
-		// Search through vector for this hash
-		for (int i = 0; i < _commandsIdx; i++) {
-			if (reqHash == _commands[i].hash) {
-				foundIdx = i;
-				break;
-			}
-		}
-
-		if (foundIdx == -1) {
-			CONSOLE_LOG_LN(F("Command not found"));
-			return COMMAND_NOT_FOUND;
-		}
-
-		const dataStruct& d = _commands[foundIdx];
-		const commandFunction* f = d.f;
-
-		CONSOLE_LOG(F("Recalled data: d.n = "));
-		CONSOLE_LOG_LN(d.n);
-
-		// Return error if wrong number of parameters
-		if (d.n != params.size() - 1 && d.n != -1) {
-			CONSOLE_LOG(F("ERROR: Expecting "));
-			CONSOLE_LOG(d.n);
-			CONSOLE_LOG(F(" parameters but got "));
-			CONSOLE_LOG_LN(params.size() - 1);
-
-			return WRONG_NUM_OF_PARAMS;
-		}
-
-		CONSOLE_LOG_LN(F("Calling function..."));
-		f(params);
-
-		return NO_ERROR;
-	}
-
-protected:
-
-	dataStruct _commands[size];
-	unsigned int _commandsIdx;
-
-	// Hash string (case insensitive)
-	// Uses	the djb2 algorithm by Dan Bernstein
-	// See http://www.cse.yorku.ca/~oz/hash.html
-	static unsigned long djbHash(const char *str)
-	{
-		unsigned long hash = 5381;
-		int c;
-
-		while (c = tolower(*str++)) {
-			hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-		}
-
-		return hash;
-	}
-};
 
 //////////////////////  COMMAND HANDLER  //////////////////////
 
@@ -347,10 +229,16 @@ protected:
 // The user must call `executeStartupCommands()` in their code once they are ready 
 // for EEPROM commands to be executed
 
-template <size_t size>
+template <size_t array_size>
 class CommandHandler
 {
+
+	// Forward declare the CommandLookup class
+private:
+	class CommandLookup;
+
 public:
+
 	// Constuctor
 	// Initialise private members and queue any stored command in the EEPROM
 	CommandHandler() :
@@ -366,10 +254,10 @@ public:
 	}
 
 	// Execute the waiting command
-	ExecuteError executeCommand()
+	CommandHandlerReturn executeCommand()
 	{
 
-		ExecuteError error = NO_ERROR;
+		CommandHandlerReturn error = NO_ERROR;
 
 		CONSOLE_LOG_LN(F("Execute command"));
 
@@ -395,7 +283,7 @@ public:
 		ParameterLookup lookupObj = ParameterLookup(_inputBuffer);
 
 		CONSOLE_LOG_LN(F("Running callStoredCommand..."));
-		ExecuteError found = _lookupList.callStoredCommand(lookupObj);
+		CommandHandlerReturn found = _lookupList.callStoredCommand(lookupObj);
 
 		// Mark buffer as ready again
 		_bufferFull = false;
@@ -406,7 +294,7 @@ public:
 	}
 
 	// Register a command
-	ExecuteError registerCommand(const char* command, int num_of_parameters,
+	CommandHandlerReturn registerCommand(const char* command, int num_of_parameters,
 		commandFunction* pointer_to_function) {
 		return _lookupList.registerCommand(command, num_of_parameters,
 			pointer_to_function);
@@ -414,7 +302,7 @@ public:
 
 	// Add a char from the serial connection to be processed and added to the queue
 	// Returns BUFFER_FULL if buffer is full and char wasn't added
-	ExecuteError addCommandChar(const char c)
+	CommandHandlerReturn addCommandChar(const char c)
 	{
 
 		// Check if the buffer is already full
@@ -492,7 +380,7 @@ public:
 	// Multiple commands can be seperated by ';' chars
 	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 	// Returns false on fail
-	ExecuteError storeStartupCommand(const String& command)
+	CommandHandlerReturn storeStartupCommand(const String& command)
 	{
 
 		// Check that the string is small enough to fit into the buffer, including null char
@@ -511,7 +399,7 @@ public:
 	// Multiple commands can be seperated by ';' chars
 	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
 	// Returns false on fail
-	ExecuteError storeStartupCommand(const char* command)
+	CommandHandlerReturn storeStartupCommand(const char* command)
 	{
 
 		// Store a flag indicating that a command exists
@@ -661,7 +549,7 @@ public:
 	}
 
 	// Execute any startup commands stored in the EEPROM
-	ExecuteError executeStartupCommands()
+	CommandHandlerReturn executeStartupCommands()
 	{
 
 		CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands"));
@@ -683,7 +571,7 @@ public:
 		// If we reach a newline, execute the command
 		// If we reach a NULL, end
 		int i = 0;
-		ExecuteError result = NO_ERROR;
+		CommandHandlerReturn result = NO_ERROR;
 		while (storedCmd[i]) {
 
 			// If any preceding commands have failed, stop executing here
@@ -711,7 +599,7 @@ public:
 
 private:
 	// An object for handling the matching of commands -> functions
-	CommandLookup<size> _lookupList;
+	CommandLookup _lookupList;
 
 	// Flag to warn that the command handler cannot handle more incoming chars
 	// until the current command is processed
@@ -724,5 +612,124 @@ private:
 	// A flag to report that the command currently being received has overrun
 	bool _command_too_long;
 
+	//////////////////////  COMMAND LOOKUP  //////////////////////
+
+	// This class is responsible for matching strings -> commands
+	// It maintains a vector of hashes, associated commands and number of
+	// parameters required for those commands
+	// `callStoredCommand` performs the lookup and calls the appropriate
+	// command, passing through a parameter lookup object
+	//
+	// Its maximum size is determined at compile time by the `size` template argument
+
+private:
+	// Structure of the data to be stored for each command
+	struct dataStruct {
+		unsigned long hash; // Hash of the keyword (case insensitive)
+		int n; // Number of params this function takes
+		commandFunction* f; // Pointer to this function
+	};
+
+	class CommandLookup
+	{
+	public:
+
+		CommandLookup() :
+			_commandsIdx(0)
+		{}
+
+		// Add a new command to the list
+		CommandHandlerReturn registerCommand(const char* command, int num_of_parameters,
+			commandFunction* pointer_to_function)
+		{
+			if (_commandsIdx >= array_size) {
+				CONSOLE_LOG_LN(F("CommandLookup::Out of pre-allocated space"));
+				return OUT_OF_MEM;
+			}
+
+			// Set up a struct containing the number of params and a pointer to the function
+			dataStruct d;
+
+			// Get hash of command
+			long keyHash = djbHash(command);
+
+			// Save params
+			d.hash = keyHash;
+			d.n = num_of_parameters;
+			d.f = pointer_to_function;
+
+			// Store it in the vector
+			_commands[_commandsIdx++] = d;
+
+			return NO_ERROR;
+		}
+
+		// Search the list of commands for the given command and execute it with the given parameter array
+		CommandHandlerReturn callStoredCommand(const ParameterLookup& params)
+		{
+
+			CONSOLE_LOG(F("callStoredCommand with n="));
+			CONSOLE_LOG_LN(params.size());
+
+			// Get hash of command requested
+			const unsigned long reqHash = djbHash(params[0]);
+
+			int foundIdx = -1;
+
+			// Search through vector for this hash
+			for (int i = 0; i < _commandsIdx; i++) {
+				if (reqHash == _commands[i].hash) {
+					foundIdx = i;
+					break;
+				}
+			}
+
+			if (foundIdx == -1) {
+				CONSOLE_LOG_LN(F("Command not found"));
+				return COMMAND_NOT_FOUND;
+			}
+
+			const dataStruct& d = _commands[foundIdx];
+			const commandFunction* f = d.f;
+
+			CONSOLE_LOG(F("Recalled data: d.n = "));
+			CONSOLE_LOG_LN(d.n);
+
+			// Return error if wrong number of parameters
+			if (d.n != params.size() - 1 && d.n != -1) {
+				CONSOLE_LOG(F("ERROR: Expecting "));
+				CONSOLE_LOG(d.n);
+				CONSOLE_LOG(F(" parameters but got "));
+				CONSOLE_LOG_LN(params.size() - 1);
+
+				return WRONG_NUM_OF_PARAMS;
+			}
+
+			CONSOLE_LOG_LN(F("Calling function..."));
+			f(params);
+
+			return NO_ERROR;
+		}
+
+	protected:
+
+		dataStruct _commands[array_size];
+		unsigned int _commandsIdx;
+
+		// Hash string (case insensitive)
+		// Uses	the djb2 algorithm by Dan Bernstein
+		// See http://www.cse.yorku.ca/~oz/hash.html
+		static unsigned long djbHash(const char *str)
+		{
+			unsigned long hash = 5381;
+			int c;
+
+			while (c = tolower(*str++)) {
+				hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+			}
+
+			return hash;
+		}
+	};
 };
 

@@ -178,16 +178,20 @@ void setupRegisters(const ParameterLookup& params) {
 	SPI.transfer(TDC_RESET);
 	digitalWrite(TDC_CS, HIGH);
 
-	int i = 0;
-
-	// Iterate over param list
-	for (int i = 1; i < params.size(); i++) {
+	// Iterate over param list and reg list
+	for (int i = 1; i < params.size() && i <= sizeof(reg) / sizeof(reg[0]); i++) {
 
 		// Get the next String, convert to a long and save in reg
-		reg[i] = strtol(params[i], NULL, 0);
+		reg[i-1] = strtol(params[i], NULL, 0);
 
-		// Increment i
-		i++;
+#ifdef DEBUG
+    Serial.print(F("Setting REG "));
+    Serial.print(i-1);
+    Serial.println(F(": "));
+    Serial.print(reg[i-1]);
+    Serial.print(F(" = 0x"));
+    Serial.println(reg[i-1], HEX);    
+#endif
 	}
 
 	// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
@@ -233,6 +237,7 @@ void getRegisters(const ParameterLookup& params) {
 
 	// Output the current register state
 	for (int i = 0; i < 7; i++) {
+		Serial.print("0x");
 		Serial.print(reg[i], HEX);
 		Serial.print('\t');
 	}

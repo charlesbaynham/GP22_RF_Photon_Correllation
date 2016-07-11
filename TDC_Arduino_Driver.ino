@@ -7,9 +7,9 @@
 		Current version:			*/
 
 #define PROG_IDN "GP22_DRIVER"
-#define PROG_VER "0.5"
+#define PROG_VER "0.6"
 
-/*----------------------------------*/
+		/*----------------------------------*/
 
 
 #define TDC_CS A1
@@ -29,10 +29,10 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Registers all the above functions with the command handler, thus defining the commands required to call them
-void registerCommands(CommandHandler * h);
+void registerCommands(CommandHandler<10>& h);
 
 // Create a command handler
-CommandHandler handler;
+CommandHandler<10> handler;
 
 // Hold TDC settings
 uint32_t reg[7];
@@ -86,7 +86,7 @@ void setup() {
 	digitalWrite(TDC_CS, HIGH);
 
 	// Load the possible serial commands
-	registerCommands(&handler);
+	registerCommands(handler);
 
 	// Initialize the SPI connection for the GP22 TDC:
 
@@ -104,15 +104,15 @@ void setup() {
 
 void loop() {
 	if (handler.commandWaiting()) {
-		
+
 #ifdef DEBUG
 		Serial.println(F("Command received."));
 #endif
 
-		ExecuteError out = handler.executeCommand();
+		CommandHandlerReturn out = handler.executeCommand();
 
 		if (out) {
-			Serial.print(F("Error in command: ExecuteError code "));
+			Serial.print(F("Error in command: CommandHandlerReturn code "));
 			Serial.println(out);
 		}
 	}
@@ -132,22 +132,22 @@ void serialEvent() {
 	}
 }
 
-void reset(const List<String>& params, bool isQuery) {
-	Serial.println("Resetting");
+void reset(const ParameterLookup& params) {
+	Serial.println(F("Resetting"));
 	Serial.flush();
 	resetFunc();
 }
 
-void identity(const List<String>& params, bool isQuery) {
-	Serial.print(PROG_IDN);
-	Serial.print(" - ");
-	Serial.println(PROG_VER);
+void identity(const ParameterLookup& params) {
+	Serial.print(F(PROG_IDN));
+	Serial.print(F(" - "));
+	Serial.println(F(PROG_VER));
 }
 
-void timedMeasure(const List<String>& params, bool isQuery) {
+void timedMeasure(const ParameterLookup& params) {
 
 	// Number of ms to read for
-	uint32_t timePeriod = atoi(params.front().c_str());
+	uint32_t timePeriod = atoi(params[1]);
 
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;
@@ -171,77 +171,77 @@ void timedMeasure(const List<String>& params, bool isQuery) {
 }
 
 // Command: "SETUp REG1 REG2 REG3 REG4 REG5 REG6 REG7" Registers as base 10 numbers
-void setupRegisters(const List<String>& params, bool isQuery) {
+void setupRegisters(const ParameterLookup& params) {
 
-	if (isQuery)
-	{
-		// Output the current register state
-		for (int i = 0; i < 7; i++) {
-			Serial.print(reg[i], HEX);
-			Serial.print('\t');
-		}
+	// Reset the TDC
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_RESET);
+	digitalWrite(TDC_CS, HIGH);
 
-		Serial.println("");
+	int i = 0;
 
-	} else {
+	// Iterate over param list
+	for (int i = 1; i < params.size(); i++) {
 
-		// Reset the TDC
-		digitalWrite(TDC_CS, LOW);
-		SPI.transfer(TDC_RESET);
-		digitalWrite(TDC_CS, HIGH);
+		// Get the next String, convert to a long and save in reg
+		reg[i] = strtol(params[i], NULL, 0);
 
-		int i = 0;
+		// Increment i
+		i++;
+	}
 
-		// Iterate over param list
-		for (List<String>::Iterator_const it = params.begin(); it != params.end(); it++) {
-			
-			// Get the next String, convert to a long and save in reg
-			reg[i] = strtol((*it).c_str(), NULL, 0);
+	// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
+	autoCalibrate = (bool)(reg[0] & (1 << 13));
 
-			// Increment i
-			i++;
-		}
+	// Write the values to the TDC's registers
+	updateTDC(reg);
 
-		// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
-		autoCalibrate = (bool)(reg[0] & (1 << 13));
+	delay(1);
 
-		// Write the values to the TDC's registers
-		updateTDC(reg);
+	// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
+	// Command:
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
+	// Data:
+	byte commsCheck = SPI.transfer(0x00);
+	digitalWrite(TDC_CS, HIGH);
 
-		delay(1);
+	byte shouldBe = (reg[1] & 0xFF000000) >> 24;
 
-		// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
-		// Command:
-		digitalWrite(TDC_CS, LOW);
-		SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
-		// Data:
-		byte commsCheck = SPI.transfer(0x00);
-		digitalWrite(TDC_CS, HIGH);
+	if (commsCheck == shouldBe) {
+		Serial.print("DONE - CALIBRATION MODE ");
+		if (autoCalibrate)
+			Serial.print("ON - ");
+		else
+			Serial.print("OFF - ");
 
-		byte shouldBe = (reg[1] & 0xFF000000) >> 24;
+		Serial.println(commsCheck, HEX);
 
-		if (commsCheck == shouldBe) {
-			Serial.print("DONE - CALIBRATION MODE ");
-			if (autoCalibrate)
-				Serial.print("ON - ");
-			else
-				Serial.print("OFF - ");
+	}
+	else {
+		Serial.print("Error. Read: 0x");
+		Serial.print(commsCheck, HEX);
+		Serial.print(" instead of 0x");
+		Serial.print(shouldBe, HEX);
+		Serial.print(" from reg[1] == ");
+		Serial.println(reg[1], HEX);
 
-			Serial.println(commsCheck, HEX);
-
-		}
-		else {
-			Serial.print("Error. Read: 0x");
-			Serial.print(commsCheck, HEX);
-			Serial.print(" instead of 0x");
-			Serial.print(shouldBe, HEX);
-			Serial.print(" from reg[1] == ");
-			Serial.println(reg[1], HEX);
-		}
 	}
 }
 
-void singleMeasure(const List<String>& params, bool isQuery) {
+void getRegisters(const ParameterLookup& params) {
+
+	// Output the current register state
+	for (int i = 0; i < 7; i++) {
+		Serial.print(reg[i], HEX);
+		Serial.print('\t');
+	}
+
+	Serial.println("");
+
+}
+
+void singleMeasure(const ParameterLookup& params) {
 
 	// Do the measurement
 	uint32_t result = measure();
@@ -252,7 +252,7 @@ void singleMeasure(const List<String>& params, bool isQuery) {
 }
 
 // Calibrate the TDC against the reference 32kHz clock and report the result
-void calibrateTDC(const List<String>& params, bool isQuery) {
+void calibrateTDC(const ParameterLookup& params) {
 
 	// Do the calibration
 	uint16_t calib = calibrate();
@@ -264,7 +264,7 @@ void calibrateTDC(const List<String>& params, bool isQuery) {
 
 // Calibrate the highspeed clock against the TDC and report the result
 // (i.e. number of high speed clock cycles in `ANZ_PER_CALRES` cycles of the ref clock)
-void calibrateResonator(const List<String>& params, bool isQuery) {
+void calibrateResonator(const ParameterLookup& params) {
 
 	// Do the calibration
 	uint32_t calib = calibrateHF();
@@ -274,7 +274,7 @@ void calibrateResonator(const List<String>& params, bool isQuery) {
 
 }
 
-void testConnection(const List<String>& params, bool isQuery) {
+void testConnection(const ParameterLookup& params) {
 	// Run the test
 	uint8_t testResult = testTDC();
 
@@ -291,7 +291,7 @@ void testConnection(const List<String>& params, bool isQuery) {
 	}
 }
 
-void getStatus(const List<String>& params, bool isQuery) { 
+void getStatus(const ParameterLookup& params) {
 
 	Serial.println(readStatus(), HEX);
 
@@ -315,7 +315,7 @@ uint8_t testTDC() {
 	// Write 0xAA800000 into register 1 (the defaults + test data)
 	uint32_t newReg1 = 0xAB800000;
 	writeConfigReg(TDC_REG1, newReg1);
-  
+
 	// Read back from the first 8 bits of register 1 (should be 0xAB)
 	// Command:
 	digitalWrite(TDC_CS, LOW);
@@ -324,11 +324,11 @@ uint8_t testTDC() {
 	uint8_t commsTest = SPI.transfer(0x00);
 	digitalWrite(TDC_CS, HIGH);
 
-  // Return 0 for success
+	// Return 0 for success
 	if (commsTest == 0xAB)
 		return 0;
 
-  // If we failed, return the value we just read, unless that value is 0 in which case return "0xFF"
+	// If we failed, return the value we just read, unless that value is 0 in which case return "0xFF"
 	else
 		if (commsTest != 0)
 			return commsTest;
@@ -347,13 +347,13 @@ void updateTDC(const uint32_t * registers) {
 
 	// Wait 100ms
 	delay(100);
-	
+
 	// Set defaults
 	// Write the values to the TDC's registers
 	for (int i = 0; i < 7; i++) {
 		writeConfigReg(i, registers[i]);
 	}
-	
+
 	// Wait 100ms
 	delay(100);
 }
@@ -554,7 +554,7 @@ uint32_t read_bytes(uint8_t reg, bool read16bits) {
 // this function will return the number of bytes currently free in RAM
 // written by David A. Mellis
 // based on code by Rob Faludi http://www.faludi.com
-void availableMemory(const List<String>& params, bool isQuery) {
+void availableMemory(const ParameterLookup& params) {
 	//int size = 1024; // Use 2048 with ATmega328
 	int size = 2048;
 	byte *buf;
@@ -569,18 +569,19 @@ void availableMemory(const List<String>& params, bool isQuery) {
 }
 
 
-void registerCommands(CommandHandler* h) {
-  // N.B. commands are not case sensitive
+void registerCommands(CommandHandler<10>& h) {
+	// N.B. commands are not case sensitive
 
-	h->registerCommand("*IDN", 0, 0, *identity);
-	h->registerCommand("*TST", 0, 0, *testConnection);
-	h->registerCommand("*RST", 0, 0, *reset);
-	h->registerCommand("MEAS", 1, 1, *timedMeasure);
-	h->registerCommand("SING", 1, 1, *singleMeasure);
-	h->registerCommand("STAT", 0, 0, *singleMeasure);
-	h->registerCommand("SETU", -1, 0, *setupRegisters);
-	h->registerCommand("*MEM", 0, 0, *availableMemory);
-	h->registerCommand("HCAL", 0, 0, *calibrateResonator);
-	h->registerCommand("CALI", 0, 0, *calibrateTDC);
-  
+	h.registerCommand("*IDN", 0, &identity);
+	h.registerCommand("*TST", 0, &testConnection);
+	h.registerCommand("*RST", 0, &reset);
+	h.registerCommand("MEAS", 1, &timedMeasure);
+	h.registerCommand("SING", 0, &singleMeasure);
+	h.registerCommand("STAT", 0, &singleMeasure);
+	h.registerCommand("SETU", -1, &setupRegisters);
+	h.registerCommand("SETU?", 0, &getRegisters);
+	h.registerCommand("*MEM", 0, &availableMemory);
+	h.registerCommand("HCAL", 0, &calibrateResonator);
+	h.registerCommand("CALI", 0, &calibrateTDC);
+
 }

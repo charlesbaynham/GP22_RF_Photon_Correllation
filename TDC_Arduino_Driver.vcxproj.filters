@@ -36,6 +36,9 @@
     <ClInclude Include="CommandHandler\hashMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CommandHandler\testInheritance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandHandler\CommandHandler.cpp">

@@ -81,6 +81,7 @@
     <ClInclude Include="CommandHandler\basicVector.h" />
     <ClInclude Include="CommandHandler\CommandHandler.h" />
     <ClInclude Include="CommandHandler\hashMap.h" />
+    <ClInclude Include="CommandHandler\testInheritance.h" />
     <ClInclude Include="Visual Micro\.TDC_Arduino_Driver.vsarduino.h" />
     <ClInclude Include="__vm\.TDC_Arduino_Driver.vsarduino.h" />
   </ItemGroup>

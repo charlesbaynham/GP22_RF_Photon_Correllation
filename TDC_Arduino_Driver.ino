@@ -29,10 +29,10 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Registers all the above functions with the command handler, thus defining the commands required to call them
-void registerCommands(CommandHandler<10>& h);
+bool registerCommands(CommandHandler<13>& h);
 
 // Create a command handler
-CommandHandler<10> handler;
+CommandHandler<13> handler;
 
 // Hold TDC settings
 uint32_t reg[7];
@@ -67,13 +67,13 @@ void(*resetFunc) (void) = 0;
 void setup() {
 
 	// Default values for TDC settings (According to ACAM's defaults)
-	reg[0] = 0x22066800;
-	reg[1] = 0x55400000;
-	reg[2] = 0x20000000;
-	reg[3] = 0x18000000;
-	reg[4] = 0x20000000;
+	reg[0] = 0xF3076000;
+	reg[1] = 0x12420000;
+	reg[2] = 0xA0000000;
+	reg[3] = 0x00000000;
+	reg[4] = 0x10000000;
 	reg[5] = 0x00000000;
-	reg[6] = 0x00000000;
+	reg[6] = 0x400010CB;
 
 	// Serial connection
 	Serial.begin(250000);
@@ -86,7 +86,9 @@ void setup() {
 	digitalWrite(TDC_CS, HIGH);
 
 	// Load the possible serial commands
-	registerCommands(handler);
+	if (!registerCommands(handler)) {
+    Serial.println(F("Error in command registration"));
+	}
 
 	// Initialize the SPI connection for the GP22 TDC:
 
@@ -156,10 +158,11 @@ void timedMeasure(const ParameterLookup& params) {
 	while (millis() < stop) {
 
 		// Do the measurement
-		uint32_t result = measure();
+		uint32_t result;
+		int stat = measure(result);
 
 		// Check we didn't timeout
-		if (result != 0xFFFFFFFF) {
+		if (stat == 0) {
 			// Report result
 			Serial.print(result);
 			Serial.print('\t');
@@ -249,10 +252,14 @@ void getRegisters(const ParameterLookup& params) {
 void singleMeasure(const ParameterLookup& params) {
 
 	// Do the measurement
-	uint32_t result = measure();
+	uint32_t result;
+	int stat = measure(result);
 
 	// Report result
-	Serial.println(result);
+	if (0 == stat)
+	  Serial.println(result);
+  else
+    Serial.println(F("TIMEOUT"));
 
 }
 
@@ -298,6 +305,7 @@ void testConnection(const ParameterLookup& params) {
 
 void getStatus(const ParameterLookup& params) {
 
+  Serial.print(F("0x"));
 	Serial.println(readStatus(), HEX);
 
 }
@@ -328,6 +336,10 @@ uint8_t testTDC() {
 	// Data:
 	uint8_t commsTest = SPI.transfer(0x00);
 	digitalWrite(TDC_CS, HIGH);
+
+
+// Restore settings to previous
+updateTDC(reg);
 
 	// Return 0 for success
 	if (commsTest == 0xAB)
@@ -363,8 +375,10 @@ void updateTDC(const uint32_t * registers) {
 	delay(100);
 }
 
-// Perform a single measurement & return the outcome
-uint32_t measure() {
+// Perform a single measurement & output to the passed variable
+// Return 1 for timeout
+// 0 for success
+int measure(uint32_t& out) {
 
 	// Send the INIT opcode to start waiting for a timing event
 	digitalWrite(TDC_CS, LOW);
@@ -374,13 +388,13 @@ uint32_t measure() {
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
 	while (HIGH == digitalRead(TDC_INT)) {
-		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
+		if (millis() - start > 500) { return 1; } // Give up if we've been waiting 500ms
 	}
 
 	// Read the result
-	uint32_t result = read_bytes(TDC_RESULT1, !autoCalibrate);
+	out = read_bytes(TDC_RESULT1, !autoCalibrate);
 
-	return result;
+	return 0;
 }
 
 // Perform a calibration routine and then return the number of LSBs in 2 clock cycles
@@ -574,19 +588,25 @@ void availableMemory(const ParameterLookup& params) {
 }
 
 
-void registerCommands(CommandHandler<10>& h) {
+bool registerCommands(CommandHandler<13>& h) {
 	// N.B. commands are not case sensitive
 
-	h.registerCommand("*IDN", 0, &identity);
-	h.registerCommand("*TST", 0, &testConnection);
-	h.registerCommand("*RST", 0, &reset);
-	h.registerCommand("MEAS", 1, &timedMeasure);
-	h.registerCommand("SING", 0, &singleMeasure);
-	h.registerCommand("STAT", 0, &singleMeasure);
-	h.registerCommand("SETU", -1, &setupRegisters);
-	h.registerCommand("SETU?", 0, &getRegisters);
-	h.registerCommand("*MEM", 0, &availableMemory);
-	h.registerCommand("HCAL", 0, &calibrateResonator);
-	h.registerCommand("CALI", 0, &calibrateTDC);
+  bool error = false;
+  
+	error |= h.registerCommand("*IDN", 0, &identity);
+ error |= h.registerCommand("*IDN?", 0, &identity);
+error |=   h.registerCommand("*TST", 0, &testConnection);
+error |=   h.registerCommand("*TST?", 0, &testConnection);
+	error |= h.registerCommand("*RST", 0, &reset);
+	error |= h.registerCommand("MEAS", 1, &timedMeasure);
+	error |= h.registerCommand("SING", 0, &singleMeasure);
+	error |= h.registerCommand("STAT", 0, &getStatus);
+	error |= h.registerCommand("SETU", -1, &setupRegisters);
+	error |= h.registerCommand("SETU?", 0, &getRegisters);
+	error |= h.registerCommand("*MEM", 0, &availableMemory);
+	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
+	error |= h.registerCommand("CALI", 0, &calibrateTDC);
+
+ return !error;
 
 }

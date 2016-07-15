@@ -20,11 +20,20 @@ void setup() {
 
   printReg(GP22_registers_data);
 
+  regWrite(GP22_reg::REG0, 0x22019800);
+
+  printReg(GP22_registers_data);
+
   bitWrite_s(GP22_reg::REG0, GP22_reg::REG0_ID0, 0xab);
   bitWrite_s(GP22_reg::REG1, GP22_reg::REG1_ID1, 0xcd);
   bitWrite_s(GP22_reg::REG2, GP22_reg::REG2_ID2, 0xef);
 
-  printReg(GP22_registers_data);  
+  printReg(GP22_registers_data);
+
+  bitWrite_s(GP22_reg::REG0, GP22_reg::REG0_DIV_FIRE, 15);
+  bitWrite_s(GP22_reg::REG0, GP22_reg::REG0_NEG_STOP1, true);
+
+  printReg(GP22_registers_data);
 
 }
 

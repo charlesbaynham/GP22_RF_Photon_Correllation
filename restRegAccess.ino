@@ -1,32 +1,30 @@
-#include "testReg.h"
+#include "GP22_reg.h"
 
-void printReg(uint32_t reg[2]) {
+uint32_t GP22_registers_data[7];
+
+void printReg(uint32_t reg[7]) {
   
-  Serial.print(F("testRegistersData contains: 0b"));
-  Serial.print(reg[0], BIN);
-  Serial.print(F(", 0b"));
-  Serial.println(reg[1], BIN);
+  Serial.println(F("reg contains: "));
+
+  for (int i = 0; i<7; i++) {
+    Serial.print(F("0x"));
+    Serial.println(reg[i], HEX);
+  }
+
+  Serial.println(F("***"));
 }
 
 void setup() {
-  // put your setup code here, to run once:
 
   Serial.begin(250000);
 
-  Serial.println(F("FIRST, SECOND_TWO, FOURTH_TO_SEVENTH"));
-  Serial.println(testReg::FIRST, HEX);
-  Serial.println(testReg::SECOND_TWO, HEX);
-  Serial.println(testReg::FOURTH_TO_SEVENTH, BIN);
+  printReg(GP22_registers_data);
 
-  printReg(testRegistersData);
+  bitWrite_s(GP22_reg::REG0, GP22_reg::REG0_ID0, 0xab);
+  bitWrite_s(GP22_reg::REG1, GP22_reg::REG1_ID1, 0xcd);
+  bitWrite_s(GP22_reg::REG2, GP22_reg::REG2_ID2, 0xef);
 
-  bitWrite_s(testReg::REG1, testReg::FIRST, 1);
-
-  printReg(testRegistersData);
-
-  bitWrite_s(testReg::REG1, testReg::FOURTH_TO_SEVENTH, 0b1010);
-
-  printReg(testRegistersData);
+  printReg(GP22_registers_data);  
 
 }
 

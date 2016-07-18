@@ -1,3 +1,11 @@
+// This is an example sketch showing how to access and modify a set of device registers
+//
+// The registers are defined in "GP22_reg.h" and are those for a GP22 time-to-digital convertor
+// as an example.
+
+// To adapt this code for another device, copy the GP22_reg.h file and follow the insutuctions in it
+// to modifiy it for your needs. 
+
 #include "GP22_reg.h"
 
 uint32_t GP22::registers_data[7];

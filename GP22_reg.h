@@ -43,22 +43,32 @@
 	Customisation / copying:
 		1. Copy this file and rename
 		2. Change the namespace to an appropriate value
-		3. Update the `registers` enum to hold the correct number of register labels
-		4. Update the bitset enums: one for each register, defining the location and names
+		3. Define the register size using the `T_register` typedef
+		4. Update the `registers` enum to hold the correct number of register labels
+		5. Update the bitset enums: one for each register, defining the location and names
 			of available settings.
-
+		6. Include this file in your code and initialise the data before calling any of the functions.
+			i.e.
+				uint32_t MY_NAMESPACE::registers_data[7];
+			For 7x 32 bit registers. 
+		7. Call the functions as described above in order to read / write to the registers. 
 
 */
 
 // Change the namespace title for other applications
 namespace GP22 {
 
+	// This defines the size of a register
+	// E.g. for a 32 bit register, use 
+	// 		typedef uint32_t T_register;
+	typedef uint32_t T_register;
+
 	// This is the location of the data. It is declared "extern" here, meaning that it must be defined
 	// and initialised elsewhere. 
 	//
 	// On initialisation, ensure that the size matches the size of `registers` or there will
 	// be buffer overflows
-	extern uint32_t registers_data[];
+	extern T_register registers_data[];
 
 	// The registers
 	// The number of labels here must match the size of `registers_data`
@@ -201,29 +211,29 @@ namespace GP22 {
 	    REG6_EN_ANALOG          = REG_BIT_DEFN(31, 31)
 	};
 	 
-	inline volatile uint32_t *regAddress(registers reg)
+	inline volatile T_register* regAddress(registers reg)
 	{
-		return reinterpret_cast<volatile uint32_t*>( 
+		return reinterpret_cast<volatile T_register*>( 
 			(unsigned int)registers_data
-			+ reg * sizeof(uint32_t) );
+			+ reg * sizeof(T_register) );
 	}
 
-	inline uint32_t regRead(registers reg)
+	inline T_register regRead(registers reg)
 	{
 		return *regAddress(reg);
 	}
 	 
-	inline void regWrite(registers reg, uint32_t value)
+	inline void regWrite(registers reg, T_register value)
 	{
 		*regAddress(reg) = value;
 	}
 
 	// Functions to read the requested bits from a register, decoding the information
 	// stored by the above macro
-	inline uint32_t bitmaskRead(registers reg, uint32_t bits)
+	inline T_register bitmaskRead(registers reg, uint32_t bits)
 	{
 		// Get the current value of the register
-		uint32_t       regval = *regAddress(reg);
+		T_register regval = *regAddress(reg);
 
 		// Extract the width of the bits required, stored in the last two bytes
 		// of `bits`
@@ -242,10 +252,10 @@ namespace GP22 {
 		// Return
 		return regval;
 	}
-	inline void bitmaskWrite(registers reg, uint32_t bits, uint32_t value)
+	inline void bitmaskWrite(registers reg, uint32_t bits, T_register value)
 	{
 		// Get the current value of the register
-		uint32_t       regval = *regAddress(reg);
+		T_register regval = *regAddress(reg);
 
 		// Extract the width of the bits required, stored in the last two bytes
 		// of `bits`

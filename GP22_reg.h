@@ -12,7 +12,7 @@
 	Usage:
 
 		Initialisation - 
-			Include this file and define `uint32_t registers_data[7]` in your code.
+			Include this file and define `uint32_t GP22::registers_data[7]` in your code.
 			e.g.
 				#include "GP22_reg.h"
 
@@ -44,13 +44,14 @@
 		1. Copy this file and rename
 		2. Change the namespace to an appropriate value
 		3. Define the register size using the `T_register` typedef
-		4. Update the `registers` enum to hold the correct number of register labels
+		4a. Update the `registers` enum to hold the correct number of register labels
+    4b. Update the `extern T_register registers_data[<NUM_REGISTERS>];` definition to match the 
+      number of registers defined in 4a.
 		5. Update the bitset enums: one for each register, defining the location and names
 			of available settings.
 		6. Include this file in your code and initialise the data before calling any of the functions.
-			i.e.
-				uint32_t MY_NAMESPACE::registers_data[7];
-			For 7x 32 bit registers. 
+			e.g.
+				T_register MY_NAMESPACE::registers_data[<NUM_REGISTERS>];
 		7. Call the functions as described above in order to read / write to the registers. 
 
 */
@@ -68,7 +69,7 @@ namespace GP22 {
 	//
 	// On initialisation, ensure that the size matches the size of `registers` or there will
 	// be buffer overflows
-	extern T_register registers_data[];
+	extern T_register registers_data[7];
 
 	// The registers
 	// The number of labels here must match the size of `registers_data`
@@ -84,7 +85,8 @@ namespace GP22 {
 	};
 
 	// A macro that defines encodes values for a bitset
-	// This encodes the start and stop positions of a bitset for a given register
+	// This encodes the start and stop positions of a bitset for a given register into
+	// the first two and last two bytes of a 32 bit int respectively
 	// See below for usage
 	#define REG_BIT_DEFN(start, end) ((uint32_t(start)<<16)|(end-start+1))
 

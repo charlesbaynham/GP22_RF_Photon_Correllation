@@ -185,15 +185,18 @@ void setupRegisters(const ParameterLookup& params) {
 	for (int i = 1; i < params.size() && i <= sizeof(reg) / sizeof(reg[0]); i++) {
 
 		// Get the next String, convert to a long and save in reg
-		reg[i-1] = strtol(params[i], NULL, 0);
+    uint32_t newRegVal = strtoul(params[i], NULL, 0);
+		reg[i-1] = newRegVal;
 
 #ifdef DEBUG
     Serial.print(F("Setting REG "));
     Serial.print(i-1);
     Serial.println(F(": "));
-    Serial.print(reg[i-1]);
+    Serial.print(newRegVal);
     Serial.print(F(" = 0x"));
-    Serial.println(reg[i-1], HEX);    
+    Serial.print(newRegVal, HEX);
+    Serial.print(F(", parsed from : "));
+    Serial.println(params[i]);
 #endif
 	}
 

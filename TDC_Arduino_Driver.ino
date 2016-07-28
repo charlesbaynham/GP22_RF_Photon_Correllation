@@ -22,6 +22,9 @@
 
 #include "CommandHandler\CommandHandler.h"
 
+// Debugging:
+#include "CommandHandler\Microprocessor_Debugging\debugging_init.h"
+
 // Setup the GP22 with the currently stored config
 void updateTDC(const uint32_t * registers);
 
@@ -78,6 +81,7 @@ void setup() {
 
 	// Serial connection
 	Serial.begin(250000);
+	__serial_is_ready = true;
 
 	// Setup the interrupt pin for input
 	pinMode(TDC_INT, INPUT);
@@ -267,6 +271,112 @@ void singleMeasure(const ParameterLookup& params) {
 
 }
 
+// Take multiple measurements for a given time period, outputting the results as a histogram
+// Histogram bins will be evenly spaced from 0 to <max val>. 
+// Any results equal to or greater than <max val> will be discarded
+// Params - 
+//		<time period> in ms
+//		<num bins>
+//		<max val>
+void histogramMeasure(const ParameterLookup& params) {
+
+	// Num ms to read for
+	const unsigned long timePeriod = strtoul(params[1], NULL, 0);
+
+	// Number of bins in histogram
+	const size_t numBins = atoi(params[2]);
+
+	// Maximum value that will fit into the histogram
+	const uint32_t maxVal = strtoul(params[3], NULL, 0);
+
+	// Reserve memory for an array to hold the histogram
+	unsigned long * hist = (unsigned long *)calloc(numBins, sizeof(unsigned long));
+
+	CONSOLE_LOG(F("histogramMeasure::timePeriod = "));
+	CONSOLE_LOG(timePeriod);
+	CONSOLE_LOG(F(", numBins = "));
+	CONSOLE_LOG(numBins);
+	CONSOLE_LOG(F(", maxVal = "));
+	CONSOLE_LOG_LN(maxVal);
+
+	// If calloc failed, quit
+	if (NULL == hist) {
+		Serial.print(F("Mem allocation of "));
+		Serial.print(numBins * sizeof(unsigned long));
+		Serial.println(F(" failed"));
+		return;
+	}
+
+	CONSOLE_LOG(F("histogramMeasure::"));
+	CONSOLE_LOG(numBins * sizeof(unsigned long));
+	CONSOLE_LOG_LN(F(" bytes allocated for histogram"))
+
+	// Calculate stop time
+	uint32_t stop = millis() + timePeriod;
+
+	// Loop until stoptime
+	while (millis() < stop) {
+
+		CONSOLE_LOG_LN(F("Start loop"));
+
+		uint32_t reading;
+
+		// Do a measurement and store it in `reading`
+		if (0 == measure(reading)) {
+			// We didn't timeout
+			CONSOLE_LOG(F("No timeout, reading = "));
+			CONSOLE_LOG_LN(reading);
+
+			// Work out to which bin this reading belongs
+			const size_t histIndex = getHistIndex(numBins, maxVal, reading);
+
+			CONSOLE_LOG(F("histIndex = "));
+			CONSOLE_LOG_LN(histIndex);
+
+			// Increment that bin if it exists
+			if (histIndex < numBins)
+			{
+				CONSOLE_LOG(histIndex);
+				CONSOLE_LOG_LN(F(" incremented"));
+				hist[histIndex]++;
+			}
+		}
+		else {
+			CONSOLE_LOG_LN(F("Timeout"));
+		}
+	}
+
+	CONSOLE_LOG_LN(F("Loop done"));
+
+	// Return the histogram
+	for (size_t i = 0; i < numBins-1; i++) {
+		Serial.print(hist[i]);
+		Serial.print('\t');
+	}
+	Serial.println(hist[numBins-1]); // No '\t' on final one, but a newline instead
+
+	CONSOLE_LOG_LN(F("Freeing histogram memory"));
+
+	// Free the histogram memory
+	free(hist);
+
+	return;
+}
+
+// Calculate which bin in a histogram a number belongs to
+// Inputs - 
+//		<num bins>
+//		<max val>
+//		<number>
+// Returns the index of the correct bin. Return value can be greater than num_bins so beware overflows!
+inline size_t getHistIndex(const size_t numBins, const uint32_t maxVal, const uint32_t reading) {
+
+	const double scaled = double(reading) * double(numBins) / double(maxVal);
+
+	return (size_t)floor(scaled);
+
+}
+
 // Calibrate the TDC against the reference 32kHz clock and report the result
 void calibrateTDC(const ParameterLookup& params) {
 
@@ -383,6 +493,13 @@ void updateTDC(const uint32_t * registers) {
 }
 
 // Perform a single measurement & output to the passed variable
+// The uint32_t readings returned by this function are taken directly from the GP22's
+// output registers. They represent either a raw integer number of gates passed for a measurement,
+// or a calibrated floating point time based on the internal clock, depending on the state
+// of the GP22's registers.
+// This function does not care: it returns the value as an unsigned 32 bit int. It is 
+// up to the user to convert into whatever format is applicable.
+//
 // Return 1 for timeout
 // 0 for success
 int measure(uint32_t& out) {
@@ -624,6 +741,7 @@ bool registerCommands(CommandHandler<13>& h) {
 	error |= h.registerCommand("*RST", 0, &reset);
 	error |= h.registerCommand("MEAS", 1, &timedMeasure);
 	error |= h.registerCommand("SING", 0, &singleMeasure);
+	error |= h.registerCommand("HIST", 3, &histogramMeasure);
 	error |= h.registerCommand("STAT", 0, &getStatus);
 	error |= h.registerCommand("SETU", -1, &setupRegisters);
 	error |= h.registerCommand("SETU?", 0, &getRegisters);

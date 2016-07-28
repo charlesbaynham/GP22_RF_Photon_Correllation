@@ -88,7 +88,7 @@ void setup() {
 
 	// Load the possible serial commands
 	if (!registerCommands(handler)) {
-    Serial.println(F("Error in command registration"));
+		Serial.println(F("Error in command registration"));
 	}
 
 	// Initialize the SPI connection for the GP22 TDC:
@@ -186,18 +186,18 @@ void setupRegisters(const ParameterLookup& params) {
 	for (int i = 1; i < params.size() && i <= sizeof(GP22::registers_data) / sizeof(GP22::registers_data[0]); i++) {
 
 		// Get the next String, convert to a long and save in the appropriate register
-    uint32_t newRegVal = strtoul(params[i], NULL, 0);
-	GP22::regWrite(GP22::registers(i-1), newRegVal);
+		uint32_t newRegVal = strtoul(params[i], NULL, 0);
+		GP22::regWrite(GP22::registers(i - 1), newRegVal);
 
 #ifdef DEBUG
-    Serial.print(F("Setting REG "));
-    Serial.print(i-1);
-    Serial.println(F(": "));
-    Serial.print(newRegVal);
-    Serial.print(F(" = 0x"));
-    Serial.print(newRegVal, HEX);
-    Serial.print(F(", parsed from : "));
-    Serial.println(params[i]);
+		Serial.print(F("Setting REG "));
+		Serial.print(i - 1);
+		Serial.println(F(": "));
+		Serial.print(newRegVal);
+		Serial.print(F(" = 0x"));
+		Serial.print(newRegVal, HEX);
+		Serial.print(F(", parsed from : "));
+		Serial.println(params[i]);
 #endif
 	}
 
@@ -261,9 +261,9 @@ void singleMeasure(const ParameterLookup& params) {
 
 	// Report result
 	if (0 == stat)
-	  Serial.println(result);
-  else
-    Serial.println(F("TIMEOUT"));
+		Serial.println(result);
+	else
+		Serial.println(F("TIMEOUT"));
 
 }
 
@@ -307,7 +307,7 @@ void testConnection(const ParameterLookup& params) {
 
 void getStatus(const ParameterLookup& params) {
 
-  Serial.print(F("0x"));
+	Serial.print(F("0x"));
 	Serial.println(readStatus(), HEX);
 
 }
@@ -344,7 +344,7 @@ uint8_t testTDC() {
 	digitalWrite(TDC_CS, HIGH);
 
 
-// Restore settings to previous
+	// Restore settings to previous
 	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_TEST_DATA, prevReg1);
 	updateTDC(GP22::registers_data);
 
@@ -446,7 +446,7 @@ uint16_t calibrate() {
 	// Our calculation is CALI2 - CALI1 == T_ref
 	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 7); // Request Cal2...
 	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 6); // ...minus Cal1
-	
+
 	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 0); // Expect 0 hits
 	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0);
 
@@ -615,12 +615,12 @@ void availableMemory(const ParameterLookup& params) {
 bool registerCommands(CommandHandler<13>& h) {
 	// N.B. commands are not case sensitive
 
-  bool error = false;
-  
+	bool error = false;
+
 	error |= h.registerCommand("*IDN", 0, &identity);
- error |= h.registerCommand("*IDN?", 0, &identity);
-error |=   h.registerCommand("*TST", 0, &testConnection);
-error |=   h.registerCommand("*TST?", 0, &testConnection);
+	error |= h.registerCommand("*IDN?", 0, &identity);
+	error |= h.registerCommand("*TST", 0, &testConnection);
+	error |= h.registerCommand("*TST?", 0, &testConnection);
 	error |= h.registerCommand("*RST", 0, &reset);
 	error |= h.registerCommand("MEAS", 1, &timedMeasure);
 	error |= h.registerCommand("SING", 0, &singleMeasure);
@@ -631,6 +631,6 @@ error |=   h.registerCommand("*TST?", 0, &testConnection);
 	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
 	error |= h.registerCommand("CALI", 0, &calibrateTDC);
 
- return !error;
+	return !error;
 
 }

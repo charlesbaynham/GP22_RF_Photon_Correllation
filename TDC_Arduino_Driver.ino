@@ -34,8 +34,9 @@ bool registerCommands(CommandHandler<13>& h);
 // Create a command handler
 CommandHandler<13> handler;
 
-// Hold TDC settings
-uint32_t reg[7];
+// Hold TDC settings and define methods to access them
+#include "GP22_Register_Access\GP22_reg.h"
+uint32_t GP22::registers_data[7] = { 0 };
 
 // Is the TDC set to automatically calibrate its results?
 bool autoCalibrate = true;
@@ -66,14 +67,14 @@ void(*resetFunc) (void) = 0;
 
 void setup() {
 
-	// Default values for TDC settings (According to ACAM's defaults)
-	reg[0] = 0xF3076000;
-	reg[1] = 0x12420000;
-	reg[2] = 0xA0000000;
-	reg[3] = 0x00000000;
-	reg[4] = 0x10000000;
-	reg[5] = 0x00000000;
-	reg[6] = 0x400010CB;
+	// Default values for TDC settings
+	regWrite(GP22::REG0, 0xF3076000);
+	regWrite(GP22::REG1, 0x12420000);
+	regWrite(GP22::REG2, 0xA0000000);
+	regWrite(GP22::REG3, 0x00000000);
+	regWrite(GP22::REG4, 0x10000000);
+	regWrite(GP22::REG5, 0x00000000);
+	regWrite(GP22::REG6, 0x400010CB);
 
 	// Serial connection
 	Serial.begin(250000);
@@ -99,7 +100,7 @@ void setup() {
 	SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
 
 	// Load all the values stored in reg into the TDC's registers
-	updateTDC(reg);
+	updateTDC(GP22::registers_data);
 
 	// Setup complete. Move to waiting for a command
 }
@@ -182,11 +183,11 @@ void setupRegisters(const ParameterLookup& params) {
 	digitalWrite(TDC_CS, HIGH);
 
 	// Iterate over param list and reg list
-	for (int i = 1; i < params.size() && i <= sizeof(reg) / sizeof(reg[0]); i++) {
+	for (int i = 1; i < params.size() && i <= sizeof(GP22::registers_data) / sizeof(GP22::registers_data[0]); i++) {
 
-		// Get the next String, convert to a long and save in reg
+		// Get the next String, convert to a long and save in the appropriate register
     uint32_t newRegVal = strtoul(params[i], NULL, 0);
-		reg[i-1] = newRegVal;
+	GP22::regWrite(GP22::registers(i-1), newRegVal);
 
 #ifdef DEBUG
     Serial.print(F("Setting REG "));
@@ -201,14 +202,14 @@ void setupRegisters(const ParameterLookup& params) {
 	}
 
 	// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
-	autoCalibrate = (bool)(reg[0] & (1 << 13));
+	autoCalibrate = (bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE);
 
 	// Write the values to the TDC's registers
-	updateTDC(reg);
+	updateTDC(GP22::registers_data);
 
 	delay(1);
 
-	// Read back from the Most Significant 8 bits of register 1 (should match reg[1])
+	// Read back from the Most Significant 8 bits of register 1 (should match GP22::registers_data[1])
 	// Command:
 	digitalWrite(TDC_CS, LOW);
 	SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
@@ -216,7 +217,7 @@ void setupRegisters(const ParameterLookup& params) {
 	byte commsCheck = SPI.transfer(0x00);
 	digitalWrite(TDC_CS, HIGH);
 
-	byte shouldBe = (reg[1] & 0xFF000000) >> 24;
+	byte shouldBe = (regRead(GP22::REG1) & 0xFF000000) >> 24;
 
 	if (commsCheck == shouldBe) {
 		Serial.print("DONE - CALIBRATION MODE ");
@@ -234,7 +235,7 @@ void setupRegisters(const ParameterLookup& params) {
 		Serial.print(" instead of 0x");
 		Serial.print(shouldBe, HEX);
 		Serial.print(" from reg[1] == ");
-		Serial.println(reg[1], HEX);
+		Serial.println(regRead(GP22::REG1), HEX);
 
 	}
 }
@@ -244,7 +245,7 @@ void getRegisters(const ParameterLookup& params) {
 	// Output the current register state
 	for (int i = 0; i < 7; i++) {
 		Serial.print("0x");
-		Serial.print(reg[i], HEX);
+		Serial.print(regRead(GP22::registers(i)), HEX);
 		Serial.print('\t');
 	}
 
@@ -290,11 +291,9 @@ void calibrateResonator(const ParameterLookup& params) {
 }
 
 void testConnection(const ParameterLookup& params) {
+
 	// Run the test
 	uint8_t testResult = testTDC();
-
-	// Restore the values changed during the test
-	updateTDC(reg);
 
 	// Report the result
 	if (testResult) {
@@ -328,11 +327,15 @@ uint8_t testTDC() {
 	// Wait 100ms
 	delay(100);
 
-	// Write 0xAA800000 into register 1 (the defaults + test data)
-	uint32_t newReg1 = 0xAB800000;
-	writeConfigReg(TDC_REG1, newReg1);
+	// Get previous value of reg1's top 8 bits
+	uint8_t prevReg1 = GP22::bitmaskRead(GP22::REG1, GP22::REG1_TEST_DATA);
 
-	// Read back from the first 8 bits of register 1 (should be 0xAB)
+	// Write test data (0xAB) into reg1
+	const uint8_t testdata = 0xAB;
+	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_TEST_DATA, testdata);
+	updateTDC(GP22::registers_data);
+
+	// Read back from the first 8 bits of register 1 (should match testdata)
 	// Command:
 	digitalWrite(TDC_CS, LOW);
 	SPI.transfer(TDC_READ_FROM_REGISTER | TDC_REG5);
@@ -342,10 +345,11 @@ uint8_t testTDC() {
 
 
 // Restore settings to previous
-updateTDC(reg);
+	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_TEST_DATA, prevReg1);
+	updateTDC(GP22::registers_data);
 
 	// Return 0 for success
-	if (commsTest == 0xAB)
+	if (commsTest == testdata)
 		return 0;
 
 	// If we failed, return the value we just read, unless that value is 0 in which case return "0xFF"
@@ -407,6 +411,12 @@ uint16_t calibrate() {
 
 	// This sequence is adapted from the ACAM eval software source code (in Labview)
 
+	// Backup registers
+	uint32_t backup[7];
+	for (int i = 0; i < 7; i++) {
+		backup[i] = regRead(GP22::registers(i));
+	}
+
 	// Goto single res. mode
 	//writeConfigReg(TDC_REG6, reg6 & 0xFFFFCFFF);
 
@@ -414,8 +424,11 @@ uint16_t calibrate() {
 	//writeConfigReg(TDC_REG6, (reg6 & 0xFFFFCFFF) | 0x1000);
 
 	// Goto quad res. mode
-	writeConfigReg(TDC_REG0, (reg[0] & 0xFFFFDFFF) | 0x1800); // Meas. mode 2 with no auto cal
-	writeConfigReg(TDC_REG6, (reg[6] & 0xFFFFCFFF) | 0x2000);
+	GP22::bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, true); // Mes. mode. 2
+	GP22::bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, false); // No auto cal
+	GP22::bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, true); // Quad res on
+	GP22::bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false); // Double res off
+	updateTDC(GP22::registers_data);
 
 	// Send INIT so that the TDC is ready to give a response
 	digitalWrite(TDC_CS, LOW);
@@ -431,7 +444,13 @@ uint16_t calibrate() {
 	// into register 1. This tells the ALU what to calculate and also triggers the calculation
 	// See p.52 of the ACAM manual
 	// Our calculation is CALI2 - CALI1 == T_ref
-	writeConfigReg(TDC_REG1, 0x67400000);
+	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 7); // Request Cal2...
+	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 6); // ...minus Cal1
+	
+	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 0); // Expect 0 hits
+	GP22::bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0);
+
+	writeConfigReg(GP22::REG1, regRead(GP22::REG1)); // Go!
 	delay(1);
 
 	// Read ALU_PTR from the status and subtract 1 to get the location of the most recently written
@@ -447,22 +466,24 @@ uint16_t calibrate() {
 		calibration = read_bytes(storageLocation, true);
 	}
 
-	// Restore register 0
-	writeConfigReg(TDC_REG0, reg[0]);
-
-	// Restore register 1
-	writeConfigReg(TDC_REG1, reg[1]);
-
-	// Restore register 6
-	writeConfigReg(TDC_REG6, reg[6]);
+	// Restore registers
+	for (int i = 0; i < 7; i++) {
+		regWrite(GP22::registers(i), backup[i]);
+	}
+	updateTDC(GP22::registers_data);
 
 	return calibration;
 }
 
 uint32_t calibrateHF() {
 
+	// Backup registers
+	uint32_t backupReg3;
+	backupReg3 = regRead(GP22::REG3);
+
 	// Set EN_AUTOCALC=0
-	writeConfigReg(TDC_REG3, 0x0);
+	GP22::bitmaskWrite(GP22::REG3, GP22::REG3_EN_AUTOCALC_MB2, false);
+	writeConfigReg(GP22::REG3, regRead(GP22::REG3));
 
 	// Init
 	digitalWrite(TDC_CS, LOW);
@@ -483,11 +504,11 @@ uint32_t calibrateHF() {
 	//The time interval to be measured is set by ANZ_PER_CALRES
 	//which defines the number of periods of the 32.768 kHz clock:
 	//2 periods = 61.03515625 us
-	// But labview will handle this, we just output the raw data
+	// But labview / the user will handle this, we just output the raw data
 	uint32_t result = read_bytes(TDC_RESULT1, false);
 
 	// Restore reg3
-	writeConfigReg(TDC_REG3, reg[3]);
+	writeConfigReg(GP22::REG3, backupReg3);
 
 	return result;
 }

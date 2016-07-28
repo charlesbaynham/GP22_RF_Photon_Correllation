@@ -1,3 +1,6 @@
 [submodule "CommandHandler"]
 	path = CommandHandler
 	url = /t/data/Yb+ Optical/git master repos/Microprocessor_SCPI_Command_Parser
+[submodule "GP22_Register_Access"]
+	path = GP22_Register_Access
+	url = T:\\data\\Yb+ Optical\\git master repos\\GP22_Register_Access

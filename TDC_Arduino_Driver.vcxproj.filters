@@ -39,6 +39,9 @@
     <ClInclude Include="CommandHandler\testInheritance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GP22_Register_Access\GP22_reg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandHandler\CommandHandler.cpp">

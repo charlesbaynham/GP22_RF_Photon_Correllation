@@ -37,7 +37,7 @@ void setup() {
 	h.registerCommand("clear", 0, &clearCommand);
 	CommandHandlerReturn r = h.registerCommand("echo", -1, &echoMany);
 
-	if (r) {
+	if (r != CommandHandlerReturn::NO_ERROR) {
 		Serial.println(F("Error in command registration"));
 	}
 
@@ -55,7 +55,7 @@ void loop() {
 
 		if (result) {
 			Serial.print("Error code ");
-			Serial.println(result);
+			Serial.println((int)result);
 		}
 	}
 

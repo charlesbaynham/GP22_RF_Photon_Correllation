@@ -46,15 +46,21 @@ void loop() {
 
 		// Report any errors
 		switch (result) {
-		case COMMAND_NOT_FOUND:
+		case CommandHandlerReturn::COMMAND_NOT_FOUND:
 
 			Serial.println(F("Command not found"));
 			break;
 
-		case WRONG_NUM_OF_PARAMS:
+		case CommandHandlerReturn::WRONG_NUM_OF_PARAMS:
 
 			Serial.println(F("Wrong number of params"));
 			break;
+
+		default:
+
+			Serial.print(F("Error code "));
+			Serial.println(int(result));
+
 		}
 	}
 

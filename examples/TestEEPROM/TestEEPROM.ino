@@ -53,7 +53,7 @@ void loop() {
 		// Execute first waiting command
 		CommandHandlerReturn result = h.executeCommand();
 
-		if (result) {
+		if (result != CommandHandlerReturn::NO_ERROR) {
 			Serial.print("Error code ");
 			Serial.println((int)result);
 		}

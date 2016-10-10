@@ -1,4 +1,10 @@
-#pragma once
+/** @file
+ * Contains all the code for the Arduino CommandHandler library
+ * 
+ * @todo Write the CommandHandler documentation
+ */
+
+ #pragma once
 
 #include <Arduino.h>
 

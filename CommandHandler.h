@@ -137,7 +137,9 @@ public:
 				// number of nulls, so return a pointer to it
 
 				CONSOLE_LOG(F("ParameterLookup::Returning ptr to pos "));
-				CONSOLE_LOG_LN(paramPtr - _theCommand);
+				CONSOLE_LOG(paramPtr - _theCommand);
+				CONSOLE_LOG(F(", containing command: "));
+				CONSOLE_LOG_LN(paramPtr);
 
 				return paramPtr;
 			}

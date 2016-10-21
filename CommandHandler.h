@@ -473,24 +473,7 @@ public:
 		return true;
 	}
 
-	// Return any stored startup command. Returns "" if no command stored
-	String getStartupCommand()
-	{
-		CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(String)"));
-
-		// Buffer for retreived command
-		char buffer[COMMAND_SIZE_MAX];
-
-		// Read into buffer
-		getStartupCommand(buffer);
-
-		return String(buffer);
-	}
-
 	// Return any stored startup command by copying into buf.
-	// This has the same functionality as the other form and 
-	// avoids memory allocations on the heap, but places responsibility
-	// for memory management on the user
 	// buf must point to a buffer of at least COMMAND_SIZE_MAX chars
 	void getStartupCommand(char * buf)
 	{
@@ -562,34 +545,51 @@ public:
 
 		CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands"));
 
-		// Buffer for command from EEPROM
-		char storedCmd[COMMAND_SIZE_MAX];
+		// Is a command stored (see getStoredCommand for details)?
+		char fromEEPROM;
+		EEPROM.get(EEPROM_STORED_COMMAND_FLAG_LOCATION, fromEEPROM);
 
-		// Read into buffer
-		getStartupCommand(storedCmd);
-
-		// Is the string empty?
-		if (storedCmd[0] == '\0') {
-			// Fail. No command stored
+		// See if the flag is anything other than "true"
+		if (fromEEPROM != (char)true) {
 			CONSOLE_LOG_LN(F("CommandHandler::executeStartupCommands: No command stored"));
 			return CommandHandlerReturn::NO_COMMAND_WAITING;
 		}
 
-		// If not, queue each char into the command buffer
-		// If we reach a newline, execute the command
+		// Command is waiting, so queue it one char at a time
+		// If we reach a newline, commandWaiting() will flag "true": execute the command
 		// If we reach a NULL, end
-		int i = 0;
+		
+		// Index of location in EEPROM
+		int EEPROM_idx = EEPROM_STORED_COMMAND_LOCATION;
 		CommandHandlerReturn result = CommandHandlerReturn::NO_ERROR;
-		while (storedCmd[i]) {
+		while (true) {
+
+			char c;
+			EEPROM.get(EEPROM_idx, c);
+
+			CONSOLE_LOG(F("CommandHandler::Read from EEPROM ("));
+			CONSOLE_LOG(EEPROM_idx);
+			CONSOLE_LOG(F("): [0x"));
+			CONSOLE_LOG(c, HEX);
+			CONSOLE_LOG_LN(']');
+
+			if (c == '\0') {
+				// Found the end
+
+				CONSOLE_LOG(F("CommandHandler::Stored command ends at "));
+				CONSOLE_LOG_LN(EEPROM_idx);
+
+				break;
+			}
 
 			// If any preceding commands have failed, stop executing here
 			if (CommandHandlerReturn::NO_ERROR == result) {
 
 				CONSOLE_LOG(F("CommandHandler::executeStartupCommands: Queueing "));
-				CONSOLE_LOG_LN(storedCmd[i]);
+				CONSOLE_LOG_LN(c);
 
 				// Queue the char
-				addCommandChar(storedCmd[i]);
+				addCommandChar(c);
 
 				// If CommandHandler is ready to execute the queued command, do so
 				if (commandWaiting()) {
@@ -597,7 +597,7 @@ public:
 				}
 			}
 
-			i++;
+			EEPROM_idx++;
 		}
 
 		return result;

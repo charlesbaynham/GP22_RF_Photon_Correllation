@@ -31,11 +31,15 @@ void updateTDC(const uint32_t * registers);
 // Read the registers from the TDC
 void readTDC();
 
-// Registers all the above functions with the command handler, thus defining the commands required to call them
-bool registerCommands(CommandHandler<13>& h);
+// Number of commands to be registered
+const uint8_t numCommands = 14;
 
 // Create a command handler
-CommandHandler<13> handler;
+CommandHandler<numCommands> handler;
+
+// Registers all the above functions with the command handler, thus defining the commands required to call them
+bool registerCommands(CommandHandler<numCommands>& h);
+
 
 // Hold TDC settings and define methods to access them
 #include "GP22_Register_Access\GP22_reg.h"
@@ -407,8 +411,8 @@ void testConnection(const ParameterLookup& params) {
 
 	// Report the result
 	if (testResult) {
-		Serial.print("FAILED with code returned ");
-		Serial.println(testResult);
+		Serial.print("FAILED with code returned 0x");
+		Serial.println(testResult, HEX);
 	}
 	else {
 		Serial.println("PASSED");
@@ -729,7 +733,7 @@ void availableMemory(const ParameterLookup& params) {
 }
 
 
-bool registerCommands(CommandHandler<13>& h) {
+bool registerCommands(CommandHandler<numCommands>& h) {
 	// N.B. commands are not case sensitive
 
 	bool error = false;

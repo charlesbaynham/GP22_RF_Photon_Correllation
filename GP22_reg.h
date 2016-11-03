@@ -250,7 +250,7 @@ namespace GP22 {
 		regval >>= bitno;
 
 		// Mask out only the bits below position `width`
-		regval  &= ((1<<width)-1);
+		regval  &= (T_register(1<<width)-1);
 
 		// Return
 		return regval;
@@ -269,7 +269,7 @@ namespace GP22 {
 		const uint32_t bitno  = bits >> 16;
 
 		// Set all the bits selected by `bits` to zero
-		regval &= ~( ((1<<width)-1) << bitno);
+		regval &= ~( T_register((1<<width)-1) << bitno);
 
 		// Set all the bits selected by `bits` to their required new value
 		regval |=  value << bitno;

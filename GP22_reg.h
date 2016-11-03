@@ -134,7 +134,7 @@ namespace GP22 {
 	    REG1_EN_FAST_INIT       = REG_BIT_DEFN(23, 23),
 	    REG1_HIT1               = REG_BIT_DEFN(24, 27),
 	    REG1_HIT2               = REG_BIT_DEFN(28, 31),
-		REG1_TEST_DATA			= REG_BIT_DEFN(23, 31)
+		REG1_TEST_DATA			= REG_BIT_DEFN(24, 31)
 	};
 
 	enum {

@@ -32,7 +32,7 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Number of commands to be registered
-const uint8_t numCommands = 14;
+const uint8_t numCommands = 17;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -75,13 +75,16 @@ void(*resetFunc) (void) = 0;
 void setup() {
 
 	// Default values for TDC settings
-	regWrite(GP22::REG0, 0xF3076000);
-	regWrite(GP22::REG1, 0x12420000);
+	regWrite(GP22::REG0, 0b00100010000001100110100000000000);
+	regWrite(GP22::REG1, 0x55400000);
 	regWrite(GP22::REG2, 0xA0000000);
 	regWrite(GP22::REG3, 0x00000000);
 	regWrite(GP22::REG4, 0x10000000);
 	regWrite(GP22::REG5, 0x00000000);
 	regWrite(GP22::REG6, 0x400010CB);
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, 0);
 
 	// Serial connection
 	Serial.begin(250000);
@@ -110,6 +113,9 @@ void setup() {
 	// Load all the values stored in reg into the TDC's registers
 	updateTDC(GP22::registers_data);
 
+	// Go into RF - photon mode
+	setupForRF_PhotonMode();
+	 
 	// Setup complete. Move to waiting for a command
 }
 
@@ -261,6 +267,19 @@ void getRegisters(const ParameterLookup& params) {
 
 }
 
+void RFMode(const ParameterLookup& params) {
+	setupForRFMode();
+	Serial.println(F("RF - RF MODE"));
+}
+void photonMode(const ParameterLookup& params) {
+	setupForRF_PhotonMode();
+	Serial.println(F("RF - PHOTON MODE"));
+}
+void ORTECMode(const ParameterLookup& params) {
+	setupForOrtecMode();
+	Serial.println(F("ORTEC MODE"));
+}
+
 void singleMeasure(const ParameterLookup& params) {
 
 	// Do the measurement
@@ -323,16 +342,19 @@ void histogramMeasure(const ParameterLookup& params) {
 
 		CONSOLE_LOG_LN(F("Start loop"));
 
-		uint32_t reading;
+		union {
+			uint32_t Unsigned;
+			int32_t Signed;
+		} result;
 
-		// Do a measurement and store it in `reading`
-		if (0 == measure(reading)) {
+		// Do a measurement and store it in `result`
+		if (0 == measure(result.Unsigned)) {
 			// We didn't timeout
 			CONSOLE_LOG(F("No timeout, reading = "));
-			CONSOLE_LOG_LN(reading);
+			CONSOLE_LOG_LN(result.Signed);
 
 			// Work out to which bin this reading belongs
-			const size_t histIndex = getHistIndex(numBins, maxVal, reading);
+			const size_t histIndex = getHistIndex(numBins, maxVal, result.Signed);
 
 			CONSOLE_LOG(F("histIndex = "));
 			CONSOLE_LOG_LN(histIndex);
@@ -373,7 +395,7 @@ void histogramMeasure(const ParameterLookup& params) {
 //		<max val>
 //		<number>
 // Returns the index of the correct bin. Return value can be greater than num_bins so beware overflows!
-inline size_t getHistIndex(const size_t numBins, const uint32_t maxVal, const uint32_t reading) {
+inline size_t getHistIndex(const size_t numBins, const uint32_t maxVal, const int32_t reading) {
 
 	const double scaled = double(reading) * double(numBins) / double(maxVal);
 
@@ -498,10 +520,10 @@ void updateTDC(const uint32_t * registers) {
 
 // Perform a single measurement & output to the passed variable
 // The uint32_t readings returned by this function are taken directly from the GP22's
-// output registers. They represent either a raw integer number of gates passed for a measurement,
+// output registers. They represent either a raw, signed integer number of gates passed for a measurement,
 // or a calibrated floating point time based on the internal clock, depending on the state
 // of the GP22's registers.
-// This function does not care: it returns the value as an unsigned 32 bit int. It is 
+// This function does not care: it returns the value as an unsigned 32 bit unsigned int. It is 
 // up to the user to convert into whatever format is applicable.
 //
 // Return 1 for timeout
@@ -752,7 +774,46 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	error |= h.registerCommand("*MEM", 0, &availableMemory);
 	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
 	error |= h.registerCommand("CALI", 0, &calibrateTDC);
+	error |= h.registerCommand("RF", 0, &RFMode);
+	error |= h.registerCommand("PHOT", 0, &photonMode);
+	error |= h.registerCommand("ORTEC", 0, &ORTECMode);
 
 	return !error;
 
+}
+
+void setupForRF_PhotonMode() {
+
+	// Read time from trigger on START until trigger on STOP1
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
+
+	// Send settings
+	updateTDC(GP22::registers_data);
+}
+
+void setupForRFMode() {
+
+	// Read time from 1 cycle of RF to the next
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 2);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 1);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 3); // 2 hits on STOP1 + 1 on START = 3
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
+
+	// Send settings
+	updateTDC(GP22::registers_data);
+}
+
+void setupForOrtecMode() {
+
+	// We have to trigger from a photon. After this, measure from the next RF cycle (STOP1) to the next photon (STOP2)
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 9);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 1); // 1 hit on STOP2
+
+	// Send settings
+	updateTDC(GP22::registers_data);
 }

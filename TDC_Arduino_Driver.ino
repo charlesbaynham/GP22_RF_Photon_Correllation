@@ -314,6 +314,7 @@ void singleMeasure(const ParameterLookup& params) {
 // Params - 
 //		<time period> in ms
 //		<num bins>
+//		<min val> in ns
 //		<max val> in ns
 void histogramMeasure(const ParameterLookup& params) {
 
@@ -323,10 +324,11 @@ void histogramMeasure(const ParameterLookup& params) {
 	// Number of bins in histogram
 	const size_t numBins = atoi(params[2]);
 
-	// Maximum value that will fit into the histogram
-	// If calibration mode is on, this value should be in nanoseconds
-	// Otherwise, it is an integer number of max gates passed by the signal
-	const double maxVal = atof(params[3]);
+	// Maximum and minimum values that will fit into the histogram
+	// If calibration mode is on, these values should be in nanoseconds
+	// Otherwise, they are an integer number of gates passed by the signal
+	const double minVal = atof(params[3]);
+	const double maxVal = atof(params[4]);
 
 	// Reserve memory for an array to hold the histogram
 	typedef unsigned int histType;
@@ -344,7 +346,7 @@ void histogramMeasure(const ParameterLookup& params) {
 	CONSOLE_LOG(numBins * sizeof(histType));
 	CONSOLE_LOG_LN(F(" bytes allocated for histogram"));
 
-	uint32_t maxValFixedPoint;
+	uint32_t minValFixedPoint, maxValFixedPoint;
 
 	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 		// The measurements returned by the TDC are (in calibrated mode) 32 bit fixed point numbers
@@ -357,13 +359,17 @@ void histogramMeasure(const ParameterLookup& params) {
 		// Then, multiply by 2^16 due to the 16-16 fixed point format
 		// And convert to unsigned integer
 		maxValFixedPoint = maxVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+		minValFixedPoint = minVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
 	} else {
 		// In uncalbrated mode, they will be signed integers representing the number of
 		// gates passed by the signal (~90ps in single res mode)
 		// They can in general be negative, but we our histogram function does not support
 		// this for now
 		maxValFixedPoint = maxVal;
+		minValFixedPoint = minVal;
 	}
+
+	const int32_t range = maxValFixedPoint - minValFixedPoint;
 
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;
@@ -376,6 +382,7 @@ void histogramMeasure(const ParameterLookup& params) {
 		union {
 			uint32_t Unsigned;
 			int32_t Signed;
+			int16_t Signed16[2];
 		} result;
 
 		// Do a measurement and store it in `result`
@@ -385,7 +392,12 @@ void histogramMeasure(const ParameterLookup& params) {
 			CONSOLE_LOG_LN(result.Signed);
 
 			// Work out to which bin this reading belongs
-			const size_t histIndex = getHistIndex(numBins, maxValFixedPoint, result.Signed);
+			size_t histIndex;
+			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
+				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed);
+			} else {
+				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed16[0]);
+			}
 
 			CONSOLE_LOG(F("histIndex = "));
 			CONSOLE_LOG_LN(histIndex);
@@ -430,12 +442,13 @@ void histogramMeasure(const ParameterLookup& params) {
 // Calculate which bin in a histogram a number belongs to
 // Inputs - 
 //		<num bins>
+//		<min val>
 //		<max val>
 //		<number>
 // Returns the index of the correct bin. Return value can be greater than num_bins so beware overflows!
-inline size_t getHistIndex(const size_t numBins, const uint32_t maxVal, const int32_t reading) {
+inline size_t getHistIndex(const size_t numBins, const int32_t minVal, const int32_t maxMinusMin, const int32_t reading) {
 
-	const double scaled = double(reading) * double(numBins) / double(maxVal);
+	const double scaled = double(reading-minVal) * double(numBins) / double(maxMinusMin);
 
 	return (size_t)floor(scaled);
 
@@ -828,7 +841,7 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	error |= h.registerCommand("*RST", 0, &reset);
 	error |= h.registerCommand("MEAS", 1, &timedMeasure);
 	error |= h.registerCommand("SING", 0, &singleMeasure);
-	error |= h.registerCommand("HIST", 3, &histogramMeasure);
+	error |= h.registerCommand("HIST", 4, &histogramMeasure);
 	error |= h.registerCommand("STAT", 0, &getStatus);
 	error |= h.registerCommand("SETU", -1, &setupRegisters);
 	error |= h.registerCommand("SETU?", 0, &getRegisters);

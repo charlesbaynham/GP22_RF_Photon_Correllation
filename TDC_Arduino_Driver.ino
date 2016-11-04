@@ -865,6 +865,10 @@ void setupForRF_PhotonMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
 
+	// Double res mode
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+	
 	// Send settings
 	updateTDC(GP22::registers_data);
 }
@@ -877,6 +881,10 @@ void setupForRFMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 3); // 2 hits on STOP1 + 1 on START = 3
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
 
+	// Double res mode
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
 	// Send settings
 	updateTDC(GP22::registers_data);
 }
@@ -888,6 +896,10 @@ void setupForOrtecMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 9);
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 1); // 1 hit on STOP2
+
+	// Normal res mode
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
 
 	// Send settings
 	updateTDC(GP22::registers_data);

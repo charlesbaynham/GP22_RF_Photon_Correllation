@@ -34,7 +34,7 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Number of commands to be registered
-const uint8_t numCommands = 18;
+const uint8_t numCommands = 19;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -267,9 +267,13 @@ void RFMode(const ParameterLookup& params) {
 	setupForRFMode();
 	Serial.println(F("RF - RF MODE"));
 }
-void photonMode(const ParameterLookup& params) {
+void photonRFMode(const ParameterLookup& params) {
 	setupForRF_PhotonMode();
 	Serial.println(F("RF - PHOTON MODE"));
+}
+void photonPhotonMode(const ParameterLookup& params) {
+	setupForPhotonPhotonMode();
+	Serial.println(F("PHOTON - PHOTON MODE"));
 }
 void ORTECMode(const ParameterLookup& params) {
 	setupForOrtecMode();
@@ -289,9 +293,17 @@ void singleMeasure(const ParameterLookup& params) {
 	int stat = measure(result.Whole);
 
 	if (stat != 0) {
-		Serial.println(F("TIMEOUT"));
+		Serial.println(F("MC TIMEOUT"));
 		return;
 	}
+
+	uint16_t ADCstat = readStatus();
+
+	if (ADCstat & 0b11000000000) {
+		Serial.println(F("ADC TIMEOUT"));
+		return;
+	}
+
 
 	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 		
@@ -849,7 +861,8 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
 	error |= h.registerCommand("CALI", 0, &calibrateTDC);
 	error |= h.registerCommand("RF", 0, &RFMode);
-	error |= h.registerCommand("PHOT", 0, &photonMode);
+	error |= h.registerCommand("RFPHOT", 0, &photonRFMode);
+	error |= h.registerCommand("PHOT", 0, &photonPhotonMode);
 	error |= h.registerCommand("ORTEC", 0, &ORTECMode);
 	error |= h.registerCommand("AUTOCAL", 1, &setAutoCal);
 
@@ -868,7 +881,10 @@ void setupForRF_PhotonMode() {
 	// Double res mode
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
-	
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+
 	// Send settings
 	updateTDC(GP22::registers_data);
 }
@@ -885,6 +901,9 @@ void setupForRFMode() {
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
 
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+
 	// Send settings
 	updateTDC(GP22::registers_data);
 }
@@ -900,6 +919,32 @@ void setupForOrtecMode() {
 	// Normal res mode
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+
+	// Send settings
+	updateTDC(GP22::registers_data);
+}
+
+void setupForPhotonPhotonMode() {
+	// We have to trigger from a photon (START)
+	// After this, measure time from the 2nd to the 3rd photons (STOP2)
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 0x9);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0xA);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 1); // 1 hit on START = 1
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 3); // 2 hits on STOP2
+
+	// Normal res mode since using STOP2
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
+	// Measurement mode 2
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, true);
+
+	// Auto calibrate must be on in mode 2
+	bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, 	true);
+	bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, false);
 
 	// Send settings
 	updateTDC(GP22::registers_data);

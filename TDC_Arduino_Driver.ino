@@ -329,18 +329,19 @@ void histogramMeasure(const ParameterLookup& params) {
 	const double maxVal = atof(params[3]);
 
 	// Reserve memory for an array to hold the histogram
-	unsigned long * hist = (unsigned long *)calloc(numBins, sizeof(unsigned long));
+	typedef unsigned int histType;
+	histType * hist = (histType *)calloc(numBins, sizeof(histType));
 
 	// If calloc failed, quit
 	if (NULL == hist) {
 		Serial.print(F("Mem allocation of "));
-		Serial.print(numBins * sizeof(unsigned long));
+		Serial.print(numBins * sizeof(histType));
 		Serial.println(F(" failed"));
 		return;
 	}
 
 	CONSOLE_LOG(F("histogramMeasure::"));
-	CONSOLE_LOG(numBins * sizeof(unsigned long));
+	CONSOLE_LOG(numBins * sizeof(histType));
 	CONSOLE_LOG_LN(F(" bytes allocated for histogram"));
 
 	uint32_t maxValFixedPoint;
@@ -395,6 +396,13 @@ void histogramMeasure(const ParameterLookup& params) {
 				CONSOLE_LOG(histIndex);
 				CONSOLE_LOG_LN(F(" incremented"));
 				hist[histIndex]++;
+
+				if (hist[histIndex] == 0) {
+					// We overflowed. Whoops!
+					hist[histIndex]--;
+					CONSOLE_LOG(histIndex);
+					CONSOLE_LOG_LN(F(" overflow!"));
+				}
 			}
 		}
 		else {

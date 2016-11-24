@@ -15,6 +15,8 @@
 #define TDC_CS A1
 #define TDC_INT A0
 
+const double HF_CLOCK_FREQ = 4E6;
+
 // #define DEBUG
 
 #include <math.h>
@@ -31,18 +33,18 @@ void updateTDC(const uint32_t * registers);
 // Read the registers from the TDC
 void readTDC();
 
-// Registers all the above functions with the command handler, thus defining the commands required to call them
-bool registerCommands(CommandHandler<15>& h);
+// Number of commands to be registered
+const uint8_t numCommands = 20;
 
 // Create a command handler
-CommandHandler<15> handler;
+CommandHandler<numCommands> handler;
+
+// Registers all the above functions with the command handler, thus defining the commands required to call them
+bool registerCommands(CommandHandler<numCommands>& h);
 
 // Hold TDC settings and define methods to access them
 #include "GP22_Register_Access\GP22_reg.h"
 uint32_t GP22::registers_data[7] = { 0 };
-
-// Is the TDC set to automatically calibrate its results?
-bool autoCalibrate = true;
 
 #define TDC_WRITE_TO_REGISTER 0x80
 #define TDC_READ_FROM_REGISTER 0xB0
@@ -71,13 +73,16 @@ void(*resetFunc) (void) = 0;
 void setup() {
 
 	// Default values for TDC settings
-	regWrite(GP22::REG0, 0xF3076000);
-	regWrite(GP22::REG1, 0x12420000);
+	regWrite(GP22::REG0, 0b00100010000001100110100000000000);
+	regWrite(GP22::REG1, 0x55400000);
 	regWrite(GP22::REG2, 0xA0000000);
 	regWrite(GP22::REG3, 0x00000000);
 	regWrite(GP22::REG4, 0x10000000);
 	regWrite(GP22::REG5, 0x00000000);
 	regWrite(GP22::REG6, 0x400010CB);
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, 0);
 
 	// Serial connection
 	Serial.begin(250000);
@@ -106,6 +111,9 @@ void setup() {
 	// Load all the values stored in reg into the TDC's registers
 	updateTDC(GP22::registers_data);
 
+	// Go into RF - photon mode
+	setupForRF_PhotonMode();
+	 
 	// Setup complete. Move to waiting for a command
 }
 
@@ -205,9 +213,6 @@ void setupRegisters(const ParameterLookup& params) {
 #endif
 	}
 
-	// Decide if we've been asked for calibration mode or not (bit 13 in reg 0)
-	autoCalibrate = (bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE);
-
 	// Write the values to the TDC's registers
 	updateTDC(GP22::registers_data);
 
@@ -225,7 +230,7 @@ void setupRegisters(const ParameterLookup& params) {
 
 	if (commsCheck == shouldBe) {
 		Serial.print("DONE - CALIBRATION MODE ");
-		if (autoCalibrate)
+		if ((bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE))
 			Serial.print("ON - ");
 		else
 			Serial.print("OFF - ");
@@ -257,17 +262,60 @@ void getRegisters(const ParameterLookup& params) {
 
 }
 
+void RFMode(const ParameterLookup& params) {
+	setupForRFMode();
+	Serial.println(F("RF - RF MODE"));
+}
+void photonRFMode(const ParameterLookup& params) {
+	setupForRF_PhotonMode();
+	Serial.println(F("RF - PHOTON MODE"));
+}
+void photonPhotonMode(const ParameterLookup& params) {
+	setupForPhotonPhotonMode();
+	Serial.println(F("PHOTON - PHOTON MODE"));
+}
+void ORTECMode(const ParameterLookup& params) {
+	setupForOrtecMode();
+	Serial.println(F("ORTEC MODE"));
+}
+
 void singleMeasure(const ParameterLookup& params) {
 
 	// Do the measurement
-	uint32_t result;
-	int stat = measure(result);
+	
+	union {
+		uint32_t Whole;
+		uint16_t Unsigned[2];
+		int32_t Signed;
+	} result;
 
-	// Report result
-	if (0 == stat)
-		Serial.println(result);
-	else
-		Serial.println(F("TIMEOUT"));
+	int stat = measure(result.Whole);
+
+	if (stat != 0) {
+		Serial.println(F("MC TIMEOUT"));
+		return;
+	}
+
+	uint16_t ADCstat = readStatus();
+
+	if (ADCstat & 0b11000000000) {
+		Serial.println(F("ADC TIMEOUT"));
+		return;
+	}
+
+
+	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
+		
+		// If calibrated, convert to nanoseconds
+		const double nanoseconds = double(result.Signed) / HF_CLOCK_FREQ * 1e9 / double(uint32_t(1)<<16);
+		Serial.print(nanoseconds, 3);
+		Serial.println("ns");
+
+	} else {
+
+		// If not calibrated, output raw LSBs
+		Serial.println(result.Unsigned[0]); // We only need the first 2 bytes
+	}
 
 }
 
@@ -277,7 +325,8 @@ void singleMeasure(const ParameterLookup& params) {
 // Params - 
 //		<time period> in ms
 //		<num bins>
-//		<max val>
+//		<min val> in ns
+//		<max val> in ns
 void histogramMeasure(const ParameterLookup& params) {
 
 	// Num ms to read for
@@ -286,30 +335,52 @@ void histogramMeasure(const ParameterLookup& params) {
 	// Number of bins in histogram
 	const size_t numBins = atoi(params[2]);
 
-	// Maximum value that will fit into the histogram
-	const uint32_t maxVal = strtoul(params[3], NULL, 0);
+	// Maximum and minimum values that will fit into the histogram
+	// If calibration mode is on, these values should be in nanoseconds
+	// Otherwise, they are an integer number of gates passed by the signal
+	const double minVal = atof(params[3]);
+	const double maxVal = atof(params[4]);
 
 	// Reserve memory for an array to hold the histogram
-	unsigned long * hist = (unsigned long *)calloc(numBins, sizeof(unsigned long));
-
-	CONSOLE_LOG(F("histogramMeasure::timePeriod = "));
-	CONSOLE_LOG(timePeriod);
-	CONSOLE_LOG(F(", numBins = "));
-	CONSOLE_LOG(numBins);
-	CONSOLE_LOG(F(", maxVal = "));
-	CONSOLE_LOG_LN(maxVal);
+	typedef unsigned int histType;
+	histType * hist = (histType *)calloc(numBins, sizeof(histType));
 
 	// If calloc failed, quit
 	if (NULL == hist) {
 		Serial.print(F("Mem allocation of "));
-		Serial.print(numBins * sizeof(unsigned long));
+		Serial.print(numBins * sizeof(histType));
 		Serial.println(F(" failed"));
 		return;
 	}
 
 	CONSOLE_LOG(F("histogramMeasure::"));
-	CONSOLE_LOG(numBins * sizeof(unsigned long));
-	CONSOLE_LOG_LN(F(" bytes allocated for histogram"))
+	CONSOLE_LOG(numBins * sizeof(histType));
+	CONSOLE_LOG_LN(F(" bytes allocated for histogram"));
+
+	uint32_t minValFixedPoint, maxValFixedPoint;
+
+	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
+		// The measurements returned by the TDC are (in calibrated mode) 32 bit fixed point numbers
+		// These represent multiples of the HF clock, where the first 16 bits are fractional
+		// So 0x00010000 is 1x the ref clock period, usually 4MHz. 
+		// We won't do this scaling during the histogram measurement since it takes too long, 
+		// instead we'll just scale the maxVal in the opposite way.
+		// 
+		// First, scale to multiples of the ref clock
+		// Then, multiply by 2^16 due to the 16-16 fixed point format
+		// And convert to unsigned integer
+		maxValFixedPoint = maxVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+		minValFixedPoint = minVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+	} else {
+		// In uncalbrated mode, they will be signed integers representing the number of
+		// gates passed by the signal (~90ps in single res mode)
+		// They can in general be negative, but we our histogram function does not support
+		// this for now
+		maxValFixedPoint = maxVal;
+		minValFixedPoint = minVal;
+	}
+
+	const int32_t range = maxValFixedPoint - minValFixedPoint;
 
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;
@@ -334,16 +405,25 @@ void histogramMeasure(const ParameterLookup& params) {
 
 		CONSOLE_LOG_LN(F("Start loop"));
 
-		uint32_t reading;
+		union {
+			uint32_t Unsigned;
+			int32_t Signed;
+			int16_t Signed16[2];
+		} result;
 
-		// Do a measurement and store it in `reading`
-		if (0 == measure(reading)) {
+		// Do a measurement and store it in `result`
+		if (0 == measure(result.Unsigned)) {
 			// We didn't timeout
 			CONSOLE_LOG(F("No timeout, reading = "));
-			CONSOLE_LOG_LN(reading);
+			CONSOLE_LOG_LN(result.Signed);
 
 			// Work out to which bin this reading belongs
-			const size_t histIndex = getHistIndex(numBins, maxVal, reading);
+			size_t histIndex;
+			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
+				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed);
+			} else {
+				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed16[0]);
+			}
 
 			CONSOLE_LOG(F("histIndex = "));
 			CONSOLE_LOG_LN(histIndex);
@@ -354,6 +434,13 @@ void histogramMeasure(const ParameterLookup& params) {
 				CONSOLE_LOG(histIndex);
 				CONSOLE_LOG_LN(F(" incremented"));
 				hist[histIndex]++;
+
+				if (hist[histIndex] == 0) {
+					// We overflowed. Whoops!
+					hist[histIndex]--;
+					CONSOLE_LOG(histIndex);
+					CONSOLE_LOG_LN(F(" overflow!"));
+				}
 			}
 		}
 		else {
@@ -385,15 +472,16 @@ void histogramMeasure(const ParameterLookup& params) {
 // Calculate which bin in a histogram a number belongs to
 // Inputs - 
 //		<num bins>
+//		<min val>
 //		<max val>
 //		<number>
 // Returns the index of the correct bin. Return value can be greater than num_bins so beware overflows!
 // 
 // This function has been timed with "testhist" command: 
 // calling with 500 bins results in an average execution time of 60us
-inline size_t getHistIndex(const size_t numBins, const uint32_t maxVal, const uint32_t reading) {
+inline size_t getHistIndex(const size_t numBins, const int32_t minVal, const int32_t maxMinusMin, const int32_t reading) {
 
-	const double scaled = double(reading) * double(numBins) / double(maxVal);
+	const double scaled = double(reading-minVal) * double(numBins) / double(maxMinusMin);
 
 	return (size_t)floor(scaled);
 
@@ -429,8 +517,8 @@ void testConnection(const ParameterLookup& params) {
 
 	// Report the result
 	if (testResult) {
-		Serial.print("FAILED with code returned ");
-		Serial.println(testResult);
+		Serial.print("FAILED with code returned 0x");
+		Serial.println(testResult, HEX);
 	}
 	else {
 		Serial.println("PASSED");
@@ -516,10 +604,10 @@ void updateTDC(const uint32_t * registers) {
 
 // Perform a single measurement & output to the passed variable
 // The uint32_t readings returned by this function are taken directly from the GP22's
-// output registers. They represent either a raw integer number of gates passed for a measurement,
+// output registers. They represent either a raw, signed integer number of gates passed for a measurement,
 // or a calibrated floating point time based on the internal clock, depending on the state
 // of the GP22's registers.
-// This function does not care: it returns the value as an unsigned 32 bit int. It is 
+// This function does not care: it returns the value as an unsigned 32 bit unsigned int. It is 
 // up to the user to convert into whatever format is applicable.
 //
 // Return 1 for timeout
@@ -538,7 +626,7 @@ int measure(uint32_t& out) {
 	}
 
 	// Read the result
-	out = read_bytes(TDC_RESULT1, !autoCalibrate);
+	out = read_bytes(TDC_RESULT1, !(bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE));
 
 	return 0;
 }
@@ -640,9 +728,9 @@ uint32_t calibrateHF() {
 		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
 	}
 
-	//The time interval to be measured is set by ANZ_PER_CALRES
-	//which defines the number of periods of the 32.768 kHz clock:
-	//2 periods = 61.03515625 us
+	// The time interval to be measured is set by ANZ_PER_CALRES
+	// which defines the number of periods of the 32.768 kHz clock:
+	// 2 periods = 61.03515625 us
 	// But labview / the user will handle this, we just output the raw data
 	uint32_t result = read_bytes(TDC_RESULT1, false);
 
@@ -796,8 +884,31 @@ void testHistFunc(const ParameterLookup& params) {
 	free(vals);
 }
 
+void setAutoCal(const ParameterLookup& params) {
 
-bool registerCommands(CommandHandler<15>& h) {
+	bool setCal = strtol(params[1], NULL, 0);
+
+	if (bitmaskRead(GP22::REG0, GP22::REG0_MESSB2)) {
+		Serial.println(F("Calibration mode can only be turned off in measurement mode 1"));
+		return;
+	}
+
+	GP22::bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, 	setCal);
+	GP22::bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, !setCal);
+
+	Serial.print(F("Calibration mode "));
+	if (setCal) {
+		// Auto calibrate on
+		Serial.println(F("on"));
+	} else {
+		// Auto calibrate off
+		Serial.println(F("off"));
+	}
+
+	updateTDC(GP22::registers_data);
+}
+
+bool registerCommands(CommandHandler<numCommands>& h) {
 	// N.B. commands are not case sensitive
 
 	bool error = false;
@@ -809,15 +920,99 @@ bool registerCommands(CommandHandler<15>& h) {
 	error |= h.registerCommand("*RST", 0, &reset);
 	error |= h.registerCommand("MEAS", 1, &timedMeasure);
 	error |= h.registerCommand("SING", 0, &singleMeasure);
-	error |= h.registerCommand("HIST", 3, &histogramMeasure);
+	error |= h.registerCommand("HIST", 4, &histogramMeasure);
 	error |= h.registerCommand("STAT", 0, &getStatus);
 	error |= h.registerCommand("SETU", -1, &setupRegisters);
 	error |= h.registerCommand("SETU?", 0, &getRegisters);
 	error |= h.registerCommand("*MEM", 0, &availableMemory);
 	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
 	error |= h.registerCommand("CALI", 0, &calibrateTDC);
+	error |= h.registerCommand("RF", 0, &RFMode);
+	error |= h.registerCommand("RFPHOT", 0, &photonRFMode);
+	error |= h.registerCommand("PHOT", 0, &photonPhotonMode);
+	error |= h.registerCommand("ORTEC", 0, &ORTECMode);
+	error |= h.registerCommand("AUTOCAL", 1, &setAutoCal);
 	error |= h.registerCommand("testhist", 3, &testHistFunc);
 
 	return !error;
+}
 
+void setupForRF_PhotonMode() {
+
+	// Read time from trigger on START until trigger on STOP1
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
+
+	// Double res mode
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+
+	// Send settings
+	updateTDC(GP22::registers_data);
+}
+
+void setupForRFMode() {
+
+	// Read time from 1 cycle of RF to the next
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 2);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 1);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 3); // 2 hits on STOP1 + 1 on START = 3
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
+
+	// Double res mode
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+
+	// Send settings
+	updateTDC(GP22::registers_data);
+}
+
+void setupForOrtecMode() {
+
+	// We have to trigger from a photon. After this, measure from the next RF cycle (STOP1) to the next photon (STOP2)
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 9);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 1); // 1 hit on STOP2
+
+	// Normal res mode
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
+	// Measurement mode 1
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+
+	// Send settings
+	updateTDC(GP22::registers_data);
+}
+
+void setupForPhotonPhotonMode() {
+	// We have to trigger from a photon (START)
+	// After this, measure time from the 2nd to the 3rd photons (STOP2)
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 0x9);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0xA);
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 1); // 1 hit on START = 1
+	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 3); // 2 hits on STOP2
+
+	// Normal res mode since using STOP2
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
+	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
+
+	// Measurement mode 2
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, true);
+
+	// Auto calibrate must be on in mode 2
+	bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, 	true);
+	bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, false);
+
+	// Send settings
+	updateTDC(GP22::registers_data);
 }

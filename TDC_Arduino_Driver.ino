@@ -32,10 +32,10 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Registers all the above functions with the command handler, thus defining the commands required to call them
-bool registerCommands(CommandHandler<13>& h);
+bool registerCommands(CommandHandler<15>& h);
 
 // Create a command handler
-CommandHandler<13> handler;
+CommandHandler<15> handler;
 
 // Hold TDC settings and define methods to access them
 #include "GP22_Register_Access\GP22_reg.h"
@@ -314,6 +314,21 @@ void histogramMeasure(const ParameterLookup& params) {
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;
 
+	/**
+	 * START PERFORMANCE CRITICAL SECTION
+	 * 
+	 * The following code must be efficient as it will be the bottleneck in 
+	 * the data gathering rate
+	 * 
+	 * Max time for RF edge ~ 100ns
+	 * Avg. time for photon arrival, assuming 10k photons per second ~ 100us
+	 * Time to call getHistIndex ~ 60us
+	 * Comparison and increment ~ 23 clock cycles = 1.5us
+	 * 
+	 * Implies a potential 30% saving if I can have TDC working in parallel
+	 * with microprocessor stuff
+	 */
+
 	// Loop until stoptime
 	while (millis() < stop) {
 
@@ -346,6 +361,10 @@ void histogramMeasure(const ParameterLookup& params) {
 		}
 	}
 
+	/**
+	 * END PERFORMANCE CRITICAL SECTION
+	 */
+
 	CONSOLE_LOG_LN(F("Loop done"));
 
 	// Return the histogram
@@ -369,6 +388,9 @@ void histogramMeasure(const ParameterLookup& params) {
 //		<max val>
 //		<number>
 // Returns the index of the correct bin. Return value can be greater than num_bins so beware overflows!
+// 
+// This function has been timed with "testhist" command: 
+// calling with 500 bins results in an average execution time of 60us
 inline size_t getHistIndex(const size_t numBins, const uint32_t maxVal, const uint32_t reading) {
 
 	const double scaled = double(reading) * double(numBins) / double(maxVal);
@@ -728,8 +750,54 @@ void availableMemory(const ParameterLookup& params) {
 	Serial.println(F(" bytes remain"));
 }
 
+// Run the getHistIndex function many times to work out its performance
+void testHistFunc(const ParameterLookup& params) {
+	
+	// Get parameters
+	const size_t arraySize = strtol(params[1], 0, 0);
+	const size_t numBins = strtol(params[2], 0, 0);
+	const uint32_t maxVal = RAND_MAX;
+	const size_t numLoops = strtol(params[3], 0, 0);
 
-bool registerCommands(CommandHandler<13>& h) {
+	// Allocate space for data
+	uint32_t * vals = (uint32_t*)malloc(arraySize * sizeof(uint32_t));
+	if (vals == 0) {
+		Serial.println(F("Mem alloc failed"));
+		return;
+	}
+
+	long totalTime = 0;
+
+	for (int loop = 0; loop < numLoops; loop++) {
+		// Generate fake data
+		for (int i = 0; i < arraySize; i++) {
+			vals[i] = rand();
+		}
+
+		// Start the clock!
+		long timerStart = micros();
+
+		for (int i = 0; i < arraySize; i++) {
+			volatile size_t throwAway = getHistIndex(numBins, maxVal, vals[i]);
+		}
+
+		// Stop the clock
+		long timerEnd = micros();
+
+		// Store time
+		totalTime += timerEnd - timerStart;
+	}
+
+	double timePerCall = double(totalTime) / double(numLoops * arraySize);
+
+	Serial.print(F("Time taken per call (us): "));
+	Serial.println(timePerCall);
+
+	free(vals);
+}
+
+
+bool registerCommands(CommandHandler<15>& h) {
 	// N.B. commands are not case sensitive
 
 	bool error = false;
@@ -748,6 +816,7 @@ bool registerCommands(CommandHandler<13>& h) {
 	error |= h.registerCommand("*MEM", 0, &availableMemory);
 	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
 	error |= h.registerCommand("CALI", 0, &calibrateTDC);
+	error |= h.registerCommand("testhist", 3, &testHistFunc);
 
 	return !error;
 

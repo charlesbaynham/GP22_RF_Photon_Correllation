@@ -10,6 +10,11 @@ D ADuM7643 6 channel digital isolator
 K isolator
 $ENDCMP
 #
+$CMP GP22
+D GP22 TDC - Acam
+K GP22 TDC
+$ENDCMP
+#
 $CMP ISO3088
 D Full isolated 10MBps Fail-Safe RS-485/J1708 Transceiver
 K RS485

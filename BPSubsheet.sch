@@ -30,7 +30,6 @@ LIBS:contrib
 LIBS:valves
 LIBS:max3440e
 LIBS:Custom_Components
-LIBS:TempCtrl-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268

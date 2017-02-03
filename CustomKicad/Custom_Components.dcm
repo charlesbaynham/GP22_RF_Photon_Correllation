@@ -21,4 +21,9 @@ K RS485
 F http://www.ti.com/lit/ds/symlink/iso3080.pdf
 $ENDCMP
 #
+$CMP LTC6957-4
+D Clock buffer
+K buffer clock linear
+$ENDCMP
+#
 #End Doc Library

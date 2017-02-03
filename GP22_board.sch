@@ -30,6 +30,7 @@ LIBS:contrib
 LIBS:valves
 LIBS:max3440e
 LIBS:Custom_Components
+LIBS:GP22_board-cache
 EELAYER 25 0
 EELAYER END
 $Descr A3 11693 16535 portrait
@@ -853,4 +854,26 @@ Wire Wire Line
 Connection ~ 5650 4650
 Wire Wire Line
 	5150 4650 5000 4650
+$Comp
+L LTC6957-4 U?
+U 1 1 58952766
+P 2600 6300
+F 0 "U?" H 2600 6875 50  0000 C BNN
+F 1 "LTC6957-4" H 2600 5725 50  0000 C TNN
+F 2 "" H 2600 6300 50  0000 C CNN
+F 3 "" H 2600 6300 50  0000 C CNN
+	1    2600 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L IDT49FCT U?
+U 1 1 58951DD7
+P 3950 8350
+F 0 "U?" H 3950 8250 50  0000 C CNN
+F 1 "IDT49FCT" H 3950 8450 50  0000 C CNN
+F 2 "" H 3950 8350 50  0001 C CNN
+F 3 "http://uk.rs-online.com/web/p/clock-drivers/7154902/" H 3950 8350 50  0001 C CNN
+	1    3950 8350
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

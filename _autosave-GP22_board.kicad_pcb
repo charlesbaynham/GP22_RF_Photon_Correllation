@@ -4021,7 +4021,7 @@
   )
 
   (module TO_SOT_Packages_SMD:SOT-353_SC-70-5_Handsoldering (layer F.Cu) (tedit 58608291) (tstamp 589CC066)
-    (at 230.5 83.25)
+    (at 233.25 79)
     (descr "SOT-353, SC-70-5, Handsoldering")
     (path /58C827D3/58D530D5)
     (attr smd)

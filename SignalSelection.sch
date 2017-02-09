@@ -35,7 +35,7 @@ EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 7 11
+Sheet 6 11
 Title ""
 Date ""
 Rev ""
@@ -45,9 +45,9 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text HLabel 3675 1950 0    60   Input ~ 0
-SineInput
 Text HLabel 3675 2050 0    60   Input ~ 0
+SineInput
+Text HLabel 4525 2150 2    60   Input ~ 0
 TTLInput
 Text HLabel 3675 2150 0    60   Input ~ 0
 StraightThroughInput
@@ -71,13 +71,13 @@ F 3 "" H 4850 2950 50  0000 C CNN
 $EndComp
 Connection ~ 4850 2850
 $Comp
-L GND #PWR063
+L GND #PWR060
 U 1 1 58A1DBD1
 P 4850 3250
-AR Path="/58A17F47/58A1DBD1" Ref="#PWR063"  Part="1" 
-AR Path="/58A6ADCB/58A1DBD1" Ref="#PWR064"  Part="1" 
-AR Path="/58A6D694/58A1DBD1" Ref="#PWR065"  Part="1" 
-F 0 "#PWR065" H 4850 3000 50  0001 C CNN
+AR Path="/58A17F47/58A1DBD1" Ref="#PWR060"  Part="1" 
+AR Path="/58A6ADCB/58A1DBD1" Ref="#PWR061"  Part="1" 
+AR Path="/58A6D694/58A1DBD1" Ref="#PWR062"  Part="1" 
+F 0 "#PWR062" H 4850 3000 50  0001 C CNN
 F 1 "GND" H 4850 3100 50  0000 C CNN
 F 2 "" H 4850 3250 50  0000 C CNN
 F 3 "" H 4850 3250 50  0000 C CNN
@@ -100,20 +100,6 @@ F 3 "" H 4850 3150 50  0000 C CNN
 $EndComp
 Text Notes 5225 3225 0    60   ~ 0
 Not sure about this capacitance: determine by trial and error!
-$Comp
-L ROTARY_SWITCH_ALPS_SRBM SW1
-U 1 1 58D62021
-P 3975 2050
-AR Path="/58A17F47/58D62021" Ref="SW1"  Part="1" 
-AR Path="/58A6ADCB/58D62021" Ref="SW2"  Part="1" 
-AR Path="/58A6D694/58D62021" Ref="SW3"  Part="1" 
-F 0 "SW3" H 3975 2310 50  0000 C CNN
-F 1 "ROTARY_SWITCH_ALPS_SRBM" H 4125 1550 50  0000 C CNN
-F 2 "Custom:SP3T_switch" H 3875 2210 50  0001 C CNN
-F 3 "" H 3975 2310 50  0001 C CNN
-	1    3975 2050
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	3675 2350 3500 2350
 Wire Wire Line
@@ -121,7 +107,23 @@ Wire Wire Line
 Wire Wire Line
 	3500 2850 5500 2850
 NoConn ~ 4525 1950
+$Comp
+L ROTARY_SWITCH_ALPS_SRBM SW1
+U 1 1 58DAF2B4
+P 4100 2450
+AR Path="/58A17F47/58DAF2B4" Ref="SW1"  Part="1" 
+AR Path="/58A6ADCB/58DAF2B4" Ref="SW2"  Part="1" 
+AR Path="/58A6D694/58DAF2B4" Ref="SW3"  Part="1" 
+F 0 "SW3" H 3975 3110 50  0000 C CNN
+F 1 "ROTARY_SWITCH_ALPS_SRBM" H 4125 2350 50  0000 C CNN
+F 2 "Custom:SP3T_switch" H 3875 3010 50  0001 C CNN
+F 3 "" H 3975 3110 50  0001 C CNN
+	1    4100 2450
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	4525 2350 4525 2850
+Connection ~ 4525 2850
 NoConn ~ 4525 2050
-NoConn ~ 4525 2150
-NoConn ~ 4525 2350
+NoConn ~ 3675 1950
 $EndSCHEMATC

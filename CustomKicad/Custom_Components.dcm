@@ -1,5 +1,10 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP 74LS165_mod
+D Shift Register 8 bits, parallel load
+K TTL SR SR8
+$ENDCMP
+#
 $CMP ADuM7642
 D ADuM7642 6 channel digital isolator
 K isolator
@@ -24,6 +29,15 @@ $ENDCMP
 $CMP LTC6957-4
 D Clock buffer
 K buffer clock linear
+$ENDCMP
+#
+$CMP SN74HC165
+D Shift Register 8 bits, parallel load
+K TTL SR SR8
+$ENDCMP
+#
+$CMP SN74LV8154
+D Fast 16 bit counter
 $ENDCMP
 #
 #End Doc Library

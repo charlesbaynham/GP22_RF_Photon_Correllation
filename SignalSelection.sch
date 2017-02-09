@@ -35,7 +35,7 @@ EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 6 11
+Sheet 7 11
 Title ""
 Date ""
 Rev ""
@@ -45,11 +45,11 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text HLabel 3675 2050 0    60   Input ~ 0
-SineInput
 Text HLabel 4525 2150 2    60   Input ~ 0
-TTLInput
+SineInput
 Text HLabel 3675 2150 0    60   Input ~ 0
+TTLInput
+Text HLabel 3675 2050 0    60   Input ~ 0
 StraightThroughInput
 Text HLabel 5500 2850 2    60   Input ~ 0
 SignalOutput
@@ -71,13 +71,13 @@ F 3 "" H 4850 2950 50  0000 C CNN
 $EndComp
 Connection ~ 4850 2850
 $Comp
-L GND #PWR060
+L GND #PWR062
 U 1 1 58A1DBD1
 P 4850 3250
-AR Path="/58A17F47/58A1DBD1" Ref="#PWR060"  Part="1" 
-AR Path="/58A6ADCB/58A1DBD1" Ref="#PWR061"  Part="1" 
-AR Path="/58A6D694/58A1DBD1" Ref="#PWR062"  Part="1" 
-F 0 "#PWR062" H 4850 3000 50  0001 C CNN
+AR Path="/58A17F47/58A1DBD1" Ref="#PWR062"  Part="1" 
+AR Path="/58A6ADCB/58A1DBD1" Ref="#PWR063"  Part="1" 
+AR Path="/58A6D694/58A1DBD1" Ref="#PWR064"  Part="1" 
+F 0 "#PWR064" H 4850 3000 50  0001 C CNN
 F 1 "GND" H 4850 3100 50  0000 C CNN
 F 2 "" H 4850 3250 50  0000 C CNN
 F 3 "" H 4850 3250 50  0000 C CNN

@@ -5,6 +5,12 @@ D Shift Register 8 bits, parallel load
 K TTL SR SR8
 $ENDCMP
 #
+$CMP 78L05
+D Linear Regulator +5V
+K POWER REGUL
+F regulator\lm78lxx.pdf
+$ENDCMP
+#
 $CMP ADuM7642
 D ADuM7642 6 channel digital isolator
 K isolator
@@ -13,6 +19,11 @@ $ENDCMP
 $CMP ADuM7643
 D ADuM7643 6 channel digital isolator
 K isolator
+$ENDCMP
+#
+$CMP ESDA5V3SC6
+D Clamping ESD diodes
+K DIODE ESD CLAMP
 $ENDCMP
 #
 $CMP GP22
@@ -31,6 +42,18 @@ D Clock buffer
 K buffer clock linear
 $ENDCMP
 #
+$CMP ROTARY_ENCODER
+D Rotary encoder, dual channel, incremental quadrate outputs
+K rotary switch encoder
+F ~
+$ENDCMP
+#
+$CMP ROTARY_SWITCH_ALPS_SRBM
+D Rotary encoder, dual channel, incremental quadrate outputs
+K rotary switch encoder
+F ~
+$ENDCMP
+#
 $CMP SN74HC165
 D Shift Register 8 bits, parallel load
 K TTL SR SR8
@@ -38,6 +61,11 @@ $ENDCMP
 #
 $CMP SN74LV8154
 D Fast 16 bit counter
+$ENDCMP
+#
+$CMP XC6206
+D Linear Regulator +3
+K POWER REGUL
 $ENDCMP
 #
 #End Doc Library

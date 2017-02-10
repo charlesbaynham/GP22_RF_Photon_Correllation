@@ -35,7 +35,7 @@ EELAYER 25 0
 EELAYER END
 $Descr A3 11693 16535 portrait
 encoding utf-8
-Sheet 1 11
+Sheet 1 8
 Title ""
 Date ""
 Rev ""
@@ -846,7 +846,7 @@ L BNC P6
 U 1 1 589E7C0D
 P 1125 7050
 F 0 "P6" H 1135 7170 50  0000 C CNN
-F 1 "StraightThroughInput" V 1235 6990 50  0000 C CNN
+F 1 "STInput" V 1235 6990 50  0000 C CNN
 F 2 "Custom:MMCX_Socket" H 1125 7050 50  0001 C CNN
 F 3 "" H 1125 7050 50  0000 C CNN
 	1    1125 7050
@@ -893,63 +893,21 @@ Text Label 6100 9050 0    60   ~ 0
 GP22_STOP2
 Text Label 5575 9050 2    60   ~ 0
 GP22_START
-$Sheet
-S 1250 8925 1175 1100
-U 58A17F47
-F0 "STARTSelection" 60
-F1 "SignalSelection.sch" 60
-F2 "SineInput" I L 1250 9275 60 
-F3 "TTLInput" I L 1250 9475 60 
-F4 "StraightThroughInput" I L 1250 9675 60 
-F5 "SignalOutput" I R 2425 9500 60 
-$EndSheet
 Text Notes 2650 1025 0    118  ~ 0
 Input termination, processing and termination
 Text Notes 1175 8550 0    118  ~ 0
 Signal selection
-Text Label 1250 9475 2    60   ~ 0
+Text Label 1450 9350 2    60   ~ 0
 TTLBuffered
-Text Label 1250 9675 2    60   ~ 0
+Text Label 1450 9250 2    60   ~ 0
 StraightThrough
-Text Label 1250 9275 2    60   ~ 0
+Text Label 2300 9350 0    60   ~ 0
 SineRectified
-$Sheet
-S 1225 10575 1175 1100
-U 58A6ADCB
-F0 "STOP1Selection" 60
-F1 "SignalSelection.sch" 60
-F2 "SineInput" I L 1225 10925 60 
-F3 "TTLInput" I L 1225 11125 60 
-F4 "StraightThroughInput" I L 1225 11325 60 
-F5 "SignalOutput" I R 2400 11150 60 
-$EndSheet
-Text Label 1225 11125 2    60   ~ 0
-TTLBuffered
-Text Label 1225 11325 2    60   ~ 0
-StraightThrough
-Text Label 1225 10925 2    60   ~ 0
-SineRectified
-$Sheet
-S 1250 12125 1175 1100
-U 58A6D694
-F0 "STOP2Selection" 60
-F1 "SignalSelection.sch" 60
-F2 "SineInput" I L 1250 12475 60 
-F3 "TTLInput" I L 1250 12675 60 
-F4 "StraightThroughInput" I L 1250 12875 60 
-F5 "SignalOutput" I R 2425 12700 60 
-$EndSheet
-Text Label 1250 12675 2    60   ~ 0
-TTLBuffered
-Text Label 1250 12875 2    60   ~ 0
-StraightThrough
-Text Label 1250 12475 2    60   ~ 0
-SineRectified
-Text Label 2425 9500 0    60   ~ 0
+Text Label 2675 9550 0    60   ~ 0
 GP22_START
-Text Label 2400 11150 0    60   ~ 0
+Text Label 2700 10775 0    60   ~ 0
 GP22_STOP1
-Text Label 2425 12700 0    60   ~ 0
+Text Label 2700 11900 0    60   ~ 0
 GP22_STOP2
 Text Notes 4475 8525 0    118  ~ 0
 GP22 Time-to-digital converter
@@ -998,16 +956,16 @@ Text Label 10225 9200 0    60   ~ 0
 GP22_MISO
 Text Label 8525 8725 2    60   ~ 0
 GP22_RST
-Text Label 9025 8100 2    60   ~ 0
-GP22_EN_START
-Text Label 9025 8200 2    60   ~ 0
-GP22_EN_STOP1
 Text Label 9025 8300 2    60   ~ 0
+GP22_EN_START
+Text Label 9025 8100 2    60   ~ 0
+GP22_EN_STOP1
+Text Label 9025 8000 2    60   ~ 0
 GP22_EN_STOP2
 NoConn ~ 4825 11425
 NoConn ~ 4825 11575
 NoConn ~ 4825 11725
-Text Label 9025 8000 2    60   ~ 0
+Text Label 9025 8200 2    60   ~ 0
 GP22_INT
 Text Label 4825 11725 2    60   ~ 0
 GP22_FIRE_IN
@@ -1606,8 +1564,6 @@ Wire Bus Line
 Wire Bus Line
 	6625 8250 100  8250
 Wire Bus Line
-	100  8250 100  8300
-Wire Bus Line
 	3275 8275 3275 16150
 Wire Bus Line
 	3275 13575 400  13575
@@ -1712,4 +1668,194 @@ F 3 "" H 7500 10150 50  0000 C CNN
 	1    7500 10150
 	0    1    1    0   
 $EndComp
+$Comp
+L R_Small R32
+U 1 1 58E535FD
+P 2575 9650
+F 0 "R32" H 2605 9670 50  0000 L CNN
+F 1 "50R" H 2605 9610 50  0000 L CNN
+F 2 "Resistors_SMD:R_0805_HandSoldering" H 2575 9650 50  0001 C CNN
+F 3 "" H 2575 9650 50  0000 C CNN
+	1    2575 9650
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR046
+U 1 1 58E53605
+P 2575 9950
+F 0 "#PWR046" H 2575 9700 50  0001 C CNN
+F 1 "GND" H 2575 9800 50  0000 C CNN
+F 2 "" H 2575 9950 50  0000 C CNN
+F 3 "" H 2575 9950 50  0000 C CNN
+	1    2575 9950
+	1    0    0    -1  
+$EndComp
+$Comp
+L C_Small C15
+U 1 1 58E5360B
+P 2575 9850
+F 0 "C15" H 2585 9920 50  0000 L CNN
+F 1 "10p" H 2585 9770 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0805_HandSoldering" H 2575 9850 50  0001 C CNN
+F 3 "" H 2575 9850 50  0000 C CNN
+	1    2575 9850
+	1    0    0    -1  
+$EndComp
+Text Notes -3625 11375 0    60   ~ 0
+Not sure about this capacitance: determine by trial and error!
+Wire Wire Line
+	1450 9550 1275 9550
+NoConn ~ 2300 9150
+$Comp
+L ROTARY_SWITCH_ALPS_SRBM SW1
+U 1 1 58E53617
+P 1875 9650
+F 0 "SW1" H 1750 10310 50  0000 C CNN
+F 1 "START" H 1900 9550 50  0000 C CNN
+F 2 "Custom:SP3T_switch" H 1650 10210 50  0001 C CNN
+F 3 "" H 1750 10310 50  0001 C CNN
+	1    1875 9650
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	2300 9550 2300 10050
+NoConn ~ 2300 9250
+NoConn ~ 1450 9150
+Text Notes -8150 11000 0    60   ~ 0
+This sheet provides the user with a switch to select which of the three input signals will reach the output.\nThe output is to be wired to one of the three signal ports on the GP22. \nSignals are terminated here using Analog's recommended method for AC CMOS signals, as emitted by the LTC6957-4. \nN.B. The "straight through" signal is also terminated here, so the termintation resistor in the input coupling selection sheet should be omitted for this branch.\n\nAll signals are converted to single ended here if they weren't already.\nI.e. ground loops will happen here if you didn't choose AC coupling with the jumpers in the coupling selection sheets
+Wire Wire Line
+	2300 9550 2675 9550
+Connection ~ 2575 9550
+Wire Wire Line
+	2300 10050 1275 10050
+Wire Wire Line
+	1275 10050 1275 9550
+Text Label 1475 10575 2    60   ~ 0
+TTLBuffered
+Text Label 1475 10475 2    60   ~ 0
+StraightThrough
+Text Label 2325 10575 0    60   ~ 0
+SineRectified
+$Comp
+L R_Small R33
+U 1 1 58E6CF91
+P 2600 10875
+F 0 "R33" H 2630 10895 50  0000 L CNN
+F 1 "50R" H 2630 10835 50  0000 L CNN
+F 2 "Resistors_SMD:R_0805_HandSoldering" H 2600 10875 50  0001 C CNN
+F 3 "" H 2600 10875 50  0000 C CNN
+	1    2600 10875
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR047
+U 1 1 58E6CF97
+P 2600 11175
+F 0 "#PWR047" H 2600 10925 50  0001 C CNN
+F 1 "GND" H 2600 11025 50  0000 C CNN
+F 2 "" H 2600 11175 50  0000 C CNN
+F 3 "" H 2600 11175 50  0000 C CNN
+	1    2600 11175
+	1    0    0    -1  
+$EndComp
+$Comp
+L C_Small C16
+U 1 1 58E6CF9D
+P 2600 11075
+F 0 "C16" H 2610 11145 50  0000 L CNN
+F 1 "10p" H 2610 10995 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0805_HandSoldering" H 2600 11075 50  0001 C CNN
+F 3 "" H 2600 11075 50  0000 C CNN
+	1    2600 11075
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1475 10775 1300 10775
+NoConn ~ 2325 10375
+$Comp
+L ROTARY_SWITCH_ALPS_SRBM SW2
+U 1 1 58E6CFA5
+P 1900 10875
+F 0 "SW2" H 1775 11535 50  0000 C CNN
+F 1 "STOP1" H 1925 10775 50  0000 C CNN
+F 2 "Custom:SP3T_switch" H 1675 11435 50  0001 C CNN
+F 3 "" H 1775 11535 50  0001 C CNN
+	1    1900 10875
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	2325 10775 2325 11275
+NoConn ~ 2325 10475
+NoConn ~ 1475 10375
+Wire Wire Line
+	2325 10775 2700 10775
+Connection ~ 2600 10775
+Wire Wire Line
+	2325 11275 1300 11275
+Wire Wire Line
+	1300 11275 1300 10775
+Text Label 1475 11700 2    60   ~ 0
+TTLBuffered
+Text Label 1475 11600 2    60   ~ 0
+StraightThrough
+Text Label 2325 11700 0    60   ~ 0
+SineRectified
+$Comp
+L R_Small R34
+U 1 1 58E7237F
+P 2600 12000
+F 0 "R34" H 2630 12020 50  0000 L CNN
+F 1 "50R" H 2630 11960 50  0000 L CNN
+F 2 "Resistors_SMD:R_0805_HandSoldering" H 2600 12000 50  0001 C CNN
+F 3 "" H 2600 12000 50  0000 C CNN
+	1    2600 12000
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR048
+U 1 1 58E72385
+P 2600 12300
+F 0 "#PWR048" H 2600 12050 50  0001 C CNN
+F 1 "GND" H 2600 12150 50  0000 C CNN
+F 2 "" H 2600 12300 50  0000 C CNN
+F 3 "" H 2600 12300 50  0000 C CNN
+	1    2600 12300
+	1    0    0    -1  
+$EndComp
+$Comp
+L C_Small C17
+U 1 1 58E7238B
+P 2600 12200
+F 0 "C17" H 2610 12270 50  0000 L CNN
+F 1 "10p" H 2610 12120 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0805_HandSoldering" H 2600 12200 50  0001 C CNN
+F 3 "" H 2600 12200 50  0000 C CNN
+	1    2600 12200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1475 11900 1300 11900
+NoConn ~ 2325 11500
+$Comp
+L ROTARY_SWITCH_ALPS_SRBM SW3
+U 1 1 58E72393
+P 1900 12000
+F 0 "SW3" H 1775 12660 50  0000 C CNN
+F 1 "STOP2" H 1925 11900 50  0000 C CNN
+F 2 "Custom:SP3T_switch" H 1675 12560 50  0001 C CNN
+F 3 "" H 1775 12660 50  0001 C CNN
+	1    1900 12000
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	2325 11900 2325 12400
+NoConn ~ 2325 11600
+NoConn ~ 1475 11500
+Wire Wire Line
+	2325 11900 2700 11900
+Connection ~ 2600 11900
+Wire Wire Line
+	2325 12400 1300 12400
+Wire Wire Line
+	1300 12400 1300 11900
 $EndSCHEMATC

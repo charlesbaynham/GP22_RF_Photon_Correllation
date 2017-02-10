@@ -362,8 +362,6 @@ F 3 "" H 9300 6350 50  0000 C CNN
 	1    9300 6350
 	1    0    0    -1  
 $EndComp
-NoConn ~ 9025 8600
-NoConn ~ 9025 8700
 $Comp
 L GP22 U2
 U 1 1 5890D5A7
@@ -1858,4 +1856,9 @@ Wire Wire Line
 	2325 12400 1300 12400
 Wire Wire Line
 	1300 12400 1300 11900
+Text Label 9025 8600 2    60   ~ 0
+GP22_CS
+NoConn ~ 9025 8700
+Text Notes 8675 8675 0    20   ~ 0
+Not used on this pin, \nbut here for routing
 $EndSCHEMATC

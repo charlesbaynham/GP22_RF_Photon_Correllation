@@ -1,10 +1,10 @@
-(module MMCX_Socket (layer F.Cu) (tedit 589CC301)
+(module MMCX_Socket (layer F.Cu) (tedit 589DCBA2)
   (descr "MMCX 73415-100x")
   (tags "MMCX jack")
-  (fp_text reference REF** (at 0.25 3) (layer F.SilkS)
+  (fp_text reference P1 (at 0.25 3) (layer F.SilkS) hide
     (effects (font (size 1 1) (thickness 0.15)))
   )
-  (fp_text value MMCX_Socket (at 0 -7.25 90) (layer F.Fab)
+  (fp_text value TTLOut1 (at 0 5 90) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (fp_line (start -1.75 -4.75) (end -1.75 -1.75) (layer F.SilkS) (width 0.15))

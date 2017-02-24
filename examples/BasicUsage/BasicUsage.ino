@@ -1,7 +1,8 @@
 #include <CommandHandler.h>
 
-// Create a CommandHandler object
+// Create a CommandHandler object to hold 5 commands
 CommandHandler<5> h;
+
 
 ///////////////////////////////////////////////////////
 // Declare functions to be called by serial commands //
@@ -17,9 +18,11 @@ commandFunction echoMany; // "echoMany"
 //             End function declaration              //
 ///////////////////////////////////////////////////////
 
+
 void setup() {
 
-	Serial.begin(250000);
+  Serial.begin(57600);
+  Serial.println(F("Program started..."));
 
 	// Register serial commands for triggering the previously
 	// declared functions
@@ -27,13 +30,14 @@ void setup() {
 	// Commands are case insensitive. Here we choose a serial command, the number of
 	// parameters it takes (to be read as strings, delimited by spaces) and the
 	// function it links to
-	h.registerCommand("hello", 0, &helloWorld);
-	h.registerCommand("hello?", 0, &helloWorldQ);
-	h.registerCommand("echo", 1, &echoMe);
-	h.registerCommand("add", 2, &adder);
+
+	h.registerCommand(COMMANDHANDLER_HASH( "heLLo" ), 0, helloWorld);
+	h.registerCommand(COMMANDHANDLER_HASH( "hello?"), 0, helloWorldQ);
+	h.registerCommand(COMMANDHANDLER_HASH( "eCHo"), 1, echoMe);
+	h.registerCommand(COMMANDHANDLER_HASH( "add"), 2, adder);
 
 	// Setting num params to "-1" will allow any number of params to be passed
-	h.registerCommand("echoMany", -1, &echoMany);
+	h.registerCommand(COMMANDHANDLER_HASH( "echoMany"), -1, echoMany);
 }
 
 void loop() {
@@ -86,17 +90,14 @@ void helloWorld(const ParameterLookup& params) {
 void helloWorldQ(const ParameterLookup& params) {
 
 	Serial.println(F("You sent a SCPI query"));
-
 }
 
 // Echo a string
 // 1 param
 void echoMe(const ParameterLookup& params) {
 
-	String str = params[1];
-
 	Serial.print(F("Passed string was: \""));
-	Serial.print(str);
+	Serial.print(params[1]);
 	Serial.print(F("\", command was: "));
 	Serial.println(params[0]);
 }

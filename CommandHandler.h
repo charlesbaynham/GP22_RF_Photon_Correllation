@@ -1,6 +1,8 @@
 /** @file
  * Contains all the code for the Arduino CommandHandler library
  * 
+ * Space requirements: 6 bytes + 8 per command + buffer size
+ * 
  * @todo Write the CommandHandler documentation
  */
 
@@ -8,6 +10,7 @@
 
 #include <Arduino.h>
 
+#include "compileTimeCRC32.h"
 #include "Microprocessor_Debugging\debugging_disable.h"
 
 #define COMMAND_SIZE_MAX 128 // num chars
@@ -302,9 +305,23 @@ public:
 	}
 
 	// Register a command
+	// This version is deprecated because it involves storing the strings in memory
+	// for it's calling which defeats the point of hashes!
 	CommandHandlerReturn registerCommand(const char* command, int num_of_parameters,
-		commandFunction* pointer_to_function) {
+		commandFunction* pointer_to_function) __attribute__((deprecated)) {
+
 		return _lookupList.registerCommand(command, num_of_parameters,
+			pointer_to_function);
+	}
+
+	// Register a command
+	// Use this version instead. To calculate the hash, use COMMANDHANDLER_HASH(cmd)
+	// e.g.
+	// 		registerCommand(COMMANDHANDLER_HASH("*idn"), 0, &identityFunc);
+	CommandHandlerReturn registerCommand(uint32_t hash, int num_of_parameters,
+		commandFunction* pointer_to_function) {
+
+		return _lookupList.registerCommand(hash, num_of_parameters,
 			pointer_to_function);
 	}
 
@@ -646,8 +663,18 @@ private:
 			_commandsIdx(0)
 		{}
 
-		// Add a new command to the list
+		// Add a new command to the list, calculating its hash at runtime (deprecated)
 		CommandHandlerReturn registerCommand(const char* command, int num_of_parameters,
+			commandFunction* pointer_to_function) {
+			
+			// Get hash of command
+			const long keyHash = crc32b(command);
+
+			return registerCommand(keyHash, num_of_parameters, pointer_to_function);
+		}
+
+		// Add a new command to the list
+		CommandHandlerReturn registerCommand(long keyHash, int num_of_parameters,
 			commandFunction* pointer_to_function)
 		{
 			if (_commandsIdx >= array_size) {
@@ -657,9 +684,6 @@ private:
 
 			// Set up a struct containing the number of params and a pointer to the function
 			dataStruct d;
-
-			// Get hash of command
-			long keyHash = djbHash(command);
 
 			// Save params
 			d.hash = keyHash;
@@ -680,7 +704,7 @@ private:
 			CONSOLE_LOG_LN(params.size());
 
 			// Get hash of command requested
-			const unsigned long reqHash = djbHash(params[0]);
+			const unsigned long reqHash = crc32b(params[0]);
 
 			int foundIdx = -1;
 
@@ -724,20 +748,35 @@ private:
 		dataStruct _commands[array_size];
 		unsigned int _commandsIdx;
 
-		// Hash string (case insensitive)
-		// Uses	the djb2 algorithm by Dan Bernstein
-		// See http://www.cse.yorku.ca/~oz/hash.html
-		static unsigned long djbHash(const char *str)
-		{
-			unsigned long hash = 5381;
-			int c;
+		// ----------------------------- crc32b --------------------------------
+		// (case insensitive)
+		/* This is the basic CRC-32 calculation with some optimization but no
+		table lookup. The the byte reversal is avoided by shifting the crc reg
+		right instead of left and by using a reversed 32-bit word to represent
+		the polynomial.
+		   When compiled to Cyclops with GCC, this function executes in 8 + 72n
+		instructions, where n is the number of bytes in the input message. It
+		should be doable in 4 + 61n instructions.
+		   If the inner loop is strung out (approx. 5*8 = 40 instructions),
+		it would take about 6 + 46n instructions. */
+		static uint32_t crc32b(const char *str) {
+		   int i, j;
+		   uint32_t byte, crc, mask;
 
-			while (c = tolower(*str++)) {
-				hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-			}
-
-			return hash;
+		   i = 0;
+		   crc = 0xFFFFFFFF;
+		   while (str[i] != 0) {
+		      byte = tolower(str[i]);            // Get next byte.
+		      crc = crc ^ byte;
+		      for (j = 7; j >= 0; j--) {    // Do eight times.
+		         mask = -(crc & 1);
+		         crc = (crc >> 1) ^ (0xEDB88320 & mask);
+		      }
+		      i = i + 1;
+		   }
+		   return ~crc;
 		}
+   
 	};
 };
 

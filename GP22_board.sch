@@ -536,7 +536,7 @@ F 3 "" H 7075 12175 50  0000 C CNN
 $EndComp
 Text Label 4825 11875 2    60   ~ 0
 GP22_INT
-Text Label 5425 12475 3    60   ~ 0
+Text Label 5425 12675 3    60   ~ 0
 GP22_CS
 Text Label 5575 12475 3    60   ~ 0
 GP22_SCK
@@ -1861,4 +1861,20 @@ GP22_CS
 NoConn ~ 9025 8700
 Text Notes 8675 8675 0    20   ~ 0
 Not used on this pin, \nbut here for routing
+$Comp
+L R R38
+U 1 1 58BB0DF9
+P 5275 12575
+F 0 "R38" V 5355 12575 50  0000 C CNN
+F 1 "10k" V 5275 12575 50  0000 C CNN
+F 2 "Resistors_SMD:R_0805_HandSoldering" V 5205 12575 50  0001 C CNN
+F 3 "" H 5275 12575 50  0000 C CNN
+	1    5275 12575
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5425 12475 5425 12675
+Connection ~ 5425 12575
+Text Label 5125 12575 2    60   ~ 0
+GP22_VIO
 $EndSCHEMATC

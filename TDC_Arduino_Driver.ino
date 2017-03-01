@@ -487,7 +487,7 @@ inline size_t getHistIndex(const size_t numBins, const int32_t minVal, const int
 
 }
 
-// Calibrate the TDC against the reference 32kHz clock and report the result
+// Calibrate the TDC against the reference 4MHz clock and report the result
 void calibrateTDC(const ParameterLookup& params) {
 
 	// Do the calibration
@@ -498,7 +498,7 @@ void calibrateTDC(const ParameterLookup& params) {
 
 }
 
-// Calibrate the highspeed clock against the TDC and report the result
+// Calibrate the highspeed clock against the low speed clock and report the result
 // (i.e. number of high speed clock cycles in `ANZ_PER_CALRES` cycles of the ref clock)
 void calibrateResonator(const ParameterLookup& params) {
 

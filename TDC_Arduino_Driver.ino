@@ -506,7 +506,10 @@ void calibrateResonator(const ParameterLookup& params) {
 	uint32_t calib = calibrateHF();
 
 	// Report result
-	Serial.println(calib);
+	if (calib == 0xFFFFFFFF)
+		Serial.println(F("TIMEOUT"));
+	else
+		Serial.println(calib);
 
 }
 

@@ -855,6 +855,7 @@ void testHistFunc(const ParameterLookup& params) {
 	}
 
 	long totalTime = 0;
+  double timeVar = 0;
 
 	for (int loop = 0; loop < numLoops; loop++) {
 		// Generate fake data
@@ -865,21 +866,44 @@ void testHistFunc(const ParameterLookup& params) {
 		// Start the clock!
 		long timerStart = micros();
 
+    // Run the histogram function, throwing away its return value
+    // "volatile" here tells the compiler not to do any funny business 
+    // like optimising away the function call completely
 		for (int i = 0; i < arraySize; i++) {
-			volatile size_t throwAway = getHistIndex(numBins, maxVal, vals[i]);
+			volatile size_t throwAway = getHistIndex(numBins, 0, maxVal, vals[i]);
 		}
 
 		// Stop the clock
 		long timerEnd = micros();
 
-		// Store time
-		totalTime += timerEnd - timerStart;
+		long thisCycleTime = timerEnd - timerStart;
+
+    // Store time
+		totalTime += thisCycleTime;
+
+    // Store varience
+    timeVar += thisCycleTime*thisCycleTime;
+   
 	}
 
-	double timePerCall = double(totalTime) / double(numLoops * arraySize);
+	const double timePerCycle = double(totalTime) / double(numLoops);
+	const double timePerCall = timePerCycle / double(arraySize);  
+  
+  timeVar = timeVar - numLoops * timePerCycle*timePerCycle;
+
+  const double loopStdDev = sqrt(timeVar);
 
 	Serial.print(F("Time taken per call (us): "));
-	Serial.println(timePerCall);
+	Serial.print(timePerCall);
+
+  Serial.print(F("  = "));
+  Serial.print(timePerCall / 1E6 * F_CPU);
+  Serial.print(F(" clock cycles @ "));
+  Serial.print(F_CPU);
+  Serial.println(F(" Hz"));
+
+  Serial.print(F("Frac. std.dev. of loop times : "));
+  Serial.println(loopStdDev / timePerCycle);
 
 	free(vals);
 }

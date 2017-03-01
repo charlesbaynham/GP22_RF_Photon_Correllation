@@ -12,8 +12,8 @@
 		/*----------------------------------*/
 
 
-#define TDC_CS A1
-#define TDC_INT A0
+#define TDC_CS 10
+#define TDC_INT A2
 
 const double HF_CLOCK_FREQ = 4E6;
 
@@ -126,9 +126,9 @@ void loop() {
 
 		CommandHandlerReturn out = handler.executeCommand();
 
-		if (out) {
+		if (out != CommandHandlerReturn::NO_ERROR) {
 			Serial.print(F("Error in command: CommandHandlerReturn code "));
-			Serial.println(out);
+			Serial.println((int)out);
 		}
 	}
 }
@@ -935,30 +935,29 @@ void setAutoCal(const ParameterLookup& params) {
 bool registerCommands(CommandHandler<numCommands>& h) {
 	// N.B. commands are not case sensitive
 
-	bool error = false;
+	h.registerCommand(COMMANDHANDLER_HASH("*IDN"), 0, &identity);
+	h.registerCommand(COMMANDHANDLER_HASH("*IDN?"), 0, &identity);
+	h.registerCommand(COMMANDHANDLER_HASH("*TST"), 0, &testConnection);
+	h.registerCommand(COMMANDHANDLER_HASH("*TST?"), 0, &testConnection);
+	h.registerCommand(COMMANDHANDLER_HASH("*RST"), 0, &reset);
+	h.registerCommand(COMMANDHANDLER_HASH("MEAS"), 1, &timedMeasure);
+	h.registerCommand(COMMANDHANDLER_HASH("SING"), 0, &singleMeasure);
+	h.registerCommand(COMMANDHANDLER_HASH("HIST"), 4, &histogramMeasure);
+	h.registerCommand(COMMANDHANDLER_HASH("STAT"), 0, &getStatus);
+	h.registerCommand(COMMANDHANDLER_HASH("SETU"), -1, &setupRegisters);
+	h.registerCommand(COMMANDHANDLER_HASH("SETU?"), 0, &getRegisters);
+	h.registerCommand(COMMANDHANDLER_HASH("*MEM"), 0, &availableMemory);
+	h.registerCommand(COMMANDHANDLER_HASH("HCAL"), 0, &calibrateResonator);
+	h.registerCommand(COMMANDHANDLER_HASH("CALI"), 0, &calibrateTDC);
+	h.registerCommand(COMMANDHANDLER_HASH("RF"), 0, &RFMode);
+	h.registerCommand(COMMANDHANDLER_HASH("RFPHOT"), 0, &photonRFMode);
+	h.registerCommand(COMMANDHANDLER_HASH("PHOT"), 0, &photonPhotonMode);
+	h.registerCommand(COMMANDHANDLER_HASH("ORTEC"), 0, &ORTECMode);
+	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
+	
+	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
 
-	error |= h.registerCommand("*IDN", 0, &identity);
-	error |= h.registerCommand("*IDN?", 0, &identity);
-	error |= h.registerCommand("*TST", 0, &testConnection);
-	error |= h.registerCommand("*TST?", 0, &testConnection);
-	error |= h.registerCommand("*RST", 0, &reset);
-	error |= h.registerCommand("MEAS", 1, &timedMeasure);
-	error |= h.registerCommand("SING", 0, &singleMeasure);
-	error |= h.registerCommand("HIST", 4, &histogramMeasure);
-	error |= h.registerCommand("STAT", 0, &getStatus);
-	error |= h.registerCommand("SETU", -1, &setupRegisters);
-	error |= h.registerCommand("SETU?", 0, &getRegisters);
-	error |= h.registerCommand("*MEM", 0, &availableMemory);
-	error |= h.registerCommand("HCAL", 0, &calibrateResonator);
-	error |= h.registerCommand("CALI", 0, &calibrateTDC);
-	error |= h.registerCommand("RF", 0, &RFMode);
-	error |= h.registerCommand("RFPHOT", 0, &photonRFMode);
-	error |= h.registerCommand("PHOT", 0, &photonPhotonMode);
-	error |= h.registerCommand("ORTEC", 0, &ORTECMode);
-	error |= h.registerCommand("AUTOCAL", 1, &setAutoCal);
-	error |= h.registerCommand("testhist", 3, &testHistFunc);
-
-	return !error;
+	return finalError == CommandHandlerReturn::NO_ERROR;
 }
 
 void setupForRF_PhotonMode() {

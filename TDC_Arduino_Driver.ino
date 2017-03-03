@@ -291,15 +291,18 @@ void singleMeasure(const ParameterLookup& params) {
 
 	int stat = measure(result.Whole);
 
-	if (stat != 0) {
-		Serial.println(F("MC TIMEOUT"));
+	// If we get an error level, report the timeout
+	if (stat == 1) {
+		Serial.println(F("START TIMEOUT"));
 		return;
 	}
 
+	// Read status byte from ADC
 	uint16_t ADCstat = readStatus();
 
 	if (ADCstat & 0b11000000000) {
-		Serial.println(F("ADC TIMEOUT"));
+		// In this case the ADC received a START but not a STOP in the time given
+		Serial.println(F("STOP TIMEOUT"));
 		return;
 	}
 
@@ -340,6 +343,11 @@ void histogramMeasure(const ParameterLookup& params) {
 	// Otherwise, they are an integer number of gates passed by the signal
 	const double minVal = atof(params[3]);
 	const double maxVal = atof(params[4]);
+
+	if (numBins < 1) {
+		Serial.println(F("Error: numBins must be > 0"));
+		return;
+	}
 
 	// Reserve memory for an array to hold the histogram
 	typedef unsigned int histType;

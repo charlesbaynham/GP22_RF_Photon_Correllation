@@ -273,9 +273,15 @@ public:
 		CONSOLE_LOG_LN(F("Execute command"));
 
 		// Return error code if no command waiting
-		if (!_bufferFull) {
+		if (!commandWaiting()) {
 			CONSOLE_LOG_LN(F("No command error"));
 			error = CommandHandlerReturn::NO_COMMAND_WAITING;
+		}
+
+		// Return error code if command over-ran
+		if (_command_too_long) {
+			CONSOLE_LOG_LN(F("Overflow error"));
+			error = CommandHandlerReturn::COMMAND_TOO_LONG;
 		}
 
 		CONSOLE_LOG(F("Command is: "));
@@ -288,25 +294,28 @@ public:
 			error = CommandHandlerReturn::EMPTY_COMMAND_STRING;
 		}
 
-		// Constuct a parameter lookup object from the command string
-		// This invalidates the string for future use
-		CONSOLE_LOG_LN(F("Creating ParameterLookup object..."));
-		ParameterLookup lookupObj = ParameterLookup(_inputBuffer);
+		// If no errors so far, continue
+		if (error == CommandHandlerReturn::NO_ERROR) {
 
-		CONSOLE_LOG_LN(F("Running callStoredCommand..."));
-		CommandHandlerReturn found = _lookupList.callStoredCommand(lookupObj);
+			// Constuct a parameter lookup object from the command string
+			// This invalidates the string for future use
+			CONSOLE_LOG_LN(F("Creating ParameterLookup object..."));
+			ParameterLookup lookupObj = ParameterLookup(_inputBuffer);
+
+			CONSOLE_LOG_LN(F("Running callStoredCommand..."));
+			error = _lookupList.callStoredCommand(lookupObj);
+
+		}
 
 		// Mark buffer as ready again
-		_bufferFull = false;
-		_inputBuffer[0] = '\0';
-		_bufferLength = 0;
+		clearBuffer();
 
-		return found;
+		return error;
 	}
-
+	
 	// Register a command
 	// This version is deprecated because it involves storing the strings in memory
-	// for it's calling which defeats the point of hashes!
+	// for its calling which defeats the point of hashes!
 	CommandHandlerReturn registerCommand(const char* command, int num_of_parameters,
 		commandFunction* pointer_to_function) __attribute__((deprecated)) {
 
@@ -341,18 +350,10 @@ public:
 			CONSOLE_LOG(F("Newline received. Command: "));
 			CONSOLE_LOG_LN(_inputBuffer);
 
-			// Should we ignore this command?
-			if (_command_too_long) {
-				// Reset the `_command_too_long` flag
-				_command_too_long = false;
-
-				CONSOLE_LOG_LN(F("Ignoring command since too long"));
-
-				return CommandHandlerReturn::COMMAND_TOO_LONG;
-			}
-
-			// If not, we are already null terminated so mark the string as ready
+			// We are already null terminated so mark the string as ready
 			_bufferFull = true;
+
+			// _command_too_long will be detected by executeCommand if it is set
 		}
 		// if c is a carridge return, ignore it
 		else if (c == '\r') {
@@ -361,7 +362,7 @@ public:
 		}
 		// else c is a normal char, so add it to the buffer
 		else {
-			if (_command_too_long || _bufferLength >= COMMAND_SIZE_MAX)
+			if (_command_too_long || _bufferLength >= COMMAND_SIZE_MAX-1)
 			{
 				// Command was too long! Set the `_command_too_long` flag to chuck away all subsequent chars until next newline
 				CONSOLE_LOG_LN(F("ERROR: command too long!"));
@@ -378,6 +379,7 @@ public:
 
 				_bufferLength++;
 
+				// Ensure that the buffer always contains valid c str
 				_inputBuffer[_bufferLength] = '\0';
 
 				CONSOLE_LOG(F("Char received: '"));
@@ -403,7 +405,7 @@ public:
 	// This command should not include newlines: it will be copied verbatim into the
 	// buffer and then executed as a normal command would be
 	// Multiple commands can be seperated by ';' chars
-	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
+	// Max length is COMMAND_SIZE_MAX - 2 (1 char to append a newline, 1 for the null term)
 	// Returns false on fail
 	CommandHandlerReturn storeStartupCommand(const String& command)
 	{
@@ -422,10 +424,12 @@ public:
 	// This command should not include newlines: it will be copied verbatim into the
 	// buffer and then executed as a normal command would be
 	// Multiple commands can be seperated by ';' chars
-	// Max length is COMMAND_LENGTH_MAX - 2 (1 char to append a newline, 1 for the null term)
-	// Returns false on fail
+	// Max length is COMMAND_SIZE_MAX - 2 (1 char to append a newline, 1 for the null term)
+	// Returns CommandHandlerReturn to indicate error status
 	CommandHandlerReturn storeStartupCommand(const char* command)
 	{
+		if (strlen(command) > COMMAND_SIZE_MAX - 2)
+			return CommandHandlerReturn::COMMAND_TOO_LONG;
 
 		// Store a flag indicating that a command exists
 		const bool trueFlag = true;
@@ -496,13 +500,13 @@ public:
 	{
 		CONSOLE_LOG_LN(F("CommandHandler::getStartupCommand(char*)"))
 
-			// Index of location in buffer
-			int bufIdx = 0; // Start at start of buffer
+		// Index of location in buffer
+		int bufIdx = 0; // Start at start of buffer
 
-							// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
-							// It will tell us if there's a command to be read or not
-							// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
-							// We only want to use it if it's exactly a bool
+		// There should be a bool stored in EEPROM_STORED_COMMAND_FLAG_LOCATION if this program has run before
+		// It will tell us if there's a command to be read or not
+		// Read it as a byte though, since the memory location will be 0xFF if it has never been written to
+		// We only want to use it if it's exactly a bool
 		char fromEEPROM;
 		EEPROM.get(EEPROM_STORED_COMMAND_FLAG_LOCATION, fromEEPROM);
 
@@ -575,13 +579,26 @@ public:
 		// Command is waiting, so queue it one char at a time
 		// If we reach a newline, commandWaiting() will flag "true": execute the command
 		// If we reach a NULL, end
+		// If we've read COMMAND_SIZE_MAX - 2 bytes from EEPROM, stop and add a newline + NULL
 		
 		// Index of location in EEPROM
 		int EEPROM_idx = EEPROM_STORED_COMMAND_LOCATION;
+		int numCharsRead = 0;
 		CommandHandlerReturn result = CommandHandlerReturn::NO_ERROR;
 		while (true) {
 
 			char c;
+			
+			// If we've read the max possible number of chars, stop here
+			if (numCharsRead >= COMMAND_SIZE_MAX-2) {
+				
+				CONSOLE_LOG_LN(F("CommandHandler::Stored command unterminated!"));
+
+				// Queue a newline then stop
+				addCommandChar('\n');
+				break;
+			}
+
 			EEPROM.get(EEPROM_idx, c);
 
 			CONSOLE_LOG(F("CommandHandler::Read from EEPROM ("));
@@ -599,7 +616,7 @@ public:
 				break;
 			}
 
-			// If any preceding commands have failed, stop executing here
+			// If no preceding commands have failed, execute if ready
 			if (CommandHandlerReturn::NO_ERROR == result) {
 
 				CONSOLE_LOG(F("CommandHandler::executeStartupCommands: Queueing "));
@@ -615,6 +632,7 @@ public:
 			}
 
 			EEPROM_idx++;
+			numCharsRead++;
 		}
 
 		return result;
@@ -623,6 +641,15 @@ public:
 #endif
 
 private:
+
+	void clearBuffer() {
+		// Mark buffer as ready again
+		_bufferFull = false;
+		_command_too_long = false;
+		_inputBuffer[0] = '\0';
+		_bufferLength = 0;
+	}
+
 	// An object for handling the matching of commands -> functions
 	CommandLookup _lookupList;
 

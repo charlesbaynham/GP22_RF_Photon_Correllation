@@ -68,6 +68,13 @@ uint32_t GP22::registers_data[7] = { 0 };
 #define TDC_START_CAL 0x04
 #define TDC_START_CAL_RES 0x03
 
+enum class MEASUREMENT_ERROR {
+	NO_ERROR = 0,
+	TIMEOUT_START,
+	TIMEOUT_STOP,
+	OVERFLOW
+};
+
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
 
@@ -191,16 +198,10 @@ void timedMeasure(const ParameterLookup& params) {
 			int32_t Signed;
 		} result;
 		
-		int stat = measure(result.Whole);
-
-		// Get the status
-		uint16_t TDC_stat = readStatus();
-		// const int nextAdr = TDC_stat & 0b111;
-		const bool startTimeout = (stat == 1);
-		const bool stopTimeout = TDC_stat & 0b11000000000;
+		MEASUREMENT_ERROR stat = measure(result.Whole);
 
 		// Check we didn't timeout
-		if (!startTimeout && !stopTimeout) {
+		if (stat == MEASUREMENT_ERROR::NO_ERROR) {
 			
 			// Check if calibration mode is on
 			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
@@ -326,23 +327,14 @@ void singleMeasure(const ParameterLookup& params) {
 		int32_t Signed;
 	} result;
 
-	int stat = measure(result.Whole);
+	MEASUREMENT_ERROR stat = measure(result.Whole);
 
 	// If we get an error level, report the timeout
-	if (stat == 1) {
-		Serial.println(F("START TIMEOUT"));
+	if (stat != MEASUREMENT_ERROR::NO_ERROR) {
+		Serial.print(F("MEASUREMENT ERROR "));
+		Serial.println((int)stat);
 		return;
 	}
-
-	// Read status byte from ADC
-	uint16_t ADCstat = readStatus();
-
-	if (ADCstat & 0b11000000000) {
-		// In this case the ADC received a START but not a STOP in the time given
-		Serial.println(F("STOP TIMEOUT"));
-		return;
-	}
-
 
 	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 		
@@ -403,6 +395,7 @@ void histogramMeasure(const ParameterLookup& params) {
 	CONSOLE_LOG_LN(F(" bytes allocated for histogram"));
 
 	uint32_t minValFixedPoint, maxValFixedPoint;
+	double minValFixedPoint_D, maxValFixedPoint_D;
 
 	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 		// The measurements returned by the TDC are (in calibrated mode) 32 bit fixed point numbers
@@ -414,12 +407,21 @@ void histogramMeasure(const ParameterLookup& params) {
 		// First, scale to multiples of the ref clock
 		// Then, multiply by 2^16 due to the 16-16 fixed point format
 		// And convert to unsigned integer
-		maxValFixedPoint = maxVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
-		minValFixedPoint = minVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+		maxValFixedPoint_D = maxVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+		minValFixedPoint_D = minVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+
+		if (minValFixedPoint > 0x7FFFFFFF || maxValFixedPoint_D > 0x7FFFFFFF) {
+			Serial.println(F("Error: limits too large"));
+			free(hist);
+			return;
+		}
+
+		maxValFixedPoint = maxValFixedPoint_D;
+		minValFixedPoint = minValFixedPoint_D;
 	} else {
 		// In uncalbrated mode, they will be signed integers representing the number of
 		// gates passed by the signal (~90ps in single res mode)
-		// They can in general be negative, but we our histogram function does not support
+		// They can in general be negative, but our histogram function does not support
 		// this for now
 		maxValFixedPoint = maxVal;
 		minValFixedPoint = minVal;
@@ -457,7 +459,8 @@ void histogramMeasure(const ParameterLookup& params) {
 		} result;
 
 		// Do a measurement and store it in `result`
-		if (0 == measure(result.Unsigned)) {
+		if (MEASUREMENT_ERROR::NO_ERROR == measure(result.Unsigned)) {
+
 			// We didn't timeout
 			CONSOLE_LOG(F("No timeout, reading = "));
 			CONSOLE_LOG_LN(result.Signed);
@@ -647,9 +650,8 @@ void updateTDC(const uint32_t * registers) {
 // This function does not care: it returns the value as an unsigned 32 bit unsigned int. It is 
 // up to the user to convert into whatever format is applicable.
 //
-// Return 1 for timeout
-// 0 for success
-int measure(uint32_t& out) {
+// Return error code for measurement status
+MEASUREMENT_ERROR measure(uint32_t& out) {
 
 	// Send the INIT opcode to start waiting for a timing event
 	digitalWrite(TDC_CS, LOW);
@@ -659,13 +661,28 @@ int measure(uint32_t& out) {
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
 	while (HIGH == digitalRead(TDC_INT)) {
-		if (millis() - start > 500) { return 1; } // Give up if we've been waiting 500ms
+		// Give up if we've been waiting 500ms
+		if (millis() - start > 500) {
+			return MEASUREMENT_ERROR::TIMEOUT_START;
+		} 
 	}
 
 	// Read the result
 	out = read_bytes(TDC_RESULT1, !(bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE));
 
-	return 0;
+	// Get the status
+	uint16_t TDC_stat = readStatus();
+
+	// const int nextAdr = TDC_stat & 0b111;
+	const bool stopTimeout = TDC_stat & 0b11000000000;
+	const bool counterOverflow = out == 0xFFFFFFFF;
+
+	if (stopTimeout)
+		return MEASUREMENT_ERROR::TIMEOUT_STOP;
+	if (counterOverflow)
+		return MEASUREMENT_ERROR::OVERFLOW;
+
+	return MEASUREMENT_ERROR::NO_ERROR;
 }
 
 // Perform a calibration routine and then return the number of LSBs in 2 clock cycles
@@ -1009,6 +1026,10 @@ void setupForRF_PhotonMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
 
+	// Trigger interrupt on timeout or finishing calculation
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
+
 	// Double res mode
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
@@ -1027,6 +1048,10 @@ void setupForRFMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 1);
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 3); // 2 hits on STOP1 + 1 on START = 3
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
+
+	// Trigger interrupt on timeout or finishing calculation
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
 
 	// Double res mode
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
@@ -1047,6 +1072,10 @@ void setupForOrtecMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 1); // 1 hit on STOP2
 
+	// Trigger interrupt on timeout or finishing calculation
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
+
 	// Normal res mode
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
@@ -1065,6 +1094,10 @@ void setupForPhotonPhotonMode() {
 	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0xA);
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 1); // 1 hit on START = 1
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 3); // 2 hits on STOP2
+
+	// Trigger interrupt on timeout or finishing calculation
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
+	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
 
 	// Normal res mode since using STOP2
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);

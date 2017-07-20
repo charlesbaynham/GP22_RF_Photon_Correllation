@@ -79,11 +79,8 @@ void setup() {
 	regWrite(GP22::REG2, 0xA0000000);
 	regWrite(GP22::REG3, 0x00000000);
 	regWrite(GP22::REG4, 0x10000000);
-	regWrite(GP22::REG5, 0x00000000);
-	regWrite(GP22::REG6, 0x400010CB);
-
-	// Measurement mode 1
-	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, 0);
+	regWrite(GP22::REG5, 0x000000CF);
+	regWrite(GP22::REG6, 0x400010AB);
 
 	// Serial connection
 	Serial.begin(250000);
@@ -108,6 +105,11 @@ void setup() {
 	Clock Phase Bit = 1
 	Clock Polarity Bit = 0 "    =>          */
 	SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
+
+	// Reset the TDC
+	digitalWrite(TDC_CS, LOW);
+	SPI.transfer(TDC_RESET);
+	digitalWrite(TDC_CS, HIGH);
 
 	// Load all the values stored in reg into the TDC's registers
 	updateTDC(GP22::registers_data);
@@ -599,22 +601,11 @@ uint8_t testTDC() {
 // registers should be a 7 element array
 void updateTDC(const uint32_t * registers) {
 
-	// Send reset
-	digitalWrite(TDC_CS, LOW);
-	SPI.transfer(TDC_RESET);
-	digitalWrite(TDC_CS, HIGH);
-
-	// Wait 100ms
-	delay(100);
-
-	// Set defaults
 	// Write the values to the TDC's registers
 	for (int i = 0; i < 7; i++) {
 		writeConfigReg(i, registers[i]);
 	}
 
-	// Wait 100ms
-	delay(100);
 }
 
 // Perform a single measurement & output to the passed variable
@@ -726,6 +717,7 @@ uint32_t calibrateHF() {
 	// Set EN_AUTOCALC=0
 	GP22::bitmaskWrite(GP22::REG3, GP22::REG3_EN_AUTOCALC_MB2, false);
 	writeConfigReg(GP22::REG3, regRead(GP22::REG3));
+	updateTDC(GP22::registers_data);
 
 	// Init
 	digitalWrite(TDC_CS, LOW);
@@ -751,6 +743,7 @@ uint32_t calibrateHF() {
 
 	// Restore reg3
 	writeConfigReg(GP22::REG3, backupReg3);
+	updateTDC(GP22::registers_data);
 
 	return result;
 }

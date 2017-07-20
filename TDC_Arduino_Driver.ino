@@ -73,14 +73,22 @@ void(*resetFunc) (void) = 0;
 
 void setup() {
 
-	// Default values for TDC settings
-	regWrite(GP22::REG0, 0b00100010000001100110100000000000);
-	regWrite(GP22::REG1, 0x55400000);
-	regWrite(GP22::REG2, 0xA0000000);
-	regWrite(GP22::REG3, 0x00000000);
-	regWrite(GP22::REG4, 0x10000000);
-	regWrite(GP22::REG5, 0x000000CF);
-	regWrite(GP22::REG6, 0x400010AB);
+	// Default values for TDC settings, as listed by ACAM in datasheet Note that
+	// these won't result in a measurement that works: to get anything
+	// interesting these defaults need to be changed, which is done by the
+	// functions "setupForXXX"
+	//
+	// Changing these register changes the value stored in the ATMega's memory
+	// only (in the array GP22::registers_data). In order to update the
+	// registers actually on the TDC, you must call
+	// "updateTDC(GP22::registers_data)"
+	regWrite(GP22::REG0, 0x2206680C);
+	regWrite(GP22::REG1, 0x5540000F);
+	regWrite(GP22::REG2, 0x2000000A);
+	regWrite(GP22::REG3, 0x1800000B);
+	regWrite(GP22::REG4, 0x20000001);
+	regWrite(GP22::REG5, 0x00000002);
+	regWrite(GP22::REG6, 0x00000003);
 
 	// Serial connection
 	Serial.begin(250000);
@@ -177,13 +185,36 @@ void timedMeasure(const ParameterLookup& params) {
 	while (millis() < stop) {
 
 		// Do the measurement
-		uint32_t result;
-		int stat = measure(result);
+		union {
+			uint32_t Whole;
+			uint16_t Unsigned[2];
+			int32_t Signed;
+		} result;
+		
+		int stat = measure(result.Whole);
+
+		// Get the status
+		uint16_t TDC_stat = readStatus();
+		// const int nextAdr = TDC_stat & 0b111;
+		const bool startTimeout = (stat == 1);
+		const bool stopTimeout = TDC_stat & 0b11000000000;
 
 		// Check we didn't timeout
-		if (stat == 0) {
-			// Report result
-			Serial.print(result);
+		if (!startTimeout && !stopTimeout) {
+			
+			// Check if calibration mode is on
+			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
+				
+				// If calibrated, convert to nanoseconds
+				const double nanoseconds = double(result.Signed) / HF_CLOCK_FREQ * 1e9 / double(uint32_t(1)<<16);
+				Serial.print(nanoseconds, 3);
+
+			} else {
+
+				// If not calibrated, output raw LSBs
+				Serial.print(result.Unsigned[0]); // We only need the first 2 bytes
+			}
+
 			Serial.print('\t');
 		}
 	}
@@ -544,8 +575,8 @@ void testConnection(const ParameterLookup& params) {
 
 void getStatus(const ParameterLookup& params) {
 
-	Serial.print(F("0x"));
-	Serial.println(readStatus(), HEX);
+	Serial.print(F("0b"));
+	Serial.println(readStatus(), BIN);
 
 }
 

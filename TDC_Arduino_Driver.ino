@@ -8,6 +8,7 @@
 
 #define PROG_IDN "GP22_DRIVER"
 #define PROG_VER "0.6"
+#include "latest_hash.h"
 
 		/*----------------------------------*/
 
@@ -34,7 +35,7 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Number of commands to be registered
-const uint8_t numCommands = 20;
+const uint8_t numCommands = 22;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -157,6 +158,9 @@ void identity(const ParameterLookup& params) {
 	Serial.print(F(PROG_IDN));
 	Serial.print(F(" - "));
 	Serial.println(F(PROG_VER));
+}
+void gitVersion(const ParameterLookup& params) {
+	Serial.println(F(LATEST_HASH));
 }
 
 void timedMeasure(const ParameterLookup& params) {
@@ -948,6 +952,8 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 
 	h.registerCommand(COMMANDHANDLER_HASH("*IDN"), 0, &identity);
 	h.registerCommand(COMMANDHANDLER_HASH("*IDN?"), 0, &identity);
+	h.registerCommand(COMMANDHANDLER_HASH("*GIT"), 0, &gitVersion);
+	h.registerCommand(COMMANDHANDLER_HASH("*GIT?"), 0, &gitVersion);
 	h.registerCommand(COMMANDHANDLER_HASH("*TST"), 0, &testConnection);
 	h.registerCommand(COMMANDHANDLER_HASH("*TST?"), 0, &testConnection);
 	h.registerCommand(COMMANDHANDLER_HASH("*RST"), 0, &reset);
@@ -965,7 +971,7 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("PHOT"), 0, &photonPhotonMode);
 	h.registerCommand(COMMANDHANDLER_HASH("ORTEC"), 0, &ORTECMode);
 	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
-	
+
 	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
 
 	return finalError == CommandHandlerReturn::NO_ERROR;

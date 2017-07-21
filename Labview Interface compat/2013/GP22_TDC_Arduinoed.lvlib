@@ -27,6 +27,8 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="Default Instrument Setup.vi" Type="VI" URL="../Private/Default Instrument Setup.vi"/>
 		<Item Name="ConvertTimes.vi" Type="VI" URL="../Private/ConvertTimes.vi"/>
 		<Item Name="MakeHistogram.vi" Type="VI" URL="../Private/MakeHistogram.vi"/>
+		<Item Name="ResMode.vi" Type="VI" URL="../Private/ResMode.vi"/>
+		<Item Name="AutoCal.vi" Type="VI" URL="../Private/AutoCal.vi"/>
 	</Item>
 	<Item Name="Public" Type="Folder">
 		<Property Name="NI.LibItem.Scope" Type="Int">1</Property>
@@ -44,6 +46,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="Config" Type="Folder">
 			<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
 			<Item Name="Create_Reg_Cluster.vi" Type="VI" URL="../Private/Create_Reg_Cluster.vi"/>
+			<Item Name="Get_Registers.vi" Type="VI" URL="../Public/Get_Registers.vi"/>
 		</Item>
 		<Item Name="Measurements" Type="Folder">
 			<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>

@@ -16,6 +16,7 @@
 		<Property Name="NI.SortType" Type="Int">3</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="GP22_TDC_Arduinoed.lvlib" Type="Library" URL="../GP22_TDC_Arduinoed.lvlib"/>
+		<Item Name="Registers.ctl" Type="VI" URL="../Registers.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Error Cluster From Error Code.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Error Cluster From Error Code.vi"/>

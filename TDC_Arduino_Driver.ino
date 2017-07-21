@@ -78,6 +78,39 @@ enum class MEASUREMENT_ERROR {
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
 
+/*
+ * A note on the board layout
+ * ==========================
+ *
+ * The TDC board has three possible inputs: "TTL", "Sine" and
+ * "Straight through". These three inputs are converted into TTL pulses in
+ * different ways, before being fed to the GP22. (Henceforth referred to as
+ * Signals)
+ *
+ * * The TTL input is buffered, one line goes to the GP22, one goes to a
+ *   hardware counter and three are made available to the user
+ * * The Sine input is converted into a square TTL wave which is fed to the GP22
+ * * The Straight Through input is connected directly to the GP22, without any
+ *   pre-processing
+ *
+ * All these three inputs go to a set of rotary switches. The position of these
+ * switches decides which signal arrives at the three ports of the GP22: START,
+ * STOP1 AND STOP2, henceforth referred to as Channels. Starting at the furthest
+ * anticlockwise position, the three possible positions of the switches are A, B
+ * and C:
+ *
+ * A -> TTL, B -> Straight Through, C -> Sine
+ *
+ * There is one switch for each GP22 Channel: starting from the bottom, the
+ * order is START, STOP1, STOP2.
+ *
+ * It is perfectly possible to have one Signal arriving at several Channels.
+ * E.g. if you intend to measure arrival times between successive photons that
+ * are heralded by a TTL Signal, you may set both the START and STOP1 switches
+ * to position A (= TTL). The position of switch STOP2 is unimportant in this
+ * case as Channel STOP2 is not in use.
+ */
+
 void setup() {
 
 	// Default values for TDC settings, as listed by ACAM in datasheet Note that
@@ -130,7 +163,7 @@ void setup() {
 	updateTDC(GP22::registers_data);
 
 	// Go into RF - photon mode
-	setupForRF_PhotonMode();
+	setupForSTARTToSTOP1Mode();
 	 
 	// Setup complete. Move to waiting for a command
 }
@@ -287,6 +320,35 @@ void setupRegisters(const ParameterLookup& params) {
 	}
 }
 
+// Enable / disable measurement mode 2 Measurement mode 2 allows for much longer
+// time periods to be measured, but requires the use of calibration. This means
+// that extremely fast readout is not possible. 
+// 
+// Params - <"1" or "2"> sets mode 1 or 2
+void setMeasMode(const ParameterLookup& params) {
+	char paramChar = params[1][0];
+
+	if (paramChar == '1') {
+		setMeasurementMode2(false);
+		Serial.println(F("MODE 1"));
+	}
+	else if (paramChar == '2') {
+		setMeasurementMode2(true);
+		Serial.println(F("MODE 2"));
+	}
+	else {
+		Serial.println(F("Invalid option: options are '1' or '2'"));
+	}
+}
+
+void getMeasMode(const ParameterLookup& params) {
+	if (bitmaskRead(GP22::REG0, GP22::REG0_MESSB2)) {
+		Serial.println(F("MODE 2"));
+	} else {
+		Serial.println(F("MODE 1"));
+	}
+}
+
 void getRegisters(const ParameterLookup& params) {
 
 	// Output the current register state
@@ -300,21 +362,26 @@ void getRegisters(const ParameterLookup& params) {
 
 }
 
-void RFMode(const ParameterLookup& params) {
-	setupForRFMode();
-	Serial.println(F("RF - RF MODE"));
-}
-void photonRFMode(const ParameterLookup& params) {
-	setupForRF_PhotonMode();
-	Serial.println(F("RF - PHOTON MODE"));
-}
-void photonPhotonMode(const ParameterLookup& params) {
-	setupForPhotonPhotonMode();
-	Serial.println(F("PHOTON - PHOTON MODE"));
-}
-void ORTECMode(const ParameterLookup& params) {
-	setupForOrtecMode();
-	Serial.println(F("ORTEC MODE"));
+// void RFMode(const ParameterLookup& params) {
+// 	setupForRFMode();
+// 	Serial.println(F("RF - RF MODE"));
+// }
+// void photonRFMode(const ParameterLookup& params) {
+// 	setupForRF_PhotonMode();
+// 	Serial.println(F("RF - PHOTON MODE"));
+// }
+// void photonPhotonMode(const ParameterLookup& params) {
+// 	setupForPhotonPhotonMode();
+// 	Serial.println(F("PHOTON - PHOTON MODE"));
+// }
+// void ORTECMode(const ParameterLookup& params) {
+// 	setupForOrtecMode();
+// 	Serial.println(F("ORTEC MODE"));
+// }
+// 
+void start_stop1_x1(const ParameterLookup& params) {
+	setupForSTARTToSTOP1Mode();
+	Serial.println(F("START - STOP1 MODE"));
 }
 
 void singleMeasure(const ParameterLookup& params) {
@@ -1007,10 +1074,9 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("*MEM"), 0, &availableMemory);
 	h.registerCommand(COMMANDHANDLER_HASH("HCAL"), 0, &calibrateResonator);
 	h.registerCommand(COMMANDHANDLER_HASH("CALI"), 0, &calibrateTDC);
-	h.registerCommand(COMMANDHANDLER_HASH("RF"), 0, &RFMode);
-	h.registerCommand(COMMANDHANDLER_HASH("RFPHOT"), 0, &photonRFMode);
-	h.registerCommand(COMMANDHANDLER_HASH("PHOT"), 0, &photonPhotonMode);
-	h.registerCommand(COMMANDHANDLER_HASH("ORTEC"), 0, &ORTECMode);
+	h.registerCommand(COMMANDHANDLER_HASH("NORM1X"), 0, &start_stop1_x1);
+	h.registerCommand(COMMANDHANDLER_HASH("MODE"), 1, &setMeasMode);
+	h.registerCommand(COMMANDHANDLER_HASH("MODE?"), 0, &getMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
 
 	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
@@ -1018,7 +1084,7 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	return finalError == CommandHandlerReturn::NO_ERROR;
 }
 
-void setupForRF_PhotonMode() {
+void setupForSTARTToSTOP1Mode() {
 
 	// Read time from trigger on START until trigger on STOP1
 	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
@@ -1030,86 +1096,30 @@ void setupForRF_PhotonMode() {
 	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
 	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
 
-	// Double res mode
+	// Double res mode: fine since we don't need channel 2
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
 
-	// Measurement mode 1
-	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+	// Measurement mode will be determined by the user.
+	// Call setMeasurementMode2(bool enable) to change
 
-	// Send settings
+	// Update the TDC's settings
 	updateTDC(GP22::registers_data);
 }
 
-void setupForRFMode() {
+void setMeasurementMode2(bool enabled) {
+	
+	// Enable / disable measurement mode 2
+	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, enabled);
 
-	// Read time from 1 cycle of RF to the next
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 2);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 1);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 3); // 2 hits on STOP1 + 1 on START = 3
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
-
-	// Trigger interrupt on timeout or finishing calculation
-	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
-	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
-
-	// Double res mode
-	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
-	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
-
-	// Measurement mode 1
-	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
+	if (enabled) {
+		// Calibration must be on in mode 2
+		// We'll also turn on autocalibration (calibrates after every shot)
+		bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, 	true);
+		bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, false);
+	}
 
 	// Send settings
 	updateTDC(GP22::registers_data);
-}
 
-void setupForOrtecMode() {
-
-	// We have to trigger from a photon. After this, measure from the next RF cycle (STOP1) to the next photon (STOP2)
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 9);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 1); // 1 hit on STOP2
-
-	// Trigger interrupt on timeout or finishing calculation
-	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
-	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
-
-	// Normal res mode
-	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
-	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
-
-	// Measurement mode 1
-	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, false);
-
-	// Send settings
-	updateTDC(GP22::registers_data);
-}
-
-void setupForPhotonPhotonMode() {
-	// We have to trigger from a photon (START)
-	// After this, measure time from the 2nd to the 3rd photons (STOP2)
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 0x9);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0xA);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 1); // 1 hit on START = 1
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 3); // 2 hits on STOP2
-
-	// Trigger interrupt on timeout or finishing calculation
-	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
-	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
-
-	// Normal res mode since using STOP2
-	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
-	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
-
-	// Measurement mode 2
-	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, true);
-
-	// Auto calibrate must be on in mode 2
-	bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, 	true);
-	bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, false);
-
-	// Send settings
-	updateTDC(GP22::registers_data);
 }

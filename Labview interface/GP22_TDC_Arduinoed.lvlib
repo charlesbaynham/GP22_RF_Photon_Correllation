@@ -16,6 +16,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		</Item>
 		<Item Name="AdaptedForYb.vi" Type="VI" URL="../Examples/AdaptedForYb.vi"/>
 		<Item Name="StateMachine.vi" Type="VI" URL="../Examples/StateMachine.vi"/>
+		<Item Name="Take histogram.vi" Type="VI" URL="../Examples/Take histogram.vi"/>
 		<Item Name="Take multiple measurements.vi" Type="VI" URL="../Examples/Take multiple measurements.vi"/>
 		<Item Name="Take single measurement.vi" Type="VI" URL="../Examples/Take single measurement.vi"/>
 	</Item>
@@ -29,6 +30,8 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="MakeHistogram.vi" Type="VI" URL="../Private/MakeHistogram.vi"/>
 		<Item Name="ResMode.vi" Type="VI" URL="../Private/ResMode.vi"/>
 		<Item Name="AutoCal.vi" Type="VI" URL="../Private/AutoCal.vi"/>
+		<Item Name="Linspace.vi" Type="VI" URL="../Private/Linspace.vi"/>
+		<Item Name="Countdown.vi" Type="VI" URL="../Private/Countdown.vi"/>
 	</Item>
 	<Item Name="Public" Type="Folder">
 		<Property Name="NI.LibItem.Scope" Type="Int">1</Property>
@@ -53,6 +56,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="MultipleMeasurements.vi" Type="VI" URL="../Public/MultipleMeasurements.vi"/>
 			<Item Name="CalibratedMultipleMeasurements.vi" Type="VI" URL="../Public/CalibratedMultipleMeasurements.vi"/>
 			<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
+			<Item Name="HistogramMeasurement.vi" Type="VI" URL="../Public/HistogramMeasurement.vi"/>
 		</Item>
 		<Item Name="VI Tree.vi" Type="VI" URL="../Public/VI Tree.vi"/>
 	</Item>

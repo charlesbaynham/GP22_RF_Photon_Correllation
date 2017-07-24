@@ -537,6 +537,7 @@ void histogramMeasure(const ParameterLookup& params) {
 			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed);
 			} else {
+				// In uncalibrated mode, only the first 16 bits have meaning
 				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed16[0]);
 			}
 

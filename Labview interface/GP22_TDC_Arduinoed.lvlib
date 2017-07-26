@@ -47,9 +47,11 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
 		</Item>
 		<Item Name="Config" Type="Folder">
-			<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
+			<Item Name="Set_Meas_Mode.vi" Type="VI" URL="../Public/Set_Meas_Mode.vi"/>
 			<Item Name="Create_Reg_Cluster.vi" Type="VI" URL="../Private/Create_Reg_Cluster.vi"/>
 			<Item Name="Get_Registers.vi" Type="VI" URL="../Public/Get_Registers.vi"/>
+			<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
+			<Item Name="Get_Meas_Mode.vi" Type="VI" URL="../Public/Get_Meas_Mode.vi"/>
 		</Item>
 		<Item Name="Measurements" Type="Folder">
 			<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>

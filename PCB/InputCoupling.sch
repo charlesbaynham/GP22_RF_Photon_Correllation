@@ -135,7 +135,7 @@ Wire Wire Line
 	6000 3850 6000 4100
 Connection ~ 6000 4100
 $Comp
-L Conn_02x02_Counter_Clockwise P7
+L Conn_02x02_Odd_Even P7
 U 1 1 5898F928
 P 4700 3300
 AR Path="/5898F23C/5898F928" Ref="P7"  Part="1" 
@@ -151,7 +151,7 @@ $EndComp
 Wire Wire Line
 	4500 3275 4500 3400
 $Comp
-L Conn_02x02_Counter_Clockwise P8
+L Conn_02x02_Odd_Even P8
 U 1 1 5898F9B2
 P 4700 4200
 AR Path="/5898F23C/5898F9B2" Ref="P8"  Part="1" 
@@ -223,13 +223,13 @@ F 3 "" H 6925 4200 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L GND #PWR056
+L GND #PWR057
 U 1 1 589D07ED
 P 6850 3100
-AR Path="/5898F23C/589D07ED" Ref="#PWR056"  Part="1" 
-AR Path="/589C38E1/589D07ED" Ref="#PWR061"  Part="1" 
-AR Path="/589E6F10/589D07ED" Ref="#PWR084"  Part="1" 
-F 0 "#PWR084" H 6850 2850 50  0001 C CNN
+AR Path="/5898F23C/589D07ED" Ref="#PWR057"  Part="1" 
+AR Path="/589C38E1/589D07ED" Ref="#PWR062"  Part="1" 
+AR Path="/589E6F10/589D07ED" Ref="#PWR085"  Part="1" 
+F 0 "#PWR057" H 6850 2850 50  0001 C CNN
 F 1 "GND" H 6850 2950 50  0000 C CNN
 F 2 "" H 6850 3100 50  0000 C CNN
 F 3 "" H 6850 3100 50  0000 C CNN
@@ -239,13 +239,13 @@ $EndComp
 Connection ~ 6925 4100
 Connection ~ 7125 4100
 $Comp
-L GND #PWR057
+L GND #PWR058
 U 1 1 589D0825
 P 6925 4300
-AR Path="/5898F23C/589D0825" Ref="#PWR057"  Part="1" 
-AR Path="/589C38E1/589D0825" Ref="#PWR062"  Part="1" 
-AR Path="/589E6F10/589D0825" Ref="#PWR085"  Part="1" 
-F 0 "#PWR085" H 6925 4050 50  0001 C CNN
+AR Path="/5898F23C/589D0825" Ref="#PWR058"  Part="1" 
+AR Path="/589C38E1/589D0825" Ref="#PWR063"  Part="1" 
+AR Path="/589E6F10/589D0825" Ref="#PWR086"  Part="1" 
+F 0 "#PWR058" H 6925 4050 50  0001 C CNN
 F 1 "GND" H 6925 4150 50  0000 C CNN
 F 2 "" H 6925 4300 50  0000 C CNN
 F 3 "" H 6925 4300 50  0000 C CNN
@@ -261,13 +261,13 @@ AC coupling
 Text Notes 3900 5425 0    60   ~ 0
 N.B. the terminating 50 ohm resistors should not be connected for the "Straight through" option\n\nThe pull up / down resistors are optional and should be connected or not as required. \nFor the ground end of the signal, these resistors will only ever be required if the signal is treated differentially\n(e.g. as by the LTC6957)
 $Comp
-L +3V3 #PWR058
+L +3V3 #PWR059
 U 1 1 58BB05B7
 P 7000 3100
-AR Path="/5898F23C/58BB05B7" Ref="#PWR058"  Part="1" 
-AR Path="/589C38E1/58BB05B7" Ref="#PWR063"  Part="1" 
-AR Path="/589E6F10/58BB05B7" Ref="#PWR086"  Part="1" 
-F 0 "#PWR086" H 7000 2950 50  0001 C CNN
+AR Path="/5898F23C/58BB05B7" Ref="#PWR059"  Part="1" 
+AR Path="/589C38E1/58BB05B7" Ref="#PWR064"  Part="1" 
+AR Path="/589E6F10/58BB05B7" Ref="#PWR087"  Part="1" 
+F 0 "#PWR059" H 7000 2950 50  0001 C CNN
 F 1 "+3V3" H 7000 3240 50  0000 C CNN
 F 2 "" H 7000 3100 50  0000 C CNN
 F 3 "" H 7000 3100 50  0000 C CNN
@@ -275,13 +275,13 @@ F 3 "" H 7000 3100 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3V3 #PWR059
+L +3V3 #PWR060
 U 1 1 58BB05EA
 P 7125 4300
-AR Path="/5898F23C/58BB05EA" Ref="#PWR059"  Part="1" 
-AR Path="/589C38E1/58BB05EA" Ref="#PWR064"  Part="1" 
-AR Path="/589E6F10/58BB05EA" Ref="#PWR087"  Part="1" 
-F 0 "#PWR087" H 7125 4150 50  0001 C CNN
+AR Path="/5898F23C/58BB05EA" Ref="#PWR060"  Part="1" 
+AR Path="/589C38E1/58BB05EA" Ref="#PWR065"  Part="1" 
+AR Path="/589E6F10/58BB05EA" Ref="#PWR088"  Part="1" 
+F 0 "#PWR060" H 7125 4150 50  0001 C CNN
 F 1 "+3V3" H 7125 4440 50  0000 C CNN
 F 2 "" H 7125 4300 50  0000 C CNN
 F 3 "" H 7125 4300 50  0000 C CNN
@@ -337,13 +337,13 @@ Wire Wire Line
 NoConn ~ 4050 4200
 NoConn ~ 4050 3400
 $Comp
-L GND #PWR060
+L GND #PWR061
 U 1 1 58DC695B
 P 3900 3450
-AR Path="/5898F23C/58DC695B" Ref="#PWR060"  Part="1" 
-AR Path="/589C38E1/58DC695B" Ref="#PWR065"  Part="1" 
-AR Path="/589E6F10/58DC695B" Ref="#PWR088"  Part="1" 
-F 0 "#PWR088" H 3900 3200 50  0001 C CNN
+AR Path="/5898F23C/58DC695B" Ref="#PWR061"  Part="1" 
+AR Path="/589C38E1/58DC695B" Ref="#PWR066"  Part="1" 
+AR Path="/589E6F10/58DC695B" Ref="#PWR089"  Part="1" 
+F 0 "#PWR061" H 3900 3200 50  0001 C CNN
 F 1 "GND" H 3900 3300 50  0000 C CNN
 F 2 "" H 3900 3450 50  0000 C CNN
 F 3 "" H 3900 3450 50  0000 C CNN

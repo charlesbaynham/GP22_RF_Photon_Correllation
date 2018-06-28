@@ -1,6 +1,6 @@
-(module SP3T_switch (layer F.Cu) (tedit 589CB3A1)
-  (descr "Alps SRBM")
-  (fp_text reference REF** (at 4 -6.5) (layer F.SilkS)
+(module SP3T_switch locked (layer F.Cu) (tedit 589DCB7F)
+  (descr "Alps SRBM131300")
+  (fp_text reference SW1 (at 4 -6.5) (layer F.SilkS) hide
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (fp_text value "SP3T rotary switch" (at 4 -7.5) (layer F.Fab)

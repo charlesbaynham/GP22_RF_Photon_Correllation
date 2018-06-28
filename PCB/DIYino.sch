@@ -301,7 +301,7 @@ NoConn ~ 9450 3350
 Text Label 450  2800 2    60   ~ 0
 5V
 $Comp
-L Conn_02x03_Counter_Clockwise P5
+L Conn_02x03_Odd_Even P5
 U 1 1 56BA568C
 P 2350 6750
 F 0 "P5" H 2350 6950 50  0000 C CNN
@@ -736,7 +736,7 @@ $EndComp
 Connection ~ 3600 3250
 Connection ~ 3550 3650
 $Comp
-L Crystal_GND2 X1
+L Crystal_GND3 X1
 U 1 1 572B9603
 P 3750 3450
 F 0 "X1" H 3650 3600 50  0000 C CNN

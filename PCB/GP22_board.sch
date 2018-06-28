@@ -1330,7 +1330,7 @@ F 3 "" H 6875 9775 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Conn_02x02_Counter_Clockwise P16
+L Conn_02x02_Odd_Even P16
 U 1 1 58E19BCD
 P 4300 1650
 F 0 "P16" H 4300 1800 50  0000 C CNN

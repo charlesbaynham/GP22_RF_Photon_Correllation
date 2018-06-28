@@ -54,6 +54,12 @@ K rotary switch encoder
 F ~
 $ENDCMP
 #
+$CMP ROTARY_SWITCH_ALPS_SRBM_FIXED
+D Rotary encoder, dual channel, incremental quadrate outputs
+K rotary switch encoder
+F ~
+$ENDCMP
+#
 $CMP SN74HC165
 D Shift Register 8 bits, parallel load
 K TTL SR SR8

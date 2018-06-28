@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:GP22_board-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +47,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L ATMEGA328P-A IC1
+L ATMEGA328P-AU IC1
 U 1 1 56BA55CF
 P 1900 3900
 F 0 "IC1" H 1150 5150 40  0000 L BNN
@@ -276,17 +277,16 @@ $EndComp
 $Comp
 L USB_OTG P4
 U 1 1 56BA5671
-P 1050 6700
-F 0 "P4" H 1375 6575 50  0000 C CNN
-F 1 "USB_OTG" H 1050 6900 50  0000 C CNN
-F 2 "Custom:MICRO-B_USB_TOP_MOUNT" V 1000 6600 60  0001 C CNN
-F 3 "" V 1000 6600 60  0000 C CNN
-	1    1050 6700
+P 1200 6825
+F 0 "P4" H 1525 6700 50  0000 C CNN
+F 1 "USB_OTG" V 950 6825 50  0000 C CNN
+F 2 "Custom:MICRO-B_USB_TOP_MOUNT" V 1150 6725 60  0001 C CNN
+F 3 "" V 1150 6725 60  0000 C CNN
+	1    1200 6825
 	0    1    1    0   
 $EndComp
-Text Label 750  6500 2    60   ~ 0
+Text Label 1375 7325 3    60   ~ 0
 USB_5V
-NoConn ~ 750  6800
 NoConn ~ 7250 2750
 NoConn ~ 7250 2900
 NoConn ~ 7250 3200
@@ -301,14 +301,14 @@ NoConn ~ 9450 3350
 Text Label 450  2800 2    60   ~ 0
 5V
 $Comp
-L CONN_02X03 P5
+L Conn_02x03_Counter_Clockwise P5
 U 1 1 56BA568C
-P 2400 6750
-F 0 "P5" H 2400 6950 50  0000 C CNN
-F 1 "ICSP" H 2400 6550 50  0000 C CNN
-F 2 "Pin_Headers:Pin_Header_Straight_2x03" H 2400 5550 60  0001 C CNN
-F 3 "" H 2400 5550 60  0000 C CNN
-	1    2400 6750
+P 2350 6750
+F 0 "P5" H 2350 6950 50  0000 C CNN
+F 1 "ICSP" H 2350 6550 50  0000 C CNN
+F 2 "Pin_Headers:Pin_Header_Straight_2x03" H 2350 5550 60  0001 C CNN
+F 3 "" H 2350 5550 60  0000 C CNN
+	1    2350 6750
 	1    0    0    -1  
 $EndComp
 Text Label 2650 6500 0    60   ~ 0
@@ -344,9 +344,9 @@ Text Label 9450 2900 0    60   ~ 0
 USB_D-
 Text Label 9450 3050 0    60   ~ 0
 USB_D+
-Text Label 750  6700 2    60   ~ 0
+Text Label 1200 7125 3    60   ~ 0
 USB_D+
-Text Label 750  6600 2    60   ~ 0
+Text Label 1100 7125 3    60   ~ 0
 USB_D-
 Text Notes 450  6100 0    60   ~ 0
 USB connector
@@ -364,7 +364,7 @@ Text Label 750  5000 2    60   ~ 0
 GND
 Text Label 4200 5850 3    60   ~ 0
 GND
-Text Label 1150 7300 3    60   ~ 0
+Text Label 650  6800 1    60   ~ 0
 USB_GND
 Text Label 9450 4450 3    60   ~ 0
 USB_GND
@@ -528,20 +528,13 @@ Connection ~ 8350 4750
 Connection ~ 8200 4750
 Connection ~ 8500 4750
 Wire Wire Line
-	1150 7100 1150 7300
-Wire Wire Line
-	1150 7150 750  7150
-Wire Wire Line
-	750  7150 750  6900
-Connection ~ 1150 7150
-Wire Wire Line
 	2650 6850 2650 7000
 Wire Wire Line
 	2650 6500 2650 6650
 Wire Wire Line
-	6850 3800 6850 5100
+	6850 3800 6850 5150
 Wire Wire Line
-	6550 5100 6550 3650
+	6550 3650 6550 5150
 Wire Wire Line
 	6550 3650 7250 3650
 Wire Wire Line
@@ -755,17 +748,50 @@ F 3 "" H 3750 3450 60  0000 C CNN
 $EndComp
 NoConn ~ 3650 3450
 NoConn ~ 4400 2700
+Wire Wire Line
+	3900 4250 2900 4250
+NoConn ~ 3850 3450
+Wire Wire Line
+	4200 5800 4200 5850
+Wire Wire Line
+	4200 5450 4200 5500
+Wire Wire Line
+	6550 5450 6550 5500
+Wire Wire Line
+	6850 5500 6850 5450
 $Comp
 L PWR_FLAG #FLG052
 U 1 1 57AB052A
-P 1150 7150
-F 0 "#FLG052" H 1150 7245 50  0001 C CNN
-F 1 "PWR_FLAG" H 1150 7330 50  0000 C CNN
-F 2 "" H 1150 7150 60  0000 C CNN
-F 3 "" H 1150 7150 60  0000 C CNN
-	1    1150 7150
-	0    1    1    0   
+P 650 6850
+F 0 "#FLG052" H 650 6945 50  0001 C CNN
+F 1 "PWR_FLAG" H 650 7030 50  0000 C CNN
+F 2 "" H 650 6850 60  0000 C CNN
+F 3 "" H 650 6850 60  0000 C CNN
+	1    650  6850
+	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	3900 4250 2900 4250
+	650  6850 650  6800
+Wire Wire Line
+	650  6800 800  6800
+Wire Wire Line
+	800  6725 800  6825
+Connection ~ 800  6800
+NoConn ~ 1000 7125
+Wire Wire Line
+	1400 7125 1400 7325
+Wire Wire Line
+	1400 7325 1375 7325
+$Comp
+L PWR_FLAG #FLG053
+U 1 1 5B3613CB
+P 1400 7250
+F 0 "#FLG053" H 1400 7345 50  0001 C CNN
+F 1 "PWR_FLAG" H 1400 7430 50  0000 C CNN
+F 2 "" H 1400 7250 60  0000 C CNN
+F 3 "" H 1400 7250 60  0000 C CNN
+	1    1400 7250
+	0    1    1    0   
+$EndComp
+Connection ~ 1400 7250
 $EndSCHEMATC

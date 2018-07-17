@@ -35,7 +35,7 @@ void updateTDC(const uint32_t * registers);
 void readTDC();
 
 // Number of commands to be registered
-const uint8_t numCommands = 22;
+const uint8_t numCommands = 23;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -416,6 +416,16 @@ void singleMeasure(const ParameterLookup& params) {
 		Serial.println(result.Unsigned[0]); // We only need the first 2 bytes
 	}
 
+	// DEBUG:
+	// Output all registers
+	// for (int i = 0; i<4; i++) {
+		
+	// 	uint32_t r = read_bytes(i, false);
+
+	// 	Serial.print("0x");
+	// 	Serial.println(r);
+	// }
+
 }
 
 // Take multiple measurements for a given time period, outputting the results as a histogram
@@ -537,6 +547,7 @@ void histogramMeasure(const ParameterLookup& params) {
 			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed);
 			} else {
+				// In uncalibrated mode, only the first 16 bits have meaning
 				histIndex = getHistIndex(numBins, minValFixedPoint, range, result.Signed16[0]);
 			}
 
@@ -1069,6 +1080,7 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("SING"), 0, &singleMeasure);
 	h.registerCommand(COMMANDHANDLER_HASH("HIST"), 4, &histogramMeasure);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT"), 0, &getStatus);
+	h.registerCommand(COMMANDHANDLER_HASH("STAT?"), 0, &getStatus);
 	h.registerCommand(COMMANDHANDLER_HASH("SETU"), -1, &setupRegisters);
 	h.registerCommand(COMMANDHANDLER_HASH("SETU?"), 0, &getRegisters);
 	h.registerCommand(COMMANDHANDLER_HASH("*MEM"), 0, &availableMemory);

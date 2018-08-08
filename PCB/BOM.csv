@@ -1,0 +1,45 @@
+Refs,Value,Footprint,Quantity,MFR,MPN,SPR,SPN
+R9;R7,100k,Resistors_SMD:R_0805_HandSoldering,2,-,-,-,-
+R8,RS485_TERM,Resistors_ThroughHole:Resistor_Vertical_RM5mm,1,-,-,-,-
+R5;R6,R,Resistors_SMD:R_0805_HandSoldering,2,-,-,-,-
+R38;R27;R26;R31;R30;R27;R26;R31;R30;R27;R26;R31;R30,10k,Resistors_SMD:R_0805_HandSoldering,13,-,-,-,-
+R35;R37,22R,Resistors_SMD:R_0805_HandSoldering,2,-,-,-,-
+R32;R33;R34;R29;R28;R29;R28;R29;R28,50R,Resistors_SMD:R_0805_HandSoldering,9,-,-,-,-
+R21;R22;R23;R3,100R,Resistors_SMD:R_0805_HandSoldering,4,-,-,-,-
+R20;R_Ser1;R_Ser2;R36,1k,Resistors_SMD:R_0805_HandSoldering,4,-,-,-,-
+R2;R1;R4,2M,Resistors_SMD:R_0805_HandSoldering,3,-,-,-,-
+C31;C29;C33;C34;C57;C24;C25;C26;C27;C20,100n,Capacitors_SMD:C_0805_HandSoldering,10,-,-,-,-
+C30;C32,8p,Capacitors_SMD:C_0805_HandSoldering,2,-,-,-,-
+C28;C4;C56;C18,1u,Capacitors_SMD:C_0805_HandSoldering,4,-,-,-,-
+C22,4u7,Capacitors_SMD:C_0805_HandSoldering,1,-,-,-,-
+C21;C23,33u,Capacitors_SMD:C_0805_HandSoldering,2,-,-,-,-
+C19,10u,Capacitors_SMD:C_0805_HandSoldering,1,-,-,-,-
+C15;C16;C17,10p,Capacitors_SMD:C_0805_HandSoldering,3,-,-,-,-
+C12;C13;C14,10n,Capacitors_SMD:C_0805_HandSoldering,3,-,-,-,-
+C10;C11;C10;C11;C10;C11,C_Small,Capacitors_SMD:C_0805_HandSoldering,6,-,-,-,-
+C1;C2;C5;C3,C,Capacitors_SMD:C_0805_HandSoldering,4,-,-,-,-
+U2,GP22,Housings_DFN_QFN:QFN-32-1EP_5x5mm_Pitch0.5mm,1,ACAM,TDC-GP22,Digikey,TDC-GP225KT&RCT-ND
+START1;STOP1;STOP2,DP3T,Custom:ALPS_Rotary_SRBM,3,Apls Electric,SRBM131400,RS,123-9600
+SCLK1;TX1;RX1;POWER1,LED,LEDs:LED_0805,4,Bivar,SM0805HC,RS,147-9844
+X1,TSX-3225 X1E0000210013,Crystals:crystal_FA238-TSX3225,1,Epson,X1E000021001311,RS,667-6151
+U12,FT232RL,Housings_SSOP:SSOP-28_5.3x10.2mm_Pitch0.65mm,1,FTDI Chip,FT232RL,RS,406-580
+ICSP1,HEADER,Pin_Headers:Pin_Header_Straight_2x03_Pitch2.54mm,1,Harwin,M20-9980346,RS,745-7046
+U5,IDT49FCT,Housings_SOIC:SOIC-20W_7.5x12.8mm_Pitch1.27mm,1,IDT,IDT49FCT3805ASOGI,RS,715-4902
+U3,LTC6957-4,Housings_SSOP:MSOP-12_3x4mm_Pitch0.65mm,1,Linear,LTC6957-4,Digikey,DC1766A-B-ND
+Y1,4MHz,Crystals:Crystal_HC49-4H_Vertical,1,Mercury,H49-4.000-18-30/50/4085,RS,672-0173
+Y2,32.768 kHz,Crystals:Crystal_SMD_MicroCrystal_CC7V-T1A-2pin_3.2x1.5mm_HandSoldering,1,Micro Crystal,CM7V-T1A 32.768kHz 7pF +/-10ppm TA QC,RS,729-3252
+IC1,ATMEGA328P-A,Housings_QFP:LQFP-32_7x7mm_Pitch0.8mm,1,Microchip Technology,ATMEGA328P-AN,RS,131-0270
+SineInput1;TTLInput1;STInput1;TTLOut1;TTLOut2;TTLOut3,MMCX,Custom:MMCX_Socket,6,Molex,73415-1001,RS,759-5300
+P4,USB_OTG,Custom:MICRO-B_USB_TOP_MOUNT,1,Molex,47590-0001,RS,702-5481
+U7,MC74VHC1G04DTT1G,TO_SOT_Packages_SMD:SOT-353_SC-70-5_Handsoldering,1,ON Semiconductor,MC74VHC1G04DTT1G,RS,806-3964
+U1,Right Angle,Backplane:96way_DIN_41612,1,RS Pro,252-210,RS,252-210
+DISABLE_FLASH1;POWER_SEL1,JMP,Pin_Headers:Pin_Header_Straight_1x03_Pitch2.54mm,2,RS Pro,251-8092,RS,251-8092
+U6,LD1117S33TR,TO_SOT_Packages_SMD:SOT-223,1,STMicroelectroncs,LD1117S33TR,RS,168-6804
+D7;D7;D7,ESDA5V3SC6,TO_SOT_Packages_SMD:SOT-23-5_HandSoldering,3,STMicroelectronics,ESDA5V3SC6,RS,102-6170
+CON1,5V power input,Connect:BARREL_JACK,1,Switchcraft,RAPC712X,RS,878-6787
+FILT_SEL1;S+ DC/AC;S- DC/AC;S+ DC/AC;S- DC/AC;S+ DC/AC;S- DC/AC,HEADER,Pin_Headers:Pin_Header_Straight_2x02_Pitch2.54mm,7,TE Connectivity,826632-2,RS,669-5288
+U9,SC74HC165N,Housings_DIP:DIP-16_W7.62mm_LongPads,1,TI,SN74HC165N,RS,333-2978
+U8,SN74LV8154,Housings_DIP:DIP-20_W7.62mm_LongPads,1,TI,SN74LV8154PW,RS,663-2782
+U4,ISO3088,Housings_SOIC:SOIC-16W_7.5x10.3mm_Pitch1.27mm,1,TI,ISO3088DW,RS,121-9061
+U11,ISO7242,Housings_SOIC:SOIC-16_7.5x10.3mm_Pitch1.27mm,1,TI,ISO7242CDW,RS,121-9145
+U10,XC6206,TO_SOT_Packages_SMD:SOT-23_Handsoldering,1,Torex,XC6206P332PR,Farnell,8796998

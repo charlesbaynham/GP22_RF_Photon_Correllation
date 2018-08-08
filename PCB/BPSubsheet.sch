@@ -46,6 +46,44 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Comp
+L C96ABC U1
+U 1 1 56DCAC55
+P 5500 4750
+F 0 "U1" H 5500 9650 70 0000 C CNN
+F 1 "Right Angle" V 5750 4750 70 0000 C CNN
+F 2 "Backplane:96way_DIN_41612" H 5500 4750 60 0001 C CNN
+F 3 "" H 5500 4750 60 0001 C CNN
+F 4 "RS Pro" H 0 0 50 0001 C CNN "MFR"
+F 5 "252-210" H 0 0 50 0001 C CNN "MPN"
+F 6 "RS" H 0 0 50 0001 C CNN "SPR"
+F 7 "252-210" H 0 0 50 0001 C CNN "SPN"
+F 8 "-" H 0 0 50 0001 C CNN "SPURL"
+	1    5500 4750
+	0    -1   1    0   
+$EndComp
+$Comp
+L PWR_FLAG #FLG055
+U 1 1 58996231
+P 9850 3800
+F 0 "#FLG055" H 9850 3895 50 0001 C CNN
+F 1 "PWR_FLAG" H 9850 3980 50 0000 C CNN
+F 2 "" H 9850 3800 50 0000 C CNN
+F 3 "" H 9850 3800 50 0000 C CNN
+	1    9850 3800
+	0    -1   -1   0   
+$EndComp
+$Comp
+L PWR_FLAG #FLG056
+U 1 1 58996356
+P 10250 4000
+F 0 "#FLG056" H 10250 4095 50 0001 C CNN
+F 1 "PWR_FLAG" H 10250 4180 50 0000 C CNN
+F 2 "" H 10250 4000 50 0000 C CNN
+F 3 "" H 10250 4000 50 0000 C CNN
+	1    10250 4000
+	0    1    1    0   
+$EndComp
 Text HLabel 1450 3700 1    60   Input ~ 0
 -15V
 Text HLabel 2050 3700 1    60   Input ~ 0
@@ -66,29 +104,6 @@ Text HLabel 5050 3700 1    60   Input ~ 0
 +3.3V
 Text HLabel 5350 3700 1    60   Input ~ 0
 GND8
-$Comp
-L C96ABC U1
-U 1 1 56DCAC55
-P 5500 4750
-F 0 "U1" H 5500 9650 70  0000 C CNN
-F 1 "RS 252-210" V 5750 4750 70  0000 C CNN
-F 2 "Backplane:96way_DIN_41612" H 5500 4750 60  0001 C CNN
-F 3 "" H 5500 4750 60  0000 C CNN
-	1    5500 4750
-	0    -1   1    0   
-$EndComp
-NoConn ~ 5550 4250
-NoConn ~ 5650 4250
-NoConn ~ 5750 4250
-NoConn ~ 5850 4250
-NoConn ~ 5950 4250
-NoConn ~ 6050 4250
-NoConn ~ 6150 4250
-NoConn ~ 6250 4250
-NoConn ~ 6350 4250
-NoConn ~ 6450 4250
-NoConn ~ 6550 4250
-NoConn ~ 6650 4250
 Text HLabel 6750 4250 1    60   Input ~ 0
 21A
 Text HLabel 9850 3700 1    60   Input ~ 0
@@ -177,100 +192,72 @@ Text HLabel 10150 3700 1    60   Input ~ 0
 RS485_B
 Text HLabel 10250 3700 1    60   Input ~ 0
 RS485_+5V
-$Comp
-L PWR_FLAG #FLG055
-U 1 1 58996231
-P 9850 3800
-F 0 "#FLG055" H 9850 3895 50  0001 C CNN
-F 1 "PWR_FLAG" H 9850 3980 50  0000 C CNN
-F 2 "" H 9850 3800 50  0000 C CNN
-F 3 "" H 9850 3800 50  0000 C CNN
-	1    9850 3800
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	750  4250 950  4250
-Connection ~ 850  4250
 Wire Wire Line
 	850  4250 850  3700
 Wire Wire Line
 	1050 4250 1250 4250
-Connection ~ 1150 4250
 Wire Wire Line
 	1150 4250 1150 3700
 Wire Wire Line
 	1350 4250 1550 4250
-Connection ~ 1450 4250
 Wire Wire Line
 	1450 4250 1450 3700
 Wire Wire Line
 	1650 4250 1850 4250
-Connection ~ 1750 4250
 Wire Wire Line
 	1750 4250 1750 3700
 Wire Wire Line
 	1950 4250 2150 4250
-Connection ~ 2050 4250
 Wire Wire Line
 	2050 4250 2050 3700
 Wire Wire Line
 	2250 4250 2450 4250
-Connection ~ 2350 4250
 Wire Wire Line
 	2350 4250 2350 3700
 Wire Wire Line
 	2550 4250 2750 4250
-Connection ~ 2650 4250
 Wire Wire Line
 	2650 4250 2650 3700
 Wire Wire Line
 	2850 4250 3050 4250
-Connection ~ 2950 4250
 Wire Wire Line
 	2950 4250 2950 3700
 Wire Wire Line
 	3150 4250 3350 4250
-Connection ~ 3250 4250
 Wire Wire Line
 	3250 4250 3250 3700
 Wire Wire Line
 	3450 4250 3650 4250
-Connection ~ 3550 4250
 Wire Wire Line
 	3550 4250 3550 3700
 Wire Wire Line
 	3750 4250 3950 4250
-Connection ~ 3850 4250
 Wire Wire Line
 	3850 4250 3850 3700
 Wire Wire Line
 	4050 4250 4250 4250
-Connection ~ 4150 4250
 Wire Wire Line
 	4150 4250 4150 3700
 Wire Wire Line
 	4350 4250 4550 4250
-Connection ~ 4450 4250
 Wire Wire Line
 	4450 4250 4450 3700
 Wire Wire Line
 	4650 4250 4850 4250
-Connection ~ 4750 4250
 Wire Wire Line
 	4750 4250 4750 3700
 Wire Wire Line
 	4950 4250 5150 4250
-Connection ~ 5050 4250
 Wire Wire Line
 	5050 4250 5050 3700
 Wire Wire Line
 	5250 4250 5450 4250
-Connection ~ 5350 4250
 Wire Wire Line
 	5350 4250 5350 3700
 Wire Wire Line
 	9750 4250 9950 4250
-Connection ~ 9850 4250
 Wire Wire Line
 	9850 4250 9850 3700
 Wire Wire Line
@@ -279,17 +266,35 @@ Wire Wire Line
 	10150 4250 10150 3700
 Wire Wire Line
 	10250 3700 10250 4250
-$Comp
-L PWR_FLAG #FLG056
-U 1 1 58996356
-P 10250 4000
-F 0 "#FLG056" H 10250 4095 50  0001 C CNN
-F 1 "PWR_FLAG" H 10250 4180 50  0000 C CNN
-F 2 "" H 10250 4000 50  0000 C CNN
-F 3 "" H 10250 4000 50  0000 C CNN
-	1    10250 4000
-	0    1    1    0   
-$EndComp
+Connection ~ 850  4250
+Connection ~ 1150 4250
+Connection ~ 1450 4250
+Connection ~ 1750 4250
+Connection ~ 2050 4250
+Connection ~ 2350 4250
+Connection ~ 2650 4250
+Connection ~ 2950 4250
+Connection ~ 3250 4250
+Connection ~ 3550 4250
+Connection ~ 3850 4250
+Connection ~ 4150 4250
+Connection ~ 4450 4250
+Connection ~ 4750 4250
+Connection ~ 5050 4250
+Connection ~ 5350 4250
+Connection ~ 9850 4250
 Connection ~ 10250 4000
 Connection ~ 9850 3800
+NoConn ~ 5550 4250
+NoConn ~ 5650 4250
+NoConn ~ 5750 4250
+NoConn ~ 5850 4250
+NoConn ~ 5950 4250
+NoConn ~ 6050 4250
+NoConn ~ 6150 4250
+NoConn ~ 6250 4250
+NoConn ~ 6350 4250
+NoConn ~ 6450 4250
+NoConn ~ 6550 4250
+NoConn ~ 6650 4250
 $EndSCHEMATC

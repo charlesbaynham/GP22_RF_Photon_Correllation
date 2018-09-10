@@ -1,4 +1,4 @@
-update=28/06/2018 10:38:09
+update=10/09/2018 16:32:08
 version=1
 last_client=kicad
 [cvpcb]
@@ -44,16 +44,6 @@ LibName14=dip_sockets
 LibName15=pga_sockets
 LibName16=valves
 LibName17=Custom_Components
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=Pcbnew
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
 [general]
 version=1
 [eeschema]
@@ -92,3 +82,13 @@ LibName29=contrib
 LibName30=valves
 LibName31=CustomKicad/max3440e
 LibName32=CustomKicad/Custom_Components
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=Pcbnew
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60

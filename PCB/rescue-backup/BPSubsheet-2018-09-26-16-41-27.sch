@@ -1,6 +1,38 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:GP22_board-rescue
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:max3440e
+LIBS:Custom_Components
 LIBS:GP22_board-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +47,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L GP22_board-rescue:C96ABC U1
+L C96ABC U1
 U 1 1 56DCAC55
 P 5500 4750
 F 0 "U1" H 5500 9650 70  0000 C CNN
@@ -31,7 +63,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   1    0   
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG055
+L PWR_FLAG #FLG055
 U 1 1 58996231
 P 9850 3800
 F 0 "#FLG055" H 9850 3895 50  0001 C CNN
@@ -42,7 +74,7 @@ F 3 "" H 9850 3800 50  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG056
+L PWR_FLAG #FLG056
 U 1 1 58996356
 P 10250 4000
 F 0 "#FLG056" H 10250 4095 50  0001 C CNN

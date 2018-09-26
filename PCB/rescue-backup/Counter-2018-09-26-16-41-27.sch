@@ -1,6 +1,38 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:GP22_board-rescue
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:max3440e
+LIBS:Custom_Components
 LIBS:GP22_board-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +47,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L power:GND #PWR067
+L GND #PWR067
 U 1 1 58C82B23
 P 3300 2650
 F 0 "#PWR067" H 3300 2400 50  0001 C CNN
@@ -26,7 +58,7 @@ F 3 "" H 3300 2650 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L power:+3V3 #PWR068
+L +3V3 #PWR068
 U 1 1 58C82B29
 P 3700 2650
 F 0 "#PWR068" H 3700 2500 50  0001 C CNN
@@ -37,7 +69,7 @@ F 3 "" H 3700 2650 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Custom_Components:SN74LV8154 U8
+L SN74LV8154 U8
 U 1 1 58C83686
 P 3475 4475
 F 0 "U8" H 3475 5025 50  0000 C CNN
@@ -45,15 +77,15 @@ F 1 "SN74LV8154" H 3475 3925 50  0000 C CNN
 F 2 "Housings_DIP:DIP-20_W7.62mm_LongPads" H 3475 4475 60  0001 C CNN
 F 3 "" H 3475 4475 60  0001 C CNN
 F 4 "TI" H 0   0   50  0001 C CNN "MFR"
-F 5 "SN74LV8154N" H 0   0   50  0001 C CNN "MPN"
+F 5 "SN74LV8154PW" H 0   0   50  0001 C CNN "MPN"
 F 6 "RS" H 0   0   50  0001 C CNN "SPR"
-F 7 "709-2514" H 0   0   50  0001 C CNN "SPN"
+F 7 "663-2782" H 0   0   50  0001 C CNN "SPN"
 F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    3475 4475
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR069
+L GND #PWR069
 U 1 1 58C83695
 P 2825 4925
 F 0 "#PWR069" H 2825 4675 50  0001 C CNN
@@ -64,7 +96,7 @@ F 3 "" H 2825 4925 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:+3V3 #PWR070
+L +3V3 #PWR070
 U 1 1 58C8369B
 P 2825 4825
 F 0 "#PWR070" H 2825 4675 50  0001 C CNN
@@ -75,7 +107,7 @@ F 3 "" H 2825 4825 50  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L power:+3V3 #PWR071
+L +3V3 #PWR071
 U 1 1 58C836A5
 P 2700 4425
 F 0 "#PWR071" H 2700 4275 50  0001 C CNN
@@ -86,7 +118,7 @@ F 3 "" H 2700 4425 50  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L power:+3V3 #PWR072
+L +3V3 #PWR072
 U 1 1 58C836B2
 P 5150 3925
 F 0 "#PWR072" H 5150 3775 50  0001 C CNN
@@ -97,7 +129,7 @@ F 3 "" H 5150 3925 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:C_Small C20
+L C_Small C20
 U 1 1 58C836B8
 P 5050 3775
 F 0 "C20" H 5060 3845 50  0000 L CNN
@@ -113,7 +145,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   -1   0   
 $EndComp
 $Comp
-L power:GND #PWR073
+L GND #PWR073
 U 1 1 58C836C2
 P 4950 3775
 F 0 "#PWR073" H 4950 3525 50  0001 C CNN
@@ -124,7 +156,7 @@ F 3 "" H 4950 3775 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L power:GND #PWR074
+L GND #PWR074
 U 1 1 58C836CB
 P 5475 3925
 F 0 "#PWR074" H 5475 3675 50  0001 C CNN
@@ -135,7 +167,7 @@ F 3 "" H 5475 3925 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L power:+3V3 #PWR075
+L +3V3 #PWR075
 U 1 1 58C836D3
 P 6300 3875
 F 0 "#PWR075" H 6300 3725 50  0001 C CNN
@@ -146,7 +178,7 @@ F 3 "" H 6300 3875 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR076
+L GND #PWR076
 U 1 1 58C836D9
 P 6250 5375
 F 0 "#PWR076" H 6250 5125 50  0001 C CNN
@@ -157,7 +189,7 @@ F 3 "" H 6250 5375 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR077
+L GND #PWR077
 U 1 1 58C836DF
 P 5650 5225
 F 0 "#PWR077" H 5650 4975 50  0001 C CNN
@@ -168,7 +200,7 @@ F 3 "" H 5650 5225 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Custom_Components:SN74HC165 U9
+L SN74HC165 U9
 U 1 1 58C836E6
 P 6350 4625
 F 0 "U9" H 6500 4575 50  0000 C CNN
@@ -184,19 +216,17 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L GP22_board-rescue:74AHC1G14 U7
+L 74AHC1G14 U7
 U 1 1 58D530D5
 P 3500 2700
-AR Path="/58D530D5" Ref="U7"  Part="1" 
-AR Path="/58C827D3/58D530D5" Ref="U7"  Part="1" 
 F 0 "U7" H 3645 2815 50  0000 C CNN
-F 1 "MC74VHC1G04DFT1G" V 3650 2200 50  0000 C CNN
+F 1 "MC74VHC1G04DTT1G" H 3775 2525 50  0000 C CNN
 F 2 "TO_SOT_Packages_SMD:SOT-353_SC-70-5_Handsoldering" H 3595 2565 50  0001 C CNN
 F 3 "" H 3645 2815 50  0001 C CNN
 F 4 "ON Semiconductor" H 0   0   50  0001 C CNN "MFR"
-F 5 "MC74VHC1G04DFT1G" H 0   0   50  0001 C CNN "MPN"
+F 5 "MC74VHC1G04DTT1G" H 0   0   50  0001 C CNN "MPN"
 F 6 "RS" H 0   0   50  0001 C CNN "SPR"
-F 7 "145-4037" H 0   0   50  0001 C CNN "SPN"
+F 7 "806-3964" H 0   0   50  0001 C CNN "SPN"
 F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    3500 2700
 	0    1    1    0   
@@ -253,6 +283,10 @@ Wire Wire Line
 	4125 4825 5650 4825
 Wire Wire Line
 	2700 4425 2825 4425
+Wire Wire Line
+	2825 4425 2825 4525
+Wire Wire Line
+	2825 4125 2825 4025
 Wire Wire Line
 	5150 3775 5150 4025
 Wire Wire Line

@@ -1,6 +1,38 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:GP22_board-rescue
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:max3440e
+LIBS:Custom_Components
 LIBS:GP22_board-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +47,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L GP22_board-rescue:ATMEGA328P-AU IC1
+L ATMEGA328P-AU IC1
 U 1 1 56BA55CF
 P 1900 3900
 F 0 "IC1" H 1150 5150 40  0000 L BNN
@@ -31,7 +63,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:CP_Small C31
+L CP_Small C31
 U 1 1 56BA55DD
 P 700 3500
 F 0 "C31" H 710 3570 50  0000 L CNN
@@ -47,7 +79,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R20
+L R_Small R20
 U 1 1 56BA55EB
 P 3600 4150
 F 0 "R20" H 3630 4170 50  0000 L CNN
@@ -63,7 +95,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:CP_Small C29
+L CP_Small C29
 U 1 1 56BA55F2
 P 750 2900
 F 0 "C29" H 760 2970 50  0000 L CNN
@@ -79,7 +111,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:CP_Small C28
+L CP_Small C28
 U 1 1 56BA55F9
 P 500 2900
 F 0 "C28" H 510 2970 50  0000 L CNN
@@ -95,7 +127,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R_Ser1
+L R_Small R_Ser1
 U 1 1 56BA5600
 P 3400 4400
 F 0 "R_Ser1" H 3430 4420 50  0000 L CNN
@@ -111,7 +143,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Device:R_Small R_Ser2
+L R_Small R_Ser2
 U 1 1 56BA5607
 P 3400 4500
 F 0 "R_Ser2" H 3430 4520 50  0000 L CNN
@@ -127,7 +159,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:LED SCLK1
+L LED SCLK1
 U 1 1 56BA560E
 P 4200 5650
 F 0 "SCLK1" H 4200 5750 50  0000 C CNN
@@ -143,7 +175,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Device:R_Small R21
+L R_Small R21
 U 1 1 56BA5615
 P 4200 5350
 F 0 "R21" H 4230 5370 50  0000 L CNN
@@ -159,7 +191,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Custom_Components:FT232RL U12
+L FT232RL U12
 U 1 1 56BA5634
 P 8350 3350
 F 0 "U12" H 7600 4550 60  0000 C CNN
@@ -175,7 +207,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	-1   0    0    -1  
 $EndComp
 $Comp
-L Device:C C33
+L C C33
 U 1 1 56BA563F
 P 4300 3900
 F 0 "C33" H 4325 4000 50  0000 L CNN
@@ -191,7 +223,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Device:LED TX1
+L LED TX1
 U 1 1 56BA5647
 P 6550 5300
 F 0 "TX1" H 6550 5400 50  0000 C CNN
@@ -207,7 +239,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R_Small R22
+L R_Small R22
 U 1 1 56BA564E
 P 6550 5600
 F 0 "R22" H 6580 5620 50  0000 L CNN
@@ -223,7 +255,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:LED RX1
+L LED RX1
 U 1 1 56BA5655
 P 6850 5300
 F 0 "RX1" H 6850 5400 50  0000 C CNN
@@ -239,7 +271,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R_Small R23
+L R_Small R23
 U 1 1 56BA565C
 P 6850 5600
 F 0 "R23" H 6880 5620 50  0000 L CNN
@@ -255,7 +287,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:CP_Small C34
+L CP_Small C34
 U 1 1 56BA5663
 P 9450 4350
 F 0 "C34" H 9460 4420 50  0000 L CNN
@@ -271,7 +303,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L GP22_board-rescue:USB_OTG P4
+L USB_OTG P4
 U 1 1 56BA5671
 P 1200 6825
 F 0 "P4" H 1525 6700 50  0000 C CNN
@@ -287,7 +319,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L GP22_board-rescue:Conn_02x03_Odd_Even ICSP1
+L Conn_02x03_Odd_Even ICSP1
 U 1 1 56BA568C
 P 2350 6750
 F 0 "ICSP1" H 2350 6950 50  0000 C CNN
@@ -303,7 +335,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR049
+L GND #PWR049
 U 1 1 56BA5695
 P 2650 7000
 F 0 "#PWR049" H 2650 6750 50  0001 C CNN
@@ -314,7 +346,7 @@ F 3 "" H 2650 7000 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Custom_Components:ISO7242 U11
+L ISO7242 U11
 U 1 1 56C0BAFB
 P 5100 2200
 F 0 "U11" H 5200 2850 60  0000 L CNN
@@ -330,7 +362,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	-1   0    0    -1  
 $EndComp
 $Comp
-L Device:C_Small C30
+L C_Small C30
 U 1 1 572B777C
 P 3600 3150
 F 0 "C30" H 3610 3220 50  0000 L CNN
@@ -346,7 +378,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:C_Small C32
+L C_Small C32
 U 1 1 572B7860
 P 3550 3750
 F 0 "C32" H 3560 3820 50  0000 L CNN
@@ -362,7 +394,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR050
+L GND #PWR050
 U 1 1 572B78C7
 P 3550 3850
 F 0 "#PWR050" H 3550 3600 50  0001 C CNN
@@ -373,7 +405,7 @@ F 3 "" H 3550 3850 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR051
+L GND #PWR051
 U 1 1 572B7917
 P 3600 3050
 F 0 "#PWR051" H 3600 2800 50  0001 C CNN
@@ -384,7 +416,7 @@ F 3 "" H 3600 3050 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:Crystal_GND3 X1
+L Crystal_GND3 X1
 U 1 1 572B9603
 P 3750 3450
 F 0 "X1" H 3650 3600 50  0000 C CNN
@@ -400,7 +432,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   1    0   
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG052
+L PWR_FLAG #FLG052
 U 1 1 57AB052A
 P 650 6850
 F 0 "#FLG052" H 650 6945 50  0001 C CNN
@@ -411,7 +443,7 @@ F 3 "" H 650 6850 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG053
+L PWR_FLAG #FLG053
 U 1 1 5B3613CB
 P 1400 7250
 F 0 "#FLG053" H 1400 7345 50  0001 C CNN
@@ -422,7 +454,7 @@ F 3 "" H 1400 7250 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L power:GND #PWR054
+L GND #PWR054
 U 1 1 5B3542B9
 P 3950 3450
 F 0 "#PWR054" H 3950 3200 50  0001 C CNN

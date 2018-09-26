@@ -1,6 +1,38 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:GP22_board-rescue
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:max3440e
+LIBS:Custom_Components
 LIBS:GP22_board-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +47,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Device:R R13
+L R R13
 U 1 1 5898F4B0
 P 6650 3750
 AR Path="/5898F23C/5898F4B0" Ref="R13"  Part="1" 
@@ -34,7 +66,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:C_Small C6
+L C_Small C6
 U 1 1 5898F558
 P 6750 3600
 AR Path="/5898F23C/5898F558" Ref="C6"  Part="1" 
@@ -53,7 +85,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Device:C_Small C7
+L C_Small C7
 U 1 1 5898F595
 P 6750 3900
 AR Path="/5898F23C/5898F595" Ref="C7"  Part="1" 
@@ -72,7 +104,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R12
+L R R12
 U 1 1 5898F62F
 P 6000 3700
 AR Path="/5898F23C/5898F62F" Ref="R12"  Part="1" 
@@ -91,7 +123,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L GP22_board-rescue:Conn_02x02_Odd_Even P7
+L Conn_02x02_Odd_Even P7
 U 1 1 5898F928
 P 4700 3300
 AR Path="/5898F23C/5898F928" Ref="P7"  Part="1" 
@@ -110,7 +142,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L GP22_board-rescue:Conn_02x02_Odd_Even P8
+L Conn_02x02_Odd_Even P8
 U 1 1 5898F9B2
 P 4700 4200
 AR Path="/5898F23C/5898F9B2" Ref="P8"  Part="1" 
@@ -129,7 +161,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    1   
 $EndComp
 $Comp
-L Device:R_Small R11
+L R_Small R11
 U 1 1 589D05E6
 P 7000 3200
 AR Path="/5898F23C/589D05E6" Ref="R11"  Part="1" 
@@ -148,7 +180,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R10
+L R_Small R10
 U 1 1 589D066C
 P 6850 3200
 AR Path="/5898F23C/589D066C" Ref="R10"  Part="1" 
@@ -167,7 +199,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:R_Small R15
+L R_Small R15
 U 1 1 589D0720
 P 7125 4200
 AR Path="/5898F23C/589D0720" Ref="R15"  Part="1" 
@@ -186,7 +218,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R14
+L R_Small R14
 U 1 1 589D0771
 P 6925 4200
 AR Path="/5898F23C/589D0771" Ref="R14"  Part="1" 
@@ -205,7 +237,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	-1   0    0    1   
 $EndComp
 $Comp
-L power:GND #PWR057
+L GND #PWR057
 U 1 1 589D07ED
 P 6850 3100
 AR Path="/5898F23C/589D07ED" Ref="#PWR057"  Part="1" 
@@ -219,7 +251,7 @@ F 3 "" H 6850 3100 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L power:GND #PWR058
+L GND #PWR058
 U 1 1 589D0825
 P 6925 4300
 AR Path="/5898F23C/589D0825" Ref="#PWR058"  Part="1" 
@@ -233,7 +265,7 @@ F 3 "" H 6925 4300 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:+3V3 #PWR059
+L +3V3 #PWR059
 U 1 1 58BB05B7
 P 7000 3100
 AR Path="/5898F23C/58BB05B7" Ref="#PWR059"  Part="1" 
@@ -247,7 +279,7 @@ F 3 "" H 7000 3100 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:+3V3 #PWR060
+L +3V3 #PWR060
 U 1 1 58BB05EA
 P 7125 4300
 AR Path="/5898F23C/58BB05EA" Ref="#PWR060"  Part="1" 
@@ -261,7 +293,7 @@ F 3 "" H 7125 4300 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Custom_Components:ESDA5V3SC6 D1
+L ESDA5V3SC6 D1
 U 1 1 58DC66C6
 P 4050 3800
 AR Path="/5898F23C/58DC66C6" Ref="D1"  Part="1" 
@@ -272,15 +304,15 @@ F 1 "ESDA5V3SC6" H 3900 4050 50  0000 C CNN
 F 2 "TO_SOT_Packages_SMD:SOT-23-5_HandSoldering" H 3750 3800 50  0001 C CNN
 F 3 "" H 3750 3800 50  0001 C CNN
 F 4 "STMicroelectronics" H 0   0   50  0001 C CNN "MFR"
-F 5 "ESDA5V3SC5" H 0   0   50  0001 C CNN "MPN"
+F 5 "ESDA5V3SC6" H 0   0   50  0001 C CNN "MPN"
 F 6 "RS" H 0   0   50  0001 C CNN "SPR"
-F 7 "249-993" H 0   0   50  0001 C CNN "SPN"
+F 7 "250-000" H 0   0   50  0001 C CNN "SPN"
 F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    4050 3800
 	0    1    1    0   
 $EndComp
 $Comp
-L power:GND #PWR061
+L GND #PWR061
 U 1 1 58DC695B
 P 3900 3450
 AR Path="/5898F23C/58DC695B" Ref="#PWR061"  Part="1" 
@@ -320,7 +352,7 @@ RF_3
 Wire Wire Line
 	3525 4200 3750 4200
 Wire Wire Line
-	5000 4100 6000 4100
+	5000 4100 7450 4100
 Wire Wire Line
 	5000 3400 6650 3400
 Wire Wire Line
@@ -338,9 +370,9 @@ Wire Wire Line
 Wire Wire Line
 	6000 3850 6000 4100
 Wire Wire Line
-	4500 3275 4500 3300
+	4500 3275 4500 3400
 Wire Wire Line
-	5000 3300 6000 3300
+	5000 3300 7450 3300
 Wire Wire Line
 	7450 3300 7450 3600
 Wire Wire Line
@@ -371,21 +403,6 @@ Connection ~ 6925 4100
 Connection ~ 7125 4100
 Connection ~ 3750 4200
 Connection ~ 4500 3300
-Connection ~ 3750 3400
 NoConn ~ 4050 4200
 NoConn ~ 4050 3400
-Wire Wire Line
-	6000 3300 6850 3300
-Wire Wire Line
-	6000 4100 6925 4100
-Wire Wire Line
-	7000 3300 7450 3300
-Wire Wire Line
-	6850 3300 7000 3300
-Wire Wire Line
-	6925 4100 7125 4100
-Wire Wire Line
-	7125 4100 7450 4100
-Wire Wire Line
-	4500 3300 4500 3400
 $EndSCHEMATC

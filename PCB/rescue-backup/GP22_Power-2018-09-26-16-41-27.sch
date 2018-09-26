@@ -1,6 +1,38 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:GP22_board-rescue
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:max3440e
+LIBS:Custom_Components
 LIBS:GP22_board-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +47,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Custom_Components:XC6206 U10
+L XC6206 U10
 U 1 1 58CEB17A
 P 4925 3725
 F 0 "U10" H 5075 3529 50  0000 C CNN
@@ -23,15 +55,15 @@ F 1 "XC6206" H 4925 3925 50  0000 C CNN
 F 2 "TO_SOT_Packages_SMD:SOT-23_Handsoldering" H 4925 3725 50  0001 C CNN
 F 3 "" H 4925 3725 50  0001 C CNN
 F 4 "Torex" H 0   0   50  0001 C CNN "MFR"
-F 5 "XC6206P332MR" H 0   0   50  0001 C CNN "MPN"
+F 5 "XC6206P332PR" H 0   0   50  0001 C CNN "MPN"
 F 6 "Farnell" H 0   0   50  0001 C CNN "SPR"
-F 7 "8796980" H 0   0   50  0001 C CNN "SPN"
+F 7 "8796998" H 0   0   50  0001 C CNN "SPN"
 F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    4925 3725
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR078
+L GND #PWR078
 U 1 1 58CEB4F8
 P 4925 3975
 F 0 "#PWR078" H 4925 3725 50  0001 C CNN
@@ -42,7 +74,7 @@ F 3 "" H 4925 3975 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R36
+L R_Small R36
 U 1 1 58CEB528
 P 3900 3675
 F 0 "R36" H 3930 3695 50  0000 L CNN
@@ -58,7 +90,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:C_Small C22
+L C_Small C22
 U 1 1 58CEB58C
 P 4225 3775
 F 0 "C22" H 4235 3845 50  0000 L CNN
@@ -74,7 +106,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR079
+L GND #PWR079
 U 1 1 58CEB629
 P 4225 3875
 F 0 "#PWR079" H 4225 3625 50  0001 C CNN
@@ -85,7 +117,7 @@ F 3 "" H 4225 3875 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R35
+L R_Small R35
 U 1 1 58CEBDDF
 P 5575 3475
 F 0 "R35" H 5605 3495 50  0000 L CNN
@@ -101,7 +133,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:C_Small C21
+L C_Small C21
 U 1 1 58CEBE21
 P 5800 3575
 F 0 "C21" H 5810 3645 50  0000 L CNN
@@ -117,7 +149,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR080
+L GND #PWR080
 U 1 1 58CEBE87
 P 5800 3675
 F 0 "#PWR080" H 5800 3425 50  0001 C CNN
@@ -128,7 +160,7 @@ F 3 "" H 5800 3675 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Small R37
+L R_Small R37
 U 1 1 58CEBF86
 P 5575 3900
 F 0 "R37" H 5605 3920 50  0000 L CNN
@@ -144,7 +176,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:C_Small C23
+L C_Small C23
 U 1 1 58CEBF8C
 P 5800 4000
 F 0 "C23" H 5810 4070 50  0000 L CNN
@@ -160,7 +192,7 @@ F 8 "-" H 0   0   50  0001 C CNN "SPURL"
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR081
+L GND #PWR081
 U 1 1 58CEBF95
 P 5800 4100
 F 0 "#PWR081" H 5800 3850 50  0001 C CNN
@@ -171,7 +203,7 @@ F 3 "" H 5800 4100 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG082
+L PWR_FLAG #FLG082
 U 1 1 58D215F9
 P 6325 3475
 F 0 "#FLG082" H 6325 3570 50  0001 C CNN
@@ -182,7 +214,7 @@ F 3 "" H 6325 3475 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG083
+L PWR_FLAG #FLG083
 U 1 1 58D21622
 P 6325 3900
 F 0 "#FLG083" H 6325 3995 50  0001 C CNN
@@ -193,7 +225,7 @@ F 3 "" H 6325 3900 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L power:PWR_FLAG #FLG084
+L PWR_FLAG #FLG084
 U 1 1 58D22AD5
 P 4225 3675
 F 0 "#FLG084" H 4225 3770 50  0001 C CNN

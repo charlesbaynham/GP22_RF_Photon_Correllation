@@ -6,7 +6,7 @@
 
 version_str=`git rev-parse --short HEAD`
 top_level_dir=$(git rev-parse --show-toplevel)
-filename=latest_hash.h
+filename="TDC_Arduino_Driver/latest_hash.h"
 
 echo Writing latest version value = $version_str
 echo to "$top_level_dir/$filename"

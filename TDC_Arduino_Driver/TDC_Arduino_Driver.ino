@@ -17,6 +17,7 @@
 #define TDC_INT A2
 
 const double HF_CLOCK_FREQ = 4E6;
+const double LF_CLOCK_FREQ = 32768;
 
 // #define DEBUG
 
@@ -30,9 +31,6 @@ const double HF_CLOCK_FREQ = 4E6;
 
 // Setup the GP22 with the currently stored config
 void updateTDC(const uint32_t * registers);
-
-// Read the registers from the TDC
-void readTDC();
 
 // Number of commands to be registered
 const uint8_t numCommands = 23;
@@ -857,15 +855,16 @@ uint32_t calibrateHF() {
 
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
+	bool timeout = false;
 	while (HIGH == digitalRead(TDC_INT)) {
-		if (millis() - start > 500) { return 0xFFFFFFFF; } // Give up if we've been waiting 500ms
+		if (millis() - start > 500) { timeout=true; break; } // Give up if we've been waiting 500ms
 	}
 
 	// The time interval to be measured is set by ANZ_PER_CALRES
 	// which defines the number of periods of the 32.768 kHz clock:
 	// 2 periods = 61.03515625 us
 	// But labview / the user will handle this, we just output the raw data
-	uint32_t result = read_bytes(TDC_RESULT1, false);
+	uint32_t result = timeout ? 0xFFFFFFFF : read_bytes(TDC_RESULT1, false);
 
 	// Restore reg3
 	writeConfigReg(GP22::REG3, backupReg3);

@@ -76,6 +76,9 @@ enum class MEASUREMENT_ERROR {
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
 
+// Prototype definitions that the Arduino pre-processor is too dumb to understand
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout=500);
+
 /*
  * A note on the board layout
  * ==========================
@@ -726,8 +729,12 @@ void updateTDC(const uint32_t * registers) {
 // This function does not care: it returns the value as an unsigned 32 bit unsigned int. It is 
 // up to the user to convert into whatever format is applicable.
 //
-// Return error code for measurement status
-MEASUREMENT_ERROR measure(uint32_t& out) {
+// Params:
+// 	&out 					- Output variable for the measurement result
+//  timeout (default 500ms) - timeout to wait before issuing a TIMEOUT_START error
+//
+// Returns: MEASUREMENT_ERROR enum listing the error status if any
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout) {
 
 	// Send the INIT opcode to start waiting for a timing event
 	digitalWrite(TDC_CS, LOW);
@@ -737,8 +744,8 @@ MEASUREMENT_ERROR measure(uint32_t& out) {
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();
 	while (HIGH == digitalRead(TDC_INT)) {
-		// Give up if we've been waiting 500ms
-		if (millis() - start > 500) {
+		// Give up if we've been waiting <timeout>ms
+		if (millis() - start > timeout) {
 			return MEASUREMENT_ERROR::TIMEOUT_START;
 		} 
 	}

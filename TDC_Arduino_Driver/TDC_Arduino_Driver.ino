@@ -33,7 +33,7 @@ const double LF_CLOCK_FREQ = 32768;
 void updateTDC(const uint32_t * registers);
 
 // Number of commands to be registered
-const uint8_t numCommands = 23;
+const uint8_t numCommands = 24;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -1150,7 +1150,8 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("*RST"), 0, &reset);
 	h.registerCommand(COMMANDHANDLER_HASH("MEAS"), 1, &timedMeasure);
 	h.registerCommand(COMMANDHANDLER_HASH("SING"), 0, &singleMeasure);
-	h.registerCommand(COMMANDHANDLER_HASH("HIST"), 4, &histogramMeasure);
+    h.registerCommand(COMMANDHANDLER_HASH("HIST"), 4, &histogramMeasure);
+    h.registerCommand(COMMANDHANDLER_HASH("TIME"), 1, &timeStart);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT"), 0, &getStatus);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT?"), 0, &getStatus);
 	h.registerCommand(COMMANDHANDLER_HASH("SETU"), -1, &setupRegisters);
@@ -1162,6 +1163,7 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("MODE"), 1, &setMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("MODE?"), 0, &getMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
+
 
 	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
 
@@ -1192,7 +1194,7 @@ void setupForSTARTToSTOP1Mode() {
 }
 
 void setMeasurementMode2(bool enabled) {
-	
+
 	// Enable / disable measurement mode 2
 	bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, enabled);
 

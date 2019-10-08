@@ -34,7 +34,7 @@ const double LF_CLOCK_FREQ = 32768;
 void updateTDC(const uint32_t * registers);
 
 // Number of commands to be registered
-const uint8_t numCommands = 25;
+const uint8_t numCommands = 27;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -358,6 +358,35 @@ void getMeasMode(const ParameterLookup& params) {
 		Serial.println(F("MODE 2"));
 	} else {
 		Serial.println(F("MODE 1"));
+	}
+}
+
+void getFireStart(const ParameterLookup& params) {
+	if (bitmaskRead(GP22::REG1, GP22::REG1_SEL_START_FIRE)) {
+		Serial.println(F("enabled"));
+	} else {
+		Serial.println(F("disabled"));
+	}
+}
+
+// Enable / disable use of the manual trigger for START. 
+//
+// If enabled, measurements will begin on the opcode START_TOF and the START input will be disabled.
+// 
+// Params - <"0" or "1"> sets disabled / enabled
+void setFireStart(const ParameterLookup& params) {
+	char paramChar = params[1][0];
+
+	if (paramChar == '0') {
+		fireStartMode(false);
+		Serial.println(F("disabled"));
+	}
+	else if (paramChar == '1') {
+		fireStartMode(true);
+		Serial.println(F("enabled"));
+	}
+	else {
+		Serial.println(F("Invalid option: options are '0' or '1'"));
 	}
 }
 
@@ -1211,6 +1240,8 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("MODE"), 1, &setMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("MODE?"), 0, &getMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
+	h.registerCommand(COMMANDHANDLER_HASH("START_FIRE"), 1, &setFireStart);
+	h.registerCommand(COMMANDHANDLER_HASH("START_FIRE?"), 0, &getFireStart);
 
 	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
 
@@ -1255,4 +1286,9 @@ void setMeasurementMode2(bool enabled) {
 	// Send settings
 	updateTDC(GP22::registers_data);
 
+}
+
+void fireStartMode(bool enabled) {	
+	bitmaskWrite(GP22::REG1, GP22::REG1_SEL_START_FIRE, enabled);
+	updateTDC(GP22::registers_data);
 }

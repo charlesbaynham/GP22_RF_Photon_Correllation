@@ -34,7 +34,7 @@ const double LF_CLOCK_FREQ = 32768;
 void updateTDC(const uint32_t * registers);
 
 // Number of commands to be registered
-const uint8_t numCommands = 24;
+const uint8_t numCommands = 25;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -73,6 +73,9 @@ enum class MEASUREMENT_ERROR {
 	TIMEOUT_STOP,
 	OVERFLOW
 };
+
+// Hold the arrival time of the most recent Serial command
+volatile unsigned long _start_comms_ms,_start_comms_us;
 
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
@@ -191,6 +194,9 @@ void loop() {
 }
 
 void serialEvent() {
+    _start_comms_us = micros();
+    _start_comms_ms = millis();
+
 	while (Serial.available()) {
 		char c = Serial.read();
 
@@ -637,19 +643,19 @@ void timeStart(const ParameterLookup& params) {
     // Start a measurement with the given timeout
     uint32_t dummy;
     unsigned long arrivalTime_ms, arrivalTime_us;
-	MEASUREMENT_ERROR stat = measure(dummy, timeout, arrivalTime_ms, arrivalTime_us);
+    MEASUREMENT_ERROR stat = measure(dummy, timeout, arrivalTime_ms, arrivalTime_us);
 
-	// Restore the previous mode
+    // Restore the previous mode
     bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, oldMode2);
     updateTDC(GP22::registers_data);
 
-	// If we got a START timeout, report the timeout
-	if (stat == MEASUREMENT_ERROR::TIMEOUT_START) {
-		Serial.println(F("TIMEOUT"));
-		return;
-	}
+    // If we got a START timeout, report the timeout
+    if (stat == MEASUREMENT_ERROR::TIMEOUT_START) {
+        Serial.println(F("TIMEOUT"));
+        return;
+    }
 
-	// If we got another error, report that
+    // If we got another error, report that
     if (stat != MEASUREMENT_ERROR::NO_ERROR && stat != MEASUREMENT_ERROR::TIMEOUT_STOP) {
         Serial.print(F("Unexpected error "));
         Serial.println((int)stat);
@@ -663,6 +669,43 @@ void timeStart(const ParameterLookup& params) {
     const unsigned long rounded_ms = arrivalTime_ms / max_length_of_micros_in_ms;
     const double arrivalTime = double(rounded_ms) + 0.001*double(arrivalTime_us);
     Serial.println(arrivalTime, 3);
+}
+
+// Report the Arduino's system time at the start and the end of communications
+//
+// Returns:
+//          system clock in ms with us resolution at start and end of function
+void reportTime(const ParameterLookup& params) {
+
+    // Read out the start time of the most recent Serial comms, before they're overwritten by an interrupt
+    unsigned long start_ms = _start_comms_ms;
+    unsigned long start_us = _start_comms_us;
+
+    // Convert to a double of millisecond since power-on
+    double time_start = clippedTime(start_ms, start_us);
+
+    // Reading for the end of comms
+    unsigned long end_ms = millis();
+    unsigned long end_us = micros();
+    const double time_end = clippedTime(end_ms, end_us);
+
+    Serial.print(time_start, 3);
+    Serial.print(", "); // Not stored in flash, since speed is critical here
+    Serial.println(time_end, 3);
+}
+
+// Convert a millis() + micros() reading into a time since the Arduino was powered on,
+// returned as a double with us precision, rolling over every 24 hours.
+double clippedTime(unsigned long ms, unsigned long us) {
+    // The Arduino micros time wraps around at the length of an unsigned long in microseconds:
+    // We'll round the millisecond count down to the most recent micros overflow, and use the microsecond
+    // count from there
+    const unsigned long max_length_of_micros_in_ms = ULONG_MAX/1000;
+    const unsigned long rounded_ms = ms / max_length_of_micros_in_ms;
+    // Clip the ms count at 1 day to avoid loss of float precision when we convert
+    const unsigned long clipped_ms = rounded_ms / (1000 * 60 * 60 * 24);
+
+    return double(rounded_ms) + 0.001*double(us);
 }
 
 // Calculate which bin in a histogram a number belongs to
@@ -1159,7 +1202,8 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("MEAS"), 1, &timedMeasure);
 	h.registerCommand(COMMANDHANDLER_HASH("SING"), 0, &singleMeasure);
     h.registerCommand(COMMANDHANDLER_HASH("HIST"), 4, &histogramMeasure);
-    h.registerCommand(COMMANDHANDLER_HASH("TIME"), 1, &timeStart);
+    h.registerCommand(COMMANDHANDLER_HASH("STAR"), 1, &timeStart);
+    h.registerCommand(COMMANDHANDLER_HASH("TIME"), 0, &reportTime);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT"), 0, &getStatus);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT?"), 0, &getStatus);
 	h.registerCommand(COMMANDHANDLER_HASH("SETU"), -1, &setupRegisters);
@@ -1171,7 +1215,6 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("MODE"), 1, &setMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("MODE?"), 0, &getMeasMode);
 	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
-
 
 	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
 

@@ -76,8 +76,12 @@ enum class MEASUREMENT_ERROR {
 // Function to reset the arduino:
 void(*resetFunc) (void) = 0;
 
-// Prototype definitions that the Arduino pre-processor is too dumb to understand
-MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout=500);
+// Prototype definitions for measure with easy defaults
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& completionTime);
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout=500) {
+    unsigned long dummy;
+    return measure(out, timeout, dummy);
+}
 
 /*
  * A note on the board layout
@@ -596,6 +600,64 @@ void histogramMeasure(const ParameterLookup& params) {
 	return;
 }
 
+// Output the Arduino's system time (as returned by `millis()`) of the first
+// occupancy of a START pulse after this call.
+
+// This is achieved by performing a TDC measurement in MODE 1 - the TDC will
+// await a pulse on START indefinitely. It will then time until the arrival of
+// a pulse on STOP1, and timeout if none occurs within 2.5us. We don't care
+// whether a pulse arrives on STOP1 or not: we just want to know that
+// something arrived on START. So, when the TDC finishes measuring (even if it
+// times out) we'll know that a START pulse arrived 2.5us before. We're
+// returning a number in ms, so we don't care about this offset: return the
+// current system time.
+//
+// Parameters:
+//  timeout     - Time to wait for a START pulse before giving up (ms)
+// Returns:
+//          system clock at occurrence of next START pulse or "TIMEOUT"
+void timeStart(const ParameterLookup& params) {
+
+    unsigned long timeout = atol(params[1]);
+
+    if (timeout == 0) {
+        Serial.println(F("Error parsing timeout parameter"));
+        return;
+    }
+
+    // Setup the TDC for MODE 1 //
+    // Check current mode
+    bool oldMode2 = bitmaskRead(GP22::REG0, GP22::REG0_MESSB2);
+    // Setup registers for MODE 1
+    bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, 0);
+    // Send registers to device
+    updateTDC(GP22::registers_data);
+
+    // Start a measurement with the given timeout
+    uint32_t dummy;
+    unsigned long arrivalTime;
+	MEASUREMENT_ERROR stat = measure(dummy, timeout, arrivalTime);
+
+	// Restore the previous mode
+    bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, oldMode2);
+    updateTDC(GP22::registers_data);
+
+	// If we got a START timeout, report the timeout
+	if (stat == MEASUREMENT_ERROR::TIMEOUT_START) {
+		Serial.println(F("TIMEOUT"));
+		return;
+	}
+
+	// If we got another error, report that
+    if (stat != MEASUREMENT_ERROR::NO_ERROR && stat != MEASUREMENT_ERROR::TIMEOUT_STOP) {
+        Serial.print(F("Unexpected error "));
+        Serial.println((int)stat);
+        return;
+    }
+    // Report the arrive time of the START pulse
+    Serial.println(arrivalTime);
+}
+
 // Calculate which bin in a histogram a number belongs to
 // Inputs - 
 //		<num bins>
@@ -731,10 +793,11 @@ void updateTDC(const uint32_t * registers) {
 //
 // Params:
 // 	&out 					- Output variable for the measurement result
+//  &completionTime         - Output variable for the millisecond counter when the measurement completed
 //  timeout (default 500ms) - timeout to wait before issuing a TIMEOUT_START error
 //
 // Returns: MEASUREMENT_ERROR enum listing the error status if any
-MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout) {
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& completionTime) {
 
 	// Send the INIT opcode to start waiting for a timing event
 	digitalWrite(TDC_CS, LOW);
@@ -749,6 +812,9 @@ MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout) {
 			return MEASUREMENT_ERROR::TIMEOUT_START;
 		} 
 	}
+
+	// Save the time
+	completionTime = millis();
 
 	// Read the result
 	out = read_bytes(TDC_RESULT1, !(bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE));

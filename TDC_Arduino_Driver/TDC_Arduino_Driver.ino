@@ -23,6 +23,7 @@ const double LF_CLOCK_FREQ = 32768;
 
 #include <math.h>
 #include <SPI.h>
+#include <limits.h>
 
 #include "CommandHandler\CommandHandler.h"
 
@@ -77,10 +78,10 @@ enum class MEASUREMENT_ERROR {
 void(*resetFunc) (void) = 0;
 
 // Prototype definitions for measure with easy defaults
-MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& completionTime);
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& completionTime_ms, unsigned long& completionTime_us);
 MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout=500) {
-    unsigned long dummy;
-    return measure(out, timeout, dummy);
+    unsigned long dummy1, dummy2;
+    return measure(out, timeout, dummy1, dummy2);
 }
 
 /*
@@ -635,8 +636,8 @@ void timeStart(const ParameterLookup& params) {
 
     // Start a measurement with the given timeout
     uint32_t dummy;
-    unsigned long arrivalTime;
-	MEASUREMENT_ERROR stat = measure(dummy, timeout, arrivalTime);
+    unsigned long arrivalTime_ms, arrivalTime_us;
+	MEASUREMENT_ERROR stat = measure(dummy, timeout, arrivalTime_ms, arrivalTime_us);
 
 	// Restore the previous mode
     bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, oldMode2);
@@ -655,7 +656,13 @@ void timeStart(const ParameterLookup& params) {
         return;
     }
     // Report the arrive time of the START pulse
-    Serial.println(arrivalTime);
+    // The Arduino micros time wraps around at the length of an unsigned long in microseconds:
+    // We'll round the millisecond count down to the most recent micros overflow, and use the microsecond
+    // count from there
+    const unsigned long max_length_of_micros_in_ms = ULONG_MAX/1000;
+    const unsigned long rounded_ms = arrivalTime_ms / max_length_of_micros_in_ms;
+    const double arrivalTime = double(rounded_ms) + 0.001*double(arrivalTime_us);
+    Serial.println(arrivalTime, 3);
 }
 
 // Calculate which bin in a histogram a number belongs to
@@ -797,7 +804,7 @@ void updateTDC(const uint32_t * registers) {
 //  timeout (default 500ms) - timeout to wait before issuing a TIMEOUT_START error
 //
 // Returns: MEASUREMENT_ERROR enum listing the error status if any
-MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& completionTime) {
+MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& completionTime_ms, unsigned long& completionTime_us) {
 
 	// Send the INIT opcode to start waiting for a timing event
 	digitalWrite(TDC_CS, LOW);
@@ -814,7 +821,8 @@ MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& co
 	}
 
 	// Save the time
-	completionTime = millis();
+    completionTime_us = micros();
+    completionTime_ms = millis();
 
 	// Read the result
 	out = read_bytes(TDC_RESULT1, !(bool)bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE));

@@ -615,9 +615,8 @@ void histogramMeasure(const ParameterLookup& params) {
 // a pulse on STOP1, and timeout if none occurs within 2.5us. We don't care
 // whether a pulse arrives on STOP1 or not: we just want to know that
 // something arrived on START. So, when the TDC finishes measuring (even if it
-// times out) we'll know that a START pulse arrived 2.5us before. We're
-// returning a number in ms, so we don't care about this offset: return the
-// current system time.
+// times out) we'll know that a START pulse arrived ~2.5us before. 
+// We subtract this 2.5us and return. 
 //
 // Parameters:
 //  timeout     - Time to wait for a START pulse before giving up (ms)
@@ -662,7 +661,9 @@ void timeStart(const ParameterLookup& params) {
         return;
     }
     // Report the arrive time of the START pulse
-    const double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
+    double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
+    // Compensate for the length of the TDC's sequence. 
+    arrivalTime -= 2.5 * 1e-3;
     Serial.println(arrivalTime, 3);
 }
 

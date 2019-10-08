@@ -42,6 +42,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 		<Item Name="Calibration" Type="Folder">
 			<Item Name="Calibrate.vi" Type="VI" URL="../Public/Calibrate.vi"/>
 			<Item Name="HFCalibrate.vi" Type="VI" URL="../Public/HFCalibrate.vi"/>
+			<Item Name="MeasureSystemOffset.vi" Type="VI" URL="../Public/MeasureSystemOffset.vi"/>
 		</Item>
 		<Item Name="Config" Type="Folder">
 			<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
@@ -53,6 +54,8 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="MultipleMeasurements.vi" Type="VI" URL="../Public/MultipleMeasurements.vi"/>
 			<Item Name="CalibratedMultipleMeasurements.vi" Type="VI" URL="../Public/CalibratedMultipleMeasurements.vi"/>
 			<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
+			<Item Name="MeasureSTARTTime.vi" Type="VI" URL="../Public/MeasureSTARTTime.vi"/>
+			<Item Name="MeasureSystemTime.vi" Type="VI" URL="../Public/MeasureSystemTime.vi"/>
 		</Item>
 		<Item Name="VI Tree.vi" Type="VI" URL="../Public/VI Tree.vi"/>
 	</Item>

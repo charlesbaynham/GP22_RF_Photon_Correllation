@@ -662,12 +662,7 @@ void timeStart(const ParameterLookup& params) {
         return;
     }
     // Report the arrive time of the START pulse
-    // The Arduino micros time wraps around at the length of an unsigned long in microseconds:
-    // We'll round the millisecond count down to the most recent micros overflow, and use the microsecond
-    // count from there
-    const unsigned long max_length_of_micros_in_ms = ULONG_MAX/1000;
-    const unsigned long rounded_ms = arrivalTime_ms / max_length_of_micros_in_ms;
-    const double arrivalTime = double(rounded_ms) + 0.001*double(arrivalTime_us);
+    const double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
     Serial.println(arrivalTime, 3);
 }
 

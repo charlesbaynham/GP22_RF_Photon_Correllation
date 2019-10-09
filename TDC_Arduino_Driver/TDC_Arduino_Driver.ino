@@ -34,7 +34,7 @@ const double LF_CLOCK_FREQ = 32768;
 void updateTDC(const uint32_t * registers);
 
 // Number of commands to be registered
-const uint8_t numCommands = 29;
+const uint8_t numCommands = 30;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -643,8 +643,8 @@ void histogramMeasure(const ParameterLookup& params) {
 }
 
 // Output the Arduino's system time (as returned by `millis()`) of the first
-// occupancy of a START pulse after this call.
-
+// occurance of a START pulse after this call.
+//
 // This is achieved by performing a TDC measurement in MODE 1 - the TDC will
 // await a pulse on START indefinitely. It will then time until the arrival of
 // a pulse on STOP1, and timeout if none occurs within 2.5us. We don't care
@@ -656,7 +656,7 @@ void histogramMeasure(const ParameterLookup& params) {
 // Parameters:
 //  timeout     - Time to wait for a START pulse before giving up (ms)
 // Returns:
-//          system clock at occurrence of next START pulse or "TIMEOUT"
+//          system clock (ms with 24h rollover) at occurrence of next START pulse or "TIMEOUT"
 void timeStart(const ParameterLookup& params) {
 
     unsigned long timeout = atol(params[1]);
@@ -666,10 +666,9 @@ void timeStart(const ParameterLookup& params) {
         return;
     }
 
+    backup_config();
+
     // Setup the TDC for MODE 1 //
-    // Check current mode
-    bool oldMode2 = bitmaskRead(GP22::REG0, GP22::REG0_MESSB2);
-    // Setup registers for MODE 1
     bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, 0);
     // Send registers to device
     updateTDC(GP22::registers_data);
@@ -679,9 +678,7 @@ void timeStart(const ParameterLookup& params) {
     unsigned long arrivalTime_ms, arrivalTime_us;
     MEASUREMENT_ERROR stat = measure(dummy, timeout, arrivalTime_ms, arrivalTime_us);
 
-    // Restore the previous mode
-    bitmaskWrite(GP22::REG0, GP22::REG0_MESSB2, oldMode2);
-    updateTDC(GP22::registers_data);
+    restore_config();
 
     // If we got a START timeout, report the timeout
     if (stat == MEASUREMENT_ERROR::TIMEOUT_START) {
@@ -699,6 +696,73 @@ void timeStart(const ParameterLookup& params) {
     double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
     // Compensate for the length of the TDC's sequence. 
     arrivalTime -= 2.5 * 1e-3;
+    Serial.println(arrivalTime, 3);
+}
+
+// Output the Arduino's system time (as returned by `millis()`) of the first
+// occurance of a STOP1 / STOP1 pulse after this call. 
+
+// This is achieved by performing a TDC measurement in MODE 2, triggered 
+// using FIRE_START. The TDC will either timeout, in which case we try again,
+// or will return a measurement. Record the arrival time of this measurement. 
+
+// Parameters:
+//  timeout     - Time to wait for a pulse before giving up (ms)
+// Returns: 
+//          system clock (ms with 24h rollover) at occurrence of next pulse or "TIMEOUT"
+void timeStop1(const ParameterLookup& params) {
+
+    unsigned long timeout = atol(params[1]);
+
+    if (timeout == 0) {
+        Serial.println(F("Error parsing timeout parameter"));
+        return;
+    }
+    
+    backup_config();
+
+    // Setup the TDC for normal MODE 2
+    setMeasurementMode2(true);
+    setupForSTARTToSTOP1Mode();
+    // But enable fire output
+    fireStartMode(true);
+
+#ifdef DEBUG
+    dump_config();
+#endif
+
+    // Send registers to device
+    updateTDC(GP22::registers_data);
+
+    // Measure until we get a hit or the timeout expires
+    const unsigned long end_time = millis() + timeout;
+    unsigned long arrivalTime_ms, arrivalTime_us;
+    uint32_t out;
+    MEASUREMENT_ERROR stat = MEASUREMENT_ERROR::TIMEOUT_STOP;
+    while (millis() < end_time && (stat != MEASUREMENT_ERROR::NO_ERROR)) {
+    	// Timeout shouldn't matter here, since it's only applicable to the START pulse, but we're generating it
+    	// 100ms is more than enough for processing time
+    	stat = measure(out, 100, arrivalTime_ms, arrivalTime_us);
+    }
+
+    // Restore the previous mode
+    restore_config();
+
+    // If we got a timeout, report it
+    if (stat == MEASUREMENT_ERROR::TIMEOUT_STOP) {
+        Serial.println(F("TIMEOUT"));
+        return;
+    }
+
+    // If we got another error, report that
+    if (stat != MEASUREMENT_ERROR::NO_ERROR) {
+        Serial.print(F("Unexpected error "));
+        Serial.println((int)stat);
+        return;
+    }
+
+    // Report the arrive time of the pulse
+    double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
     Serial.println(arrivalTime, 3);
 }
 
@@ -931,10 +995,7 @@ uint16_t calibrate() {
 	// This sequence is adapted from the ACAM eval software source code (in Labview)
 
 	// Backup registers
-	uint32_t backup[7];
-	for (int i = 0; i < 7; i++) {
-		backup[i] = regRead(GP22::registers(i));
-	}
+	backup_config();
 
 	// Goto single res. mode
 	//writeConfigReg(TDC_REG6, reg6 & 0xFFFFCFFF);
@@ -986,10 +1047,7 @@ uint16_t calibrate() {
 	}
 
 	// Restore registers
-	for (int i = 0; i < 7; i++) {
-		regWrite(GP22::registers(i), backup[i]);
-	}
-	updateTDC(GP22::registers_data);
+	restore_config();
 
 	return calibration;
 }
@@ -1293,6 +1351,7 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("SING"), 0, &singleMeasure);
     h.registerCommand(COMMANDHANDLER_HASH("HIST"), 4, &histogramMeasure);
     h.registerCommand(COMMANDHANDLER_HASH("STAR"), 1, &timeStart);
+    h.registerCommand(COMMANDHANDLER_HASH("STOP1"), 1, &timeStop1);
     h.registerCommand(COMMANDHANDLER_HASH("TIME"), 0, &reportTime);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT"), 0, &getStatus);
 	h.registerCommand(COMMANDHANDLER_HASH("STAT?"), 0, &getStatus);
@@ -1402,5 +1461,26 @@ inline double HSClockFreq() {
 			return HF_CLOCK_FREQ/2.0;
 		default:
 			return HF_CLOCK_FREQ/4.0;
+	}
+}
+
+uint32_t _backup[7];
+void backup_config() {
+	for (int i = 0; i < 7; i++) {
+		_backup[i] = regRead(GP22::registers(i));
+	}
+}
+
+void restore_config() {
+	for (int i = 0; i < 7; i++) {
+		regWrite(GP22::registers(i), _backup[i]);
+	}
+	updateTDC(GP22::registers_data);
+}
+
+void dump_config() {
+	for (int i = 0; i < 7; i++) {
+		Serial.print("0x");
+		Serial.println(GP22::registers_data[i], HEX);
 	}
 }

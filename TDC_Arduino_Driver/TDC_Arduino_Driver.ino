@@ -34,7 +34,7 @@ const double LF_CLOCK_FREQ = 32768;
 void updateTDC(const uint32_t * registers);
 
 // Number of commands to be registered
-const uint8_t numCommands = 27;
+const uint8_t numCommands = 29;
 
 // Create a command handler
 CommandHandler<numCommands> handler;
@@ -1227,6 +1227,58 @@ void setAutoCal(const ParameterLookup& params) {
 	updateTDC(GP22::registers_data);
 }
 
+void setClockDivision(const ParameterLookup& params) {
+	
+	int division = strtol(params[1], NULL, 0);
+
+	unsigned int setting;
+
+	if (division == 1)
+		setting = 0x00;
+	else if (division == 2)
+		setting = 0x01;
+	else if (division == 4)
+		setting = 0x02;
+	else
+	{
+		// Invalid setting. Error!
+		Serial.println(F("Invalid setting! Choose 1, 2 or 4"));
+		return;
+	}
+
+	// Set the register bit appropriately
+	bitmaskWrite(GP22::REG0, GP22::REG0_DIV_CLKHS, setting);
+
+	// Write to device
+	updateTDC(GP22::registers_data);
+
+	Serial.print(F("Division = "));
+	Serial.println(division);
+}
+
+void getClockDivision(const ParameterLookup&) {
+	
+	// Get the register bits
+	uint8_t setting = bitmaskRead(GP22::REG0, GP22::REG0_DIV_CLKHS);
+
+	int division;
+
+	if (setting == 0x00)
+		division = 1;
+	else if (setting == 0x01)
+		division = 2;
+	else if (setting == 0x02 || setting == 0x03)
+		division = 4;
+	else
+	{
+		// Invalid setting. Error!
+		Serial.println(F("Invalid setting! Board in strange config, reset recommended"));
+		return;
+	}
+
+	Serial.println(division);
+}
+
 bool registerCommands(CommandHandler<numCommands>& h) {
 	// N.B. commands are not case sensitive
 
@@ -1255,6 +1307,8 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 	h.registerCommand(COMMANDHANDLER_HASH("AUTOCAL"), 1, &setAutoCal);
 	h.registerCommand(COMMANDHANDLER_HASH("START_FIRE"), 1, &setFireStart);
 	h.registerCommand(COMMANDHANDLER_HASH("START_FIRE?"), 0, &getFireStart);
+	h.registerCommand(COMMANDHANDLER_HASH("DIVI"), 1, &setClockDivision);
+	h.registerCommand(COMMANDHANDLER_HASH("DIVI?"), 0, &getClockDivision);
 
 	CommandHandlerReturn finalError = h.registerCommand(COMMANDHANDLER_HASH("testhist"), 3, &testHistFunc);
 

@@ -229,7 +229,7 @@ void gitVersion(const ParameterLookup& params) {
 void timedMeasure(const ParameterLookup& params) {
 
 	// Number of ms to read for
-	uint32_t timePeriod = atoi(params[1]);
+	uint32_t timePeriod = atol(params[1]);
 
 	// Calculate stop time
 	uint32_t stop = millis() + timePeriod;

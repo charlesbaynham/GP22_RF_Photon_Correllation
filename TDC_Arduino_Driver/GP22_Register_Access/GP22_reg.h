@@ -268,11 +268,14 @@ namespace GP22 {
 		// two bytes of `bits`
 		const uint32_t bitno  = bits >> 16;
 
-		// Set all the bits selected by `bits` to zero
-		regval &= ~( T_register((1<<width)-1) << bitno);
+		// Make a positive mask of just this value's position
+		const T_register val_mask = T_register((1<<width)-1) << bitno;
 
-		// Set all the bits selected by `bits` to their required new value
-		regval |=  value << bitno;
+		// Set all the bits of this value to zero
+		regval &= ~val_mask;
+
+		// Set all the bits of this value to their required new value
+		regval |=  (value << bitno) & val_mask;
 
 		// Store
 		*regAddress(reg) = regval;

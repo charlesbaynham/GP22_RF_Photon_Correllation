@@ -169,6 +169,11 @@ void setup() {
 	SPI.transfer(TDC_RESET);
 	digitalWrite(TDC_CS, HIGH);
 
+	// Set clock divider to 4 (the maximum time interval that can be measure in MODE 1 is 2* clock cycles, so 
+	// without a clock divider we'd be limited to 500ns)
+	// See p48 of the datasheet
+	bitmaskWrite(GP22::REG0, GP22::REG0_DIV_CLKHS, 4);
+
 	// Load all the values stored in reg into the TDC's registers
 	updateTDC(GP22::registers_data);
 
@@ -253,7 +258,7 @@ void timedMeasure(const ParameterLookup& params) {
 			if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 				
 				// If calibrated, convert to nanoseconds
-				const double nanoseconds = double(result.Signed) / HF_CLOCK_FREQ * 1e9 / double(uint32_t(1)<<16);
+				const double nanoseconds = double(result.Signed) / HSClockFreq() * 1e9 / double(uint32_t(1)<<16);
 				Serial.print(nanoseconds, 3);
 
 			} else {
@@ -448,7 +453,7 @@ void singleMeasure(const ParameterLookup& params) {
 	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 		
 		// If calibrated, convert to nanoseconds
-		const double nanoseconds = double(result.Signed) / HF_CLOCK_FREQ * 1e9 / double(uint32_t(1)<<16);
+		const double nanoseconds = double(result.Signed) / HSClockFreq() * 1e9 / double(uint32_t(1)<<16);
 		Serial.print(nanoseconds, 3);
 		Serial.println("ns");
 
@@ -526,8 +531,8 @@ void histogramMeasure(const ParameterLookup& params) {
 		// First, scale to multiples of the ref clock
 		// Then, multiply by 2^16 due to the 16-16 fixed point format
 		// And convert to unsigned integer
-		maxValFixedPoint_D = maxVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
-		minValFixedPoint_D = minVal * 1e-9 * HF_CLOCK_FREQ * double( uint32_t(1)<<16 );
+		maxValFixedPoint_D = maxVal * 1e-9 * HSClockFreq() * double( uint32_t(1)<<16 );
+		minValFixedPoint_D = minVal * 1e-9 * HSClockFreq() * double( uint32_t(1)<<16 );
 
 		if (minValFixedPoint > 0x7FFFFFFF || maxValFixedPoint_D > 0x7FFFFFFF) {
 			Serial.println(F("Error: limits too large"));
@@ -1263,21 +1268,23 @@ void setupForSTARTToSTOP1Mode() {
 	if (inMeasurementMode2()) { // mode 2
 		bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
 		bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 2);
+		// Configure number of hits expected
+		bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	} else { // mode 1
 		bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
 		bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
+		// Configure number of hits expected
+		bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 1); // 1 hit on STOP1
 	}
 
-	// Configure number of hits expected
-	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
 
 	// Trigger interrupt on timeout or finishing calculation
 	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_ALU, 1);
 	bitmaskWrite(GP22::REG2, GP22::REG2_EN_INT_TDC_TIMEOUT, 1);
 
-	// Double res mode: fine since we don't need channel 2
-	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
+	// Double res mode off since it limits mode 1 max time to half
+	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, false);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
 
 	// Update the TDC's settings
@@ -1296,23 +1303,8 @@ void setMeasurementMode2(bool enabled) {
 		bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, false);
 	}
 
-	if (enabled) { // If we're going into mode 2
-		if (bitmaskRead(GP22::REG1, GP22::REG1_HIT1) == 1 && 
-			bitmaskRead(GP22::REG1, GP22::REG1_HIT2) == 0) { 
-			// ...and we're currently set up for START -> STOP1 measurements in MODE 1
-			// Set up for START -> STOP1 measurements in MODE 2
-			bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
-			bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 2);
-		}
-	} else { //  else if we're going into mode 1...
-		if (bitmaskRead(GP22::REG1, GP22::REG1_HIT1) == 1 && 
-			bitmaskRead(GP22::REG1, GP22::REG1_HIT2) == 2) { 
-			// ...and we're currently set up for START -> STOP1 measurements in MODE 2
-			// Set up for START -> STOP1 measurements in MODE 1
-			bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
-			bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
-		}
-	}
+	// We must call the setup again, since other settings need to be changed between modes
+	setupForSTARTToSTOP1Mode();
 
 	// Send settings
 	updateTDC(GP22::registers_data);
@@ -1326,4 +1318,17 @@ inline bool inMeasurementMode2() {
 void fireStartMode(bool enabled) {	
 	bitmaskWrite(GP22::REG1, GP22::REG1_SEL_START_FIRE, enabled);
 	updateTDC(GP22::registers_data);
+}
+
+// Return the frequency of the high speed clock, taking into account any division settings
+inline double HSClockFreq() {
+	uint8_t START_CLKHS = bitmaskRead(GP22::REG0, GP22::REG0_DIV_CLKHS);
+	switch (START_CLKHS) {
+		case 0:
+			return HF_CLOCK_FREQ;
+		case 1:
+			return HF_CLOCK_FREQ/2.0;
+		default:
+			return HF_CLOCK_FREQ/4.0;
+	}
 }

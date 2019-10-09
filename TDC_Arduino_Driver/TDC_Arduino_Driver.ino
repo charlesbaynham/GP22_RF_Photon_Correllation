@@ -466,12 +466,12 @@ void singleMeasure(const ParameterLookup& params) {
 
 void triggeredMeasure(const ParameterLookup& params) {
 
-	unsigned long trigger_ms = atof(params[1]);
+	unsigned long trigger_us = atol(params[1]);
 	if (trigger_ms==0){
 		Serial.println(F("Error parsing trigger time"));
 	}
 
-	// Convert millisecond time (with us resolution) to a us counter value
+	
 
 	// Do the measurement
 	
@@ -685,7 +685,7 @@ void histogramMeasure(const ParameterLookup& params) {
 // Parameters:
 //  timeout     - Time to wait for a START pulse before giving up (ms)
 // Returns:
-//          system clock (ms with 24h rollover) at occurrence of next START pulse or "TIMEOUT"
+//          system clock (us) at occurrence of next START pulse or "TIMEOUT"
 void timeStart(const ParameterLookup& params) {
 
 	unsigned long timeout = atol(params[1]);
@@ -721,11 +721,10 @@ void timeStart(const ParameterLookup& params) {
 		Serial.println((int)stat);
 		return;
 	}
-	// Report the arrive time of the START pulse
-	double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
-	// Compensate for the length of the TDC's sequence. 
-	arrivalTime -= 2.5 * 1e-3;
-	Serial.println(arrivalTime, 3);
+	
+	// Compensate for the length of the TDC's sequence and report the arrive time of the START pulse
+	arrivalTime_us -= 2.;
+	Serial.println(arrivalTime_us);
 }
 
 // Output the Arduino's system time (as returned by `millis()`) of the first
@@ -791,45 +790,26 @@ void timeStop1(const ParameterLookup& params) {
 	}
 
 	// Report the arrive time of the pulse
-	double arrivalTime = clippedTime(arrivalTime_ms, arrivalTime_us);
-	Serial.println(arrivalTime, 3);
+	Serial.println(arrivalTime_us);
 }
 
 // Report the Arduino's system time at the start and the end of communications
 //
 // Returns:
-//          system clock in ms with us resolution at start and end of function
+//          system clock in us resolution at start and end of function
 void reportTime(const ParameterLookup& params) {
 
 	// Read out the start time of the most recent Serial comms, before they're overwritten by an interrupt
-	unsigned long start_ms = _start_comms_ms;
+	// unsigned long start_ms = _start_comms_ms;
 	unsigned long start_us = _start_comms_us;
 
-	// Convert to a double of millisecond since power-on
-	double time_start = clippedTime(start_ms, start_us);
-
 	// Reading for the end of comms
-	unsigned long end_ms = millis();
+	// unsigned long end_ms = millis();
 	unsigned long end_us = micros();
-	const double time_end = clippedTime(end_ms, end_us);
 
-	Serial.print(time_start, 3);
+	Serial.print(start_us);
 	Serial.print(", "); // Not stored in flash, since speed is critical here
-	Serial.println(time_end, 3);
-}
-
-// Convert a millis() + micros() reading into a time since the Arduino was powered on,
-// returned as a double with us precision, rolling over every 24 hours.
-double clippedTime(unsigned long ms, unsigned long us) {
-	// The Arduino micros time wraps around at the length of an unsigned long in microseconds:
-	// We'll round the millisecond count down to the most recent micros overflow, and use the microsecond
-	// count from there
-	const unsigned long max_length_of_micros_in_ms = ULONG_MAX/1000;
-	const unsigned long rounded_ms = ms / max_length_of_micros_in_ms;
-	// Clip the ms count at 1 day to avoid loss of float precision when we convert
-	const unsigned long clipped_ms = rounded_ms / (1000 * 60 * 60 * 24);
-
-	return double(rounded_ms) + 0.001*double(us);
+	Serial.println(end_us);
 }
 
 // Calculate which bin in a histogram a number belongs to

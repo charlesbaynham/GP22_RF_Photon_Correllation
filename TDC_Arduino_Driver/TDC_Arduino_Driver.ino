@@ -1259,8 +1259,16 @@ bool registerCommands(CommandHandler<numCommands>& h) {
 void setupForSTARTToSTOP1Mode() {
 
 	// Read time from trigger on START until trigger on STOP1
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
-	bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
+	// The config for this depends on whether the GP22 is in mode 1 or mode 2
+	if (inMeasurementMode2()) { // mode 2
+		bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+		bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 2);
+	} else { // mode 1
+		bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+		bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
+	}
+
+	// Configure number of hits expected
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN1, 2); // 1 hit on STOP1 + 1 on START = 2
 	bitmaskWrite(GP22::REG1, GP22::REG1_HITIN2, 0); // No hits on STOP2
 
@@ -1271,9 +1279,6 @@ void setupForSTARTToSTOP1Mode() {
 	// Double res mode: fine since we don't need channel 2
 	bitmaskWrite(GP22::REG6, GP22::REG6_DOUBLE_RES, true);
 	bitmaskWrite(GP22::REG6, GP22::REG6_QUAD_RES, false);
-
-	// Measurement mode will be determined by the user.
-	// Call setMeasurementMode2(bool enable) to change
 
 	// Update the TDC's settings
 	updateTDC(GP22::registers_data);
@@ -1291,9 +1296,31 @@ void setMeasurementMode2(bool enabled) {
 		bitmaskWrite(GP22::REG0, GP22::REG0_NO_CAL_AUTO, false);
 	}
 
+	if (enabled) { // If we're going into mode 2
+		if (bitmaskRead(GP22::REG1, GP22::REG1_HIT1) == 1 && 
+			bitmaskRead(GP22::REG1, GP22::REG1_HIT2) == 0) { 
+			// ...and we're currently set up for START -> STOP1 measurements in MODE 1
+			// Set up for START -> STOP1 measurements in MODE 2
+			bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+			bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 2);
+		}
+	} else { //  else if we're going into mode 1...
+		if (bitmaskRead(GP22::REG1, GP22::REG1_HIT1) == 1 && 
+			bitmaskRead(GP22::REG1, GP22::REG1_HIT2) == 2) { 
+			// ...and we're currently set up for START -> STOP1 measurements in MODE 2
+			// Set up for START -> STOP1 measurements in MODE 1
+			bitmaskWrite(GP22::REG1, GP22::REG1_HIT1, 1);
+			bitmaskWrite(GP22::REG1, GP22::REG1_HIT2, 0);
+		}
+	}
+
 	// Send settings
 	updateTDC(GP22::registers_data);
 
+}
+
+inline bool inMeasurementMode2() {
+	return bitmaskRead(GP22::REG0, GP22::REG0_MESSB2);
 }
 
 void fireStartMode(bool enabled) {	

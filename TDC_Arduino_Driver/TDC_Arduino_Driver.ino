@@ -66,6 +66,7 @@ uint32_t GP22::registers_data[7] = { 0 };
 #define TDC_RESET 0x50
 #define TDC_START_CAL 0x04
 #define TDC_START_CAL_RES 0x03
+#define TDC_START_TOF 0x01
 
 enum class MEASUREMENT_ERROR {
 	NO_ERROR = 0,
@@ -878,6 +879,13 @@ MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& co
 	digitalWrite(TDC_CS, LOW);
 	SPI.transfer(TDC_INIT);
 	digitalWrite(TDC_CS, HIGH);
+
+	// If we're in FIRE_START mode, fire a start pulse
+	if (bitmaskRead(GP22::REG1, GP22::REG1_SEL_START_FIRE)) {
+		digitalWrite(TDC_CS, LOW);
+		SPI.transfer(TDC_START_TOF);
+		digitalWrite(TDC_CS, HIGH);
+	}
 
 	// Wait until interrupt goes low indicating a successful read
 	uint32_t start = millis();

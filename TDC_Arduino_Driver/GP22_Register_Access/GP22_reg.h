@@ -119,7 +119,7 @@ namespace GP22 {
 	    REG0_DIV_CLKHS          = REG_BIT_DEFN(20, 21),
 	    REG0_ANZ_PER_CALRES     = REG_BIT_DEFN(22, 23),
 	    REG0_DIV_FIRE           = REG_BIT_DEFN(24, 27),
-	    REG0_ANZ_FIRE_START     = REG_BIT_DEFN(28, 31)
+	    REG0_ANZ_FIRE_LSB       = REG_BIT_DEFN(28, 31)
 	};
 
 	enum {
@@ -191,12 +191,12 @@ namespace GP22 {
 	    REG5_REPEAT_FIRE        = REG_BIT_DEFN(24, 26),
 	    REG5_DIS_PHASESHIFT     = REG_BIT_DEFN(27, 27),
 	    REG5_EN_STARTNOISE      = REG_BIT_DEFN(28, 28),
-	    REG5_CON_FIRE           = REG_BIT_DEFN(29, 31)
+	    REG5_CONF_FIRE          = REG_BIT_DEFN(29, 31)
 	};
 
 	enum {
 	    REG6_ID6                = REG_BIT_DEFN(0, 7),
-	    REG6_ANZ_FIRE_END       = REG_BIT_DEFN(8, 10),
+	    REG6_ANZ_FIRE_MSB       = REG_BIT_DEFN(8, 10),
 	    REG6_TEMP_PORTDIR       = REG_BIT_DEFN(11, 11),
 	    REG6_DOUBLE_RES         = REG_BIT_DEFN(12, 12),
 	    REG6_QUAD_RES           = REG_BIT_DEFN(13, 13),

@@ -441,7 +441,7 @@ void singleMeasure(const ParameterLookup& params) {
 		int32_t Signed;
 	} result;
 
-	MEASUREMENT_ERROR stat = measure(result.Whole);
+	MEASUREMENT_ERROR stat = measure(result.Whole, 2000);
 
 	// If we get an error level, report the timeout
 	if (stat != MEASUREMENT_ERROR::NO_ERROR) {
@@ -1369,8 +1369,26 @@ inline bool inMeasurementMode2() {
 	return bitmaskRead(GP22::REG0, GP22::REG0_MESSB2);
 }
 
-void fireStartMode(bool enabled) {	
-	bitmaskWrite(GP22::REG1, GP22::REG1_SEL_START_FIRE, enabled);
+void fireStartMode(bool enabled) {
+
+	// In both cases...
+	// Generate 1 pulse only
+	bitmaskWrite(GP22::REG0, GP22::REG0_ANZ_FIRE_LSB, 1);
+	// Set pulse generator divider to 2 (lowest available)
+	bitmaskWrite(GP22::REG0, GP22::REG0_DIV_FIRE, 1);
+
+	if (enabled) {
+		// Connect START to the pulse generator
+		bitmaskWrite(GP22::REG1, GP22::REG1_SEL_START_FIRE, 1);
+		// Output pulses from FIRE_UP (which is sent to START)
+		bitmaskWrite(GP22::REG5, GP22::REG5_CONF_FIRE, 2);
+	} else {
+		// Don't connect START to the pulse generator
+		bitmaskWrite(GP22::REG1, GP22::REG1_SEL_START_FIRE, 0);
+		// Don't output any pulses
+		bitmaskWrite(GP22::REG5, GP22::REG5_CONF_FIRE, 0);
+	}
+	
 	updateTDC(GP22::registers_data);
 }
 

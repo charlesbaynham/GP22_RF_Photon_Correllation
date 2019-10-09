@@ -912,7 +912,7 @@ MEASUREMENT_ERROR measure(uint32_t& out, unsigned int timeout, unsigned long& co
 	uint16_t TDC_stat = readStatus();
 
 	// const int nextAdr = TDC_stat & 0b111;
-	const bool stopTimeout = TDC_stat & 0b11000000000;
+	const bool stopTimeout = TDC_stat & ((1<<9)|(1<<10));
 	const bool counterOverflow = out == 0xFFFFFFFF;
 
 	if (stopTimeout)

@@ -462,17 +462,46 @@ void singleMeasure(const ParameterLookup& params) {
 		// If not calibrated, output raw LSBs
 		Serial.println(result.Unsigned[0]); // We only need the first 2 bytes
 	}
+}
 
-	// DEBUG:
-	// Output all registers
-	// for (int i = 0; i<4; i++) {
+void triggeredMeasure(const ParameterLookup& params) {
+
+	unsigned long trigger_ms = atof(params[1]);
+	if (trigger_ms==0){
+		Serial.println(F("Error parsing trigger time"));
+	}
+
+	// Convert millisecond time (with us resolution) to a us counter value
+
+	// Do the measurement
+	
+	union {
+		uint32_t Whole;
+		uint16_t Unsigned[2];
+		int32_t Signed;
+	} result;
+
+	MEASUREMENT_ERROR stat = measure(result.Whole, 2000);
+
+	// If we get an error level, report the timeout
+	if (stat != MEASUREMENT_ERROR::NO_ERROR) {
+		Serial.print(F("MEASUREMENT ERROR "));
+		Serial.println((int)stat);
+		return;
+	}
+
+	if (bitmaskRead(GP22::REG0, GP22::REG0_CALIBRATE)) {
 		
-	// 	uint32_t r = read_bytes(i, false);
+		// If calibrated, convert to nanoseconds
+		const double nanoseconds = double(result.Signed) / HSClockFreq() * 1e9 / double(uint32_t(1)<<16);
+		Serial.print(nanoseconds, 3);
+		Serial.println("ns");
 
-	// 	Serial.print("0x");
-	// 	Serial.println(r);
-	// }
+	} else {
 
+		// If not calibrated, output raw LSBs
+		Serial.println(result.Unsigned[0]); // We only need the first 2 bytes
+	}
 }
 
 // Take multiple measurements for a given time period, outputting the results as a histogram

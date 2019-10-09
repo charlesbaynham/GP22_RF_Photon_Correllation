@@ -172,7 +172,7 @@ void setup() {
 	// Set clock divider to 4 (the maximum time interval that can be measure in MODE 1 is 2* clock cycles, so 
 	// without a clock divider we'd be limited to 500ns)
 	// See p48 of the datasheet
-	bitmaskWrite(GP22::REG0, GP22::REG0_DIV_CLKHS, 4);
+	bitmaskWrite(GP22::REG0, GP22::REG0_DIV_CLKHS, 2);
 
 	// Load all the values stored in reg into the TDC's registers
 	updateTDC(GP22::registers_data);

@@ -467,10 +467,9 @@ void singleMeasure(const ParameterLookup& params) {
 void triggeredMeasure(const ParameterLookup& params) {
 
 	unsigned long trigger_us = atol(params[1]);
-	if (trigger_ms==0){
+	if (trigger_us==0){
 		Serial.println(F("Error parsing trigger time"));
 	}
-
 	
 
 	// Do the measurement
@@ -1064,12 +1063,13 @@ uint16_t calibrate() {
 uint32_t calibrateHF() {
 
 	// Backup registers
-	uint32_t backupReg3;
-	backupReg3 = regRead(GP22::REG3);
+	backup_config();
 
 	// Set EN_AUTOCALC=0
-	GP22::bitmaskWrite(GP22::REG3, GP22::REG3_EN_AUTOCALC_MB2, false);
-	writeConfigReg(GP22::REG3, regRead(GP22::REG3));
+	GP22::bitmaskWrite(GP22::REG3, GP22::REG3_EN_AUTOCALC_MB2, 0);
+	// Turn on calibration
+	GP22::bitmaskWrite(GP22::REG0, GP22::REG0_CALIBRATE, 1);
+
 	updateTDC(GP22::registers_data);
 
 	// Init
@@ -1092,12 +1092,11 @@ uint32_t calibrateHF() {
 	// The time interval to be measured is set by ANZ_PER_CALRES
 	// which defines the number of periods of the 32.768 kHz clock:
 	// 2 periods = 61.03515625 us
-	// But labview / the user will handle this, we just output the raw data
+	// Calibration is on, so the GP22 will output an answer in Hz for the measured oscillator frequency
 	uint32_t result = timeout ? 0xFFFFFFFF : read_bytes(TDC_RESULT1, false);
 
-	// Restore reg3
-	writeConfigReg(GP22::REG3, backupReg3);
-	updateTDC(GP22::registers_data);
+	// Restore previous config
+	restore_config();
 
 	return result;
 }

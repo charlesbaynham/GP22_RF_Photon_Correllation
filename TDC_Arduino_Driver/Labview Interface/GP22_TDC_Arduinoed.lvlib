@@ -48,6 +48,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="Set_Registers.vi" Type="VI" URL="../Public/Set_Registers.vi"/>
 			<Item Name="Create_Reg_Cluster.vi" Type="VI" URL="../Private/Create_Reg_Cluster.vi"/>
 			<Item Name="Get_Registers.vi" Type="VI" URL="../Public/Get_Registers.vi"/>
+			<Item Name="Set measurement mode.vi" Type="VI" URL="../Public/Set measurement mode.vi"/>
 		</Item>
 		<Item Name="Measurements" Type="Folder">
 			<Item Name="SingleMeasurement.vi" Type="VI" URL="../Public/SingleMeasurement.vi"/>
@@ -56,6 +57,7 @@ N.B. The configuration of the TDC has been stored in the device's EEPROM (solid 
 			<Item Name="GetBinnedData.vi" Type="VI" URL="../Public/GetBinnedData.vi"/>
 			<Item Name="MeasureSTARTTime.vi" Type="VI" URL="../Public/MeasureSTARTTime.vi"/>
 			<Item Name="MeasureSystemTime.vi" Type="VI" URL="../Public/MeasureSystemTime.vi"/>
+			<Item Name="MeasureSTOP1Time.vi" Type="VI" URL="../Public/MeasureSTOP1Time.vi"/>
 		</Item>
 		<Item Name="VI Tree.vi" Type="VI" URL="../Public/VI Tree.vi"/>
 	</Item>

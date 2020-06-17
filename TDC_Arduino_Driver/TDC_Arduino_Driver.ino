@@ -802,12 +802,13 @@ void reportTime(const ParameterLookup& params) {
 	// unsigned long start_ms = _start_comms_ms;
 	unsigned long start_us = _start_comms_us;
 
+	Serial.print(start_us);
+	Serial.print(", "); // Not stored in flash, since speed is critical here
+
 	// Reading for the end of comms
 	// unsigned long end_ms = millis();
 	unsigned long end_us = micros();
-
-	Serial.print(start_us);
-	Serial.print(", "); // Not stored in flash, since speed is critical here
+	
 	Serial.println(end_us);
 }
 
